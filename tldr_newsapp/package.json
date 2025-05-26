@@ -46,6 +46,7 @@
     "@types/react": "~19.0.10",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~9.2.0",
+    "file-loader": "^6.2.0",
     "typescript": "~5.8.3"
   },
   "private": true

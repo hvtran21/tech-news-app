@@ -1,40 +1,60 @@
 import * as React from 'react'
-import Box from '@mui/material/Box';
-import { Text, View, StyleSheet } from 'react-native';
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap');
-</style>
+import { Text, View, StyleSheet, Image } from 'react-native';
 
 export default function main() {
   return (
-    <View style={card_style.card}>
-      <Text style={card_style.title}>Hello there this is a test of the great wonders of React!</Text>
+    <View style={card_style.main_card}>
+      <Text style={card_style.card_title}>Hello there this is a test of the great wonders of React!
+          This is a news title summary of an article.
+      </Text>
+      <View style={card_style.thumbnail_frame}> 
+        <Image 
+          source={require('../assets/images/computer.jpg')}
+          alt='Image'
+          style={card_style.thumbnail_image}
+         />
+      </View>
     </View>
   );
 }
 
 const card_style = StyleSheet.create({
-
-  card: {
+  main_card: {
+    flexDirection: 'row',
     flex: 1,
     backgroundColor: '#fff',
-    padding: 20,
+    padding: 10,
     margin: 10,
-    borderRadius: 10,
+    borderRadius: 5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
     maxHeight: 150,
+    width: 'auto'
   },
 
-  title: {
+  card_title: {
     color: 'black',
     fontSize: 18,
+    width: "60%",
+    padding: 10
   },
 
+  thumbnail_frame: {
+    borderColor: 'black',
+    backgroundColor: '#ccc',
+    width: '40%',
+    padding: 5,
+    borderRadius: 5,
+    justifyContent: 'center'
+  },
+
+  thumbnail_image: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 5
+  }
 });
 
 
