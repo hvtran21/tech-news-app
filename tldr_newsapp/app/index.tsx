@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Text, View, StyleSheet, ScrollView } from 'react-native';
+import { StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import NewsCard from './components/news_card'
@@ -9,8 +9,10 @@ export default function main() {
   const [fontsLoaded] = useFonts ({
   'Nunito-Light': require('../assets/fonts/Nunito/static/Nunito-Light.ttf')
 })
- const title='Hackers broke into Commvaults cloud backup system and stole secret passwords that let them access customers Microsoft.'
+ const title='Hackers broke into Commvaults cloud backup system and stole secret passwords'
  const image_src=require('/Users/htran/repos/tldr_newsapp/tldr_newsapp/assets/images/computer.jpg')
+ const date='May 21st'
+ const genre='Cybersecurity'
 
   return (
     <SafeAreaView style={base.theme} edges={['top', 'left', 'right', 'bottom']}>
@@ -18,6 +20,8 @@ export default function main() {
         <NewsCard
         title={title}
         image_src={image_src}
+        date={date}
+        genre={genre}
         />
       </ScrollView>
     </SafeAreaView>
