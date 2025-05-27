@@ -17,18 +17,73 @@ export const NewsCard = ({ title, image_src, date, genre }: NewsCardProps) => {
         <Text style={card_style.date}>
           {date} | {genre}
         </Text>
+
         <Text style={card_style.card_title}>
           {title}
         </Text>
+        {/* TODO: Add in summary */}
       </View>
+
       <View style={card_style.thumbnail_frame}>
         <Image source={image_src} alt='Image' style={card_style.thumbnail_image} />
+      </View>
+  
+    </View>
+  )
+}
+
+export const HighlightCard = ({ title, image_src, date, genre }: NewsCardProps) => {
+  return(
+    <View style={card_style.highlight_card}>
+      <View style={{ width: '60%', flexDirection: 'column', alignItems: 'flex-start'}}>
+
+        <Text style={card_style.date}>
+          {date} | {genre}
+        </Text>
+
+        <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-evenly' }}>
+          <View style={card_style.highlight_thumbnail}>
+            <Image source={image_src} alt='Image' style={card_style.thumbnail_image} />
+          </View>
+
+          <Text style={card_style.card_title}>
+            {title}
+          </Text>
+
+        </View>
+
+
       </View>
     </View>
   )
 }
 
 export const card_style = StyleSheet.create({
+  highlight_card: {
+    flexDirection: 'row',
+    flex: 1,
+    backgroundColor: '#141414',
+    padding: 5,
+    margin: 8,
+    borderRadius: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    height: 250,
+    width: 'auto',
+  },
+
+  highlight_thumbnail: {
+    width: '81%',
+    height: '81%',
+    padding: 5,
+    borderRadius: 5,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+
   // styling for the news card itself
   main_card: {
     flexDirection: 'row',
@@ -46,7 +101,6 @@ export const card_style = StyleSheet.create({
   },
 
   card_title: {
-    display: 'flex',
     color: 'white',
     fontSize: 16,
     width: '100%',
@@ -57,7 +111,6 @@ export const card_style = StyleSheet.create({
   },
 
   thumbnail_frame: {
-    borderColor: 'black',
     width: '40%',
     padding: 5,
     borderRadius: 5,
