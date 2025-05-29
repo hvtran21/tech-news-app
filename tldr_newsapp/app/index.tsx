@@ -15,7 +15,7 @@ export default function main() {
  const date='May 24th'
  const genre='Cybersecurity'
 
- const title_2='Product-Led Growth (PLG) changed the game. Instead of being sold bloated software over steak dinners and locked into multi-year contracts, customers started choosing products that actually solved their problems'
+ const title_2='Product-Led Growth (PLG) changed the game. Instead of being sold bloated software over steak dinners and locked into multi-year contracts'
  const image_src_2=require('/Users/htran/repos/tldr_newsapp/tldr_newsapp/assets/images/computer_2.jpg')
  const date_2='May 24th'
  const genre_2='AI'
