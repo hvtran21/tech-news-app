@@ -46,7 +46,7 @@ export const HighlightCard = ({ title, image_src, date, genre }: NewsCardProps) 
             <Image source={image_src} alt='Image' style={card_style.thumbnail_image} />
           </View>
 
-          <Text style={card_style.card_title}>
+          <Text style={card_style.highlight_title}>
             {title}
           </Text>
 
@@ -70,18 +70,31 @@ export const card_style = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
-    height: 250,
+    height: 300,
     width: 'auto',
   },
 
   highlight_thumbnail: {
-    width: '81%',
-    height: '81%',
+    width: '75%',
+    height: '75%',
     padding: 5,
     borderRadius: 5,
     shadowColor: '#000',
     shadowOpacity: 0.3,
     shadowRadius: 4,
+  },
+
+  highlight_title: {
+    color: 'white',
+    fontSize: 16,
+    width: '85%',
+    height: '80%',
+    padding: 5,
+    fontFamily: 'Nunito-Light',
+  },
+
+  highlight_summary: {
+    
   },
 
   // styling for the news card itself
