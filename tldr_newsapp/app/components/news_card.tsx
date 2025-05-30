@@ -17,17 +17,14 @@ export const NewsCard = ({ title, image_src, date, genre }: NewsCardProps) => {
         <Text style={card_style.date}>
           {date} | {genre}
         </Text>
-
         <Text style={card_style.card_title}>
           {title}
         </Text>
-        {/* TODO: Add in summary */}
       </View>
 
       <View style={card_style.thumbnail_frame}>
         <Image source={image_src} alt='Image' style={card_style.thumbnail_image} />
       </View>
-  
     </View>
   )
 }
@@ -35,33 +32,31 @@ export const NewsCard = ({ title, image_src, date, genre }: NewsCardProps) => {
 export const HighlightCard = ({ title, image_src, date, genre }: NewsCardProps) => {
   return(
     <View style={card_style.highlight_card}>
-      <View style={{ width: '60%', flexDirection: 'column', alignItems: 'flex-start'}}>
-
+      <View style={{ width: '100%', flexDirection: 'column', justifyContent: 'flex-start'}}>
+        
         <Text style={card_style.date}>
           {date} | {genre}
-        </Text>
-
-        <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-evenly' }}>
+        </Text> 
+        {/* TODO: Need to fix how highlight card is displayed.
+                -> currently leaving this for now, since The rest of the page needs to be
+                      figured out.
+        
+        */}
+       
+        {/* <View style={{ width: '100%', flexDirection: 'column', justifyContent: 'space-evenly' }}>
           <View style={card_style.highlight_thumbnail}>
             <Image source={image_src} alt='Image' style={card_style.thumbnail_image} />
-          </View>
-
-          <Text style={card_style.highlight_title}>
-            {title}
-          </Text>
-
-        </View>
-
+          </View> */}
 
       </View>
+        {/* <View style={card_style.highlight_title}></View> */}
+
     </View>
   )
 }
 
 export const card_style = StyleSheet.create({
   highlight_card: {
-    flexDirection: 'row',
-    flex: 1,
     backgroundColor: '#141414',
     padding: 5,
     margin: 8,
@@ -74,33 +69,35 @@ export const card_style = StyleSheet.create({
     width: 'auto',
   },
 
+  // TODO: Fix up styling for highlight card.
   highlight_thumbnail: {
-    width: '75%',
-    height: '75%',
-    padding: 5,
+    width: '100%',
+    height: '80%',
+    // padding: 5,
     borderRadius: 5,
     shadowColor: '#000',
     shadowOpacity: 0.3,
     shadowRadius: 4,
+    // borderWidth: 1,
+    // borderColor: 'white',
   },
 
-  highlight_title: {
+  highlight_title_box: {
     color: 'white',
-    fontSize: 16,
-    width: '85%',
-    height: '80%',
-    padding: 5,
-    fontFamily: 'Nunito-Light',
+    // width: '100%',
+    // height: '35%',
+    backgroundColor: '#141414',
+    borderRadius: 5,
   },
 
-  highlight_summary: {
-    
+  highlight_title_text: {
+    fontSize: 16,
+    fontFamily: 'Nunito-Light',
   },
 
   // styling for the news card itself
   main_card: {
     flexDirection: 'row',
-    flex: 1,
     backgroundColor: '#141414',
     padding: 5,
     margin: 8,
