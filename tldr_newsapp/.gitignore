@@ -37,3 +37,7 @@ yarn-error.*
 *.tsbuildinfo
 
 *.vscode
+
+eslint.config.js
+
+.prettierrc
