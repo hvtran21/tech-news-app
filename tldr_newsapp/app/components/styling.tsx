@@ -49,7 +49,7 @@ export const BaseTemplate = StyleSheet.create({
     },
 
     title: {
-        paddingTop: 25,
+        paddingTop: 20,
         paddingHorizontal: 20,
         fontWeight: 'bold',
         fontFamily: 'Nunito-Bold',

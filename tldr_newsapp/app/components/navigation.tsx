@@ -1,4 +1,4 @@
-import { View, StyleSheet, ScrollView, Text, ImageURISource, Image } from 'react-native';
+import { View, StyleSheet, ScrollView, Text, ImageURISource, Image, TouchableOpacity } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faHouse, faUser, faMagnifyingGlass, faBookmark } from '@fortawesome/free-solid-svg-icons';
@@ -53,6 +53,8 @@ const BottomNavBar = StyleSheet.create({
         justifyContent: 'flex-start',
         alignItems: 'center',
         backgroundColor: '#000000',
+        borderTopColor: '#282828',
+        borderWidth: StyleSheet.hairlineWidth
     },
 
     nav_icon_config: {
@@ -66,8 +68,10 @@ const BottomNavBar = StyleSheet.create({
 
 const TopNavBar = StyleSheet.create({
     nav_bar_container: {
-        height: '10%',
-        borderRadius: 20,
+        height: '7%',
+        marginTop: 5,
+        borderBottomColor: '#282828',
+        borderWidth: StyleSheet.hairlineWidth
     },
 
     scroll_content: {

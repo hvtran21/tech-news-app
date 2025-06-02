@@ -14,16 +14,21 @@ export const NewsCard = ({ title, image_src, date, genre }: NewsCardProps) => {
     // renders a news card based off of 'title' prop, and 'image_src' prop
     return (
         <View style={card_style.main_card}>
-            <View style={{ width: '60%', flexDirection: 'column', alignItems: 'flex-start' }}>
-                <GradientText
-                    colors={['#C020D0', '#4743EF']}
-                    text={`${date} | ${genre}`}
-                ></GradientText>
-                <Text style={card_style.card_title}>{title}</Text>
-            </View>
+            <View style={{
+                flexDirection: 'row',
+                alignItems: 'center'
+            }}>
+                <View style={{ width: '60%', flexDirection: 'column', alignItems: 'flex-start' }}>
+                    <GradientText
+                        colors={['#C020D0', '#4743EF']}
+                        text={`${date} | ${genre}`}
+                    ></GradientText>
+                    <Text style={card_style.card_title}>{title}</Text>
+                </View>
 
-            <View style={card_style.thumbnail_frame}>
-                <Image source={image_src} alt="Image" style={card_style.thumbnail_image} />
+                <View style={card_style.thumbnail_frame}>
+                    <Image source={image_src} alt="Image" style={card_style.thumbnail_image} />
+                </View>
             </View>
         </View>
     );
@@ -34,12 +39,12 @@ export const card_style = StyleSheet.create({
     main_card: {
         flexDirection: 'row',
         backgroundColor: '#000000',
-        marginTop: 5,
         borderRadius: 5,
         maxHeight: 175,
-        width: 'auto',
+        width: '98%',
         alignContent: 'center',
         justifyContent: 'center',
+        height: 150
     },
 
     card_title: {
