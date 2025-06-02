@@ -40,7 +40,7 @@ export default function main() {
                     ></GradientText>
 
                     <TopNavigation />
-                    <ScrollView contentContainerStyle={{ 
+                    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ 
                         flexDirection: 'column',
                         justifyContent: 'center',
                         alignItems: 'center'
@@ -50,20 +50,6 @@ export default function main() {
                             image_src={image_src_2}
                             date={date_2}
                             genre={genre_2}
-                        />
-                        <View style={{ borderWidth: StyleSheet.hairlineWidth, borderColor: '#282828', width: '100%' }}></View>
-                        <NewsCard
-                            title={title}
-                            image_src={image_src}
-                            date={date}
-                            genre={genre}
-                        />
-                        <View style={{ borderWidth: StyleSheet.hairlineWidth, borderColor: '#282828', width: '100%' }}></View>
-                        <NewsCard
-                            title={title}
-                            image_src={image_src}
-                            date={date}
-                            genre={genre}
                         />
                         <View style={{ borderWidth: StyleSheet.hairlineWidth, borderColor: '#282828', width: '100%' }}></View>
                         <NewsCard

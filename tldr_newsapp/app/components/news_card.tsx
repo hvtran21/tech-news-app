@@ -18,10 +18,11 @@ export const NewsCard = ({ title, image_src, date, genre }: NewsCardProps) => {
                 flexDirection: 'row',
                 alignItems: 'center'
             }}>
-                <View style={{ width: '60%', flexDirection: 'column', alignItems: 'flex-start' }}>
+                <View style={{ width: '60%', flexDirection: 'column' }}>
                     <GradientText
                         colors={['#C020D0', '#4743EF']}
                         text={`${date} | ${genre}`}
+                        style={{ paddingLeft: 2 }}
                     ></GradientText>
                     <Text style={card_style.card_title}>{title}</Text>
                 </View>
@@ -51,7 +52,7 @@ export const card_style = StyleSheet.create({
         color: 'white',
         fontSize: 16,
         width: '100%',
-        padding: 2,
+        paddingLeft: 2,
         fontFamily: 'Nunito-Medium',
         opacity: 0.8,
     },
