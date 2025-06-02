@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, TextStyle, StyleSheet } from 'react-native';
+import { Text, TextStyle, StyleSheet, View } from 'react-native';
 import MaskedView from '@react-native-masked-view/masked-view';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -35,24 +35,33 @@ export const BaseTemplate = StyleSheet.create({
     theme: {
         flex: 1,
         backgroundColor: '#000000',
-        justifyContent: 'flex-start',
+        justifyContent: 'space-between',
         alignItems: 'center',
         flexDirection: 'column',
-        height: '80%'
     },
 
     config: {
         flexDirection: 'column',
         width: '100%',
-        height: '80%',
-        justifyContent: 'center',
+        height: '100%',
+        justifyContent: 'space-between',
         alignItems: 'center',
     },
 
     title: {
+        paddingTop: 25,
+        paddingHorizontal: 20,
+        fontWeight: 'bold',
         fontFamily: 'Nunito-Bold',
-        fontSize: 30,
+        fontSize: 32,
     },
+    
+    sub_title: {
+        fontSize: 18,
+        fontFamily: 'Nunito-Medium',
+        marginTop: 4, 
+    },
+
 });
 
 export default GradientText;

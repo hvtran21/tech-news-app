@@ -114,7 +114,9 @@ export const card_style = StyleSheet.create({
     },
 
     thumbnail_frame: {
-        width: '40%',
+        width: '',
+        height: '100%',
+
         padding: 5,
         borderRadius: 5,
         shadowColor: '#000',
