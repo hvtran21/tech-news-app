@@ -2,7 +2,7 @@ import * as React from 'react';
 import { ScrollView, View, FlatList, StyleSheet } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
-import { NewsCard, HighlightCard } from './components/news_card';
+import { NewsCard } from './components/news_card';
 import { BaseTemplate, GradientText } from './components/styling';
 import { TopNavigation, BottomNavigation } from './components/navigation';
 
