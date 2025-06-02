@@ -21,14 +21,13 @@ export const NewsCard = ({ title, image_src, date, genre }: NewsCardProps) => {
                 ></GradientText>
                 <Text style={card_style.card_title}>{title}</Text>
             </View>
-            
+
             <View style={card_style.thumbnail_frame}>
                 <Image source={image_src} alt="Image" style={card_style.thumbnail_image} />
             </View>
         </View>
     );
 };
-
 
 export const card_style = StyleSheet.create({
     // styling for the news card itself
@@ -49,7 +48,7 @@ export const card_style = StyleSheet.create({
         width: '100%',
         padding: 2,
         fontFamily: 'Nunito-Medium',
-        opacity: 0.8
+        opacity: 0.8,
     },
 
     thumbnail_frame: {

@@ -33,21 +33,37 @@ export default function main() {
                         style={BaseTemplate.title}
                     ></GradientText>
 
-                    <GradientText                   
+                    <GradientText
                         colors={['#8432DF', '#0B54FE']}
                         text="Tech headlines made simple."
-                        style={BaseTemplate.sub_title}>
-                    </GradientText>
+                        style={BaseTemplate.sub_title}
+                    ></GradientText>
 
                     <TopNavigation />
                     <ScrollView>
-                        <View style={{ flexDirection: 'column', justifyContent: 'center', alignContent: 'center' }}>
-                            <NewsCard title={title_2} image_src={image_src_2} date={date_2} genre={genre_2} />
+                        <View
+                            style={{
+                                flexDirection: 'column',
+                                justifyContent: 'center',
+                                alignContent: 'center',
+                            }}
+                        >
+                            <NewsCard
+                                title={title_2}
+                                image_src={image_src_2}
+                                date={date_2}
+                                genre={genre_2}
+                            />
                             {/* <View style={{ borderWidth: StyleSheet.hairlineWidth, borderColor: '#fff', opacity: 0.1, width: '70%' }}></View> */}
-                            <NewsCard title={title} image_src={image_src} date={date} genre={genre} />
+                            <NewsCard
+                                title={title}
+                                image_src={image_src}
+                                date={date}
+                                genre={genre}
+                            />
                         </View>
                     </ScrollView>
-                <BottomNavigation />
+                    <BottomNavigation />
                 </View>
             </SafeAreaView>
         </SafeAreaProvider>

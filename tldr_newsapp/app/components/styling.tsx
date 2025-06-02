@@ -55,13 +55,12 @@ export const BaseTemplate = StyleSheet.create({
         fontFamily: 'Nunito-Bold',
         fontSize: 32,
     },
-    
+
     sub_title: {
         fontSize: 18,
         fontFamily: 'Nunito-Medium',
-        marginTop: 4, 
+        marginTop: 4,
     },
-
 });
 
 export default GradientText;
