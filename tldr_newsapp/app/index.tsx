@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { ScrollView, View, FlatList } from 'react-native';
+import { ScrollView, View, FlatList, StyleSheet } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import { NewsCard, HighlightCard } from './components/news_card';
@@ -18,7 +18,7 @@ export default function main() {
     const genre = 'Cybersecurity';
 
     const title_2 =
-        'Product-Led Growth (PLG) changed the game. Instead of being sold bloated software over steak dinners and locked into multi-year contracts';
+        'Product-Led Growth (PLG) changed the game. Instead of being sold bloated software over steak dinners.';
     const image_src_2 = require('/Users/htran/repos/tldr_newsapp/tldr_newsapp/assets/images/computer_2.jpg');
     const date_2 = 'May 24th';
     const genre_2 = 'AI';
@@ -28,22 +28,27 @@ export default function main() {
             <SafeAreaView style={BaseTemplate.theme} edges={['top', 'left', 'right', 'bottom']}>
                 <View style={BaseTemplate.config}>
                     <GradientText
-                        colors={['#C54B8C', '#6A5ACD']}
+                        colors={['#C020D0', '#4743EF']}
                         text="TLDR Newsletter"
                         style={BaseTemplate.title}
                     ></GradientText>
+
+                    <GradientText                   
+                        colors={['#8432DF', '#0B54FE']}
+                        text="Tech headlines made simple."
+                        style={BaseTemplate.sub_title}>
+                    </GradientText>
+
                     <TopNavigation />
                     <ScrollView>
-                        <HighlightCard
-                            title={title_2}
-                            image_src={image_src_2}
-                            date={date_2}
-                            genre={genre_2}
-                        />
-                        <NewsCard title={title} image_src={image_src} date={date} genre={genre} />
+                        <View style={{ flexDirection: 'column', justifyContent: 'center', alignContent: 'center' }}>
+                            <NewsCard title={title_2} image_src={image_src_2} date={date_2} genre={genre_2} />
+                            {/* <View style={{ borderWidth: StyleSheet.hairlineWidth, borderColor: '#fff', opacity: 0.1, width: '70%' }}></View> */}
+                            <NewsCard title={title} image_src={image_src} date={date} genre={genre} />
+                        </View>
                     </ScrollView>
-                </View>
                 <BottomNavigation />
+                </View>
             </SafeAreaView>
         </SafeAreaProvider>
     );
