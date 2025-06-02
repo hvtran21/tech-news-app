@@ -5,7 +5,7 @@ App envisonment of tldr_newsletter but in an app.
 The tldr_newsletter is only through emails, and for me it was overflowing my inbox and I was not a fan, it made finding everything else harder that I conisdered important.
 
 ## Solution
-Make a mobile application that can display all of the information in a comfortable format, that doesn't overflow inboxes. Most the time we'll read it from our phone, or others at the computer; both can be used. It's just that on the phone, its just easier.
+Make a mobile application that can display all of the information in a comfortable format, that doesn't overflow inboxes. Most the time we'll read it from our phone, or others at the computer; both can be used. It's just that on the phone, its just easier and more convient. No more flooded inboxes, we already recieve enough emails.
 
 ### Features
 &rarr; Have an associated account (optional) that marks a reading list and saves preferences \
@@ -16,4 +16,4 @@ Make a mobile application that can display all of the information in a comfortab
 &rarr; Add a widget that shows a new hot article to read, preference defined by the user
 
 ## Initial Support
-I want to support iOS initially, as I want to learn Swift and Apple development.
+I want to initially support mobile applications, focusing on iOS development and open to expanding to other mobile operating systems such as Android.
