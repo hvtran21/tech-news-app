@@ -28,6 +28,7 @@
         "@react-navigation/native": "^7.1.10",
         "@types/express": "^5.0.2",
         "@types/node": "^22.15.29",
+        "concurrently": "^9.1.2",
         "expo": "~53.0.9",
         "expo-blur": "~14.1.4",
         "expo-constants": "~17.1.6",

@@ -2,5 +2,4 @@
 
 cd "$(dirname "$0")/server"
 npx tsc
-npx tsc -w & 
-npx nodemon dist/index.js
+npx concurrently "npx tsc -w" "nodemon dist/index.js"
