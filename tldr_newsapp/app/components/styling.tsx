@@ -31,6 +31,15 @@ export const GradientText: React.FC<GradientTextProps> = ({ text, colors, style 
     );
 };
 
+export const HorizonalLine = () => {
+    return  (
+        <View style={{ 
+            borderWidth: StyleSheet.hairlineWidth,
+            borderColor: '#141414', width: '98%' }}>
+        </View>
+    )
+}
+
 export const BaseTemplate = StyleSheet.create({
     theme: {
         flex: 1,

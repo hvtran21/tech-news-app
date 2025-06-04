@@ -3,8 +3,9 @@ import { ScrollView, View, FlatList, StyleSheet } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import { NewsCard } from './components/news_card';
-import { BaseTemplate, GradientText } from './components/styling';
+import { BaseTemplate, GradientText, HorizonalLine } from './components/styling';
 import { TopNavigation, BottomNavigation } from './components/navigation';
+import { Link, router } from 'expo-router';
 
 export default function main() {
     const [fontsLoaded] = useFonts({
@@ -51,14 +52,14 @@ export default function main() {
                             date={date_2}
                             genre={genre_2}
                         />
-                        <View style={{ borderWidth: StyleSheet.hairlineWidth, borderColor: '#282828', width: '100%' }}></View>
+                        <HorizonalLine />
                         <NewsCard
                             title={title}
                             image_src={image_src}
                             date={date}
                             genre={genre}
                         />
-                        <View style={{ borderWidth: StyleSheet.hairlineWidth, borderColor: '#282828', width: '100%' }}></View>
+                        <HorizonalLine />
 
                     </ScrollView>
                     <BottomNavigation />
