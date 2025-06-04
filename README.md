@@ -2,7 +2,7 @@
 Read your preferred news, no flooded emails, going to external pages, here I present a mobile application where you can conviently read up on all of the new technological innovations across the world.
 
 ## Why?
-The tldr_newsletter is only through emails, reading tech news was appealing, but for me it was overflowing my inbox and I was not a fan, it made finding everything else harder that I conisdered important. I'm also a curious and motiviated in mobile development, and want to get my own hands in application development, and potentially utilizing AI later.
+I want to be able to read about tech news without having to opt into my browser. The tldr_newsletter seemed really nice, but only through emails. For me it was overflowing my inbox and I was not a fan, it made finding everything else harder that I conisdered important. I'm also a curious and motiviated in mobile development, and want to get my own hands in application development, and potentially utilizing AI later. In addition to this, I prefer the modern format of reading articles, not having to go into an external browser espically when most articles are not mobile format friendly.
 
 ## Solution
 Make a mobile application that can display all of the information in a comfortable format, that doesn't overflow inboxes. Most the time we'll read it from our phone, or others at the computer; both can be used. It's just that on the phone, its just easier and more convient. No more flooded inboxes, we already recieve enough emails.
