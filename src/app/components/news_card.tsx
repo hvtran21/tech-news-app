@@ -18,13 +18,15 @@ export const NewsCard = ({ title, image_src, date, genre }: NewsCardProps) => {
                 flexDirection: 'row',
                 alignItems: 'center'
             }}>
-                <View style={{ width: '60%', flexDirection: 'column' }}>
+                <View style={{ width: '60%', flexDirection: 'column', marginRight: 0 }}>
                     <GradientText
                         colors={['#C020D0', '#4743EF']}
                         text={`${date} | ${genre}`}
                         style={{ paddingLeft: 2 }}
                     ></GradientText>
-                    <Text style={card_style.card_title}>{title}</Text>
+                    <View style={{ width: '95%' }}>
+                        <Text style={card_style.card_title}>{title}</Text>
+                    </View>
                 </View>
 
                 <View style={card_style.thumbnail_frame}>
