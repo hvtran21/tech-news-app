@@ -30,13 +30,13 @@ export default function main() {
                 <View style={BaseTemplate.config}>
                     <GradientText
                         colors={['#C020D0', '#4743EF']}
-                        text="TLDR Newsletter"
+                        text="Tech Newsletter"
                         style={BaseTemplate.title}
                     ></GradientText>
 
                     <GradientText
                         colors={['#8432DF', '#0B54FE']}
-                        text="Tech headlines made simple."
+                        text="Yep. That's it."
                         style={BaseTemplate.sub_title}
                     ></GradientText>
 
