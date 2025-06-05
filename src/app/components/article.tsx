@@ -1,4 +1,5 @@
-export type article = {
+// this is what's used when connecting to the backend API endpoint
+export interface article {
     id: string;
     source: string;
     author: string
