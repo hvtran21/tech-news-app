@@ -12,21 +12,21 @@ export const TopNavigation = () => {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={TopNavBar.scroll_content}
             >
-                <View style={TopNavBar.single_nav}>
+                <TouchableOpacity style={TopNavBar.single_nav}>
                     <Text style={TopNavBar.single_nav_text}>Top News</Text>
-                </View>
-                <View style={TopNavBar.single_nav}>
+                </TouchableOpacity>
+                <TouchableOpacity style={TopNavBar.single_nav}>
                     <Text style={TopNavBar.single_nav_text}>Tech</Text>
-                </View>
-                <View style={TopNavBar.single_nav}>
+                </TouchableOpacity>
+                <TouchableOpacity style={TopNavBar.single_nav}>
                     <Text style={TopNavBar.single_nav_text}>WebDev</Text>
-                </View>
-                <View style={TopNavBar.single_nav}>
+                </TouchableOpacity>
+                <TouchableOpacity style={TopNavBar.single_nav}>
                     <Text style={TopNavBar.single_nav_text}>DevOps</Text>
-                </View>
-                <View style={TopNavBar.single_nav}>
+                </TouchableOpacity>
+                <TouchableOpacity style={TopNavBar.single_nav}>
                     <Text style={TopNavBar.single_nav_text}>AI</Text>
-                </View>
+                </TouchableOpacity>
             </ScrollView>
         </View>
     );
