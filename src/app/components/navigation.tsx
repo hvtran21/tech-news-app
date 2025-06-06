@@ -2,7 +2,6 @@ import { View, StyleSheet, ScrollView, Text, ImageURISource, Image, TouchableOpa
 import React, { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faHouse, faUser, faMagnifyingGlass, faBookmark } from '@fortawesome/free-solid-svg-icons';
-import {} from '@fortawesome/free-regular-svg-icons';
 
 export const TopNavigation = () => {
     return (
