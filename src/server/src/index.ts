@@ -1,6 +1,7 @@
 import express, { Express, Request, Response } from 'express';
-import db from '../db'
 import { articleTableDefinition } from '../models';
+import fetchArticles from '../newsapi';
+import db from '../db'
 
 async function initDatabase() {
     try {
@@ -18,9 +19,14 @@ const serverStart = () => {
     const port = 8000;
     
     server.get('/', (req, res) => {
-        res.send("HELLO!");
+        res.send('Hello');
     });
-    
+
+    server.get('/newsapi', (req, res) => {
+        res.send('calling newsapi');
+        fetchArticles();
+    })
+
     server.listen(port, () => {
         console.log(`Listening on port ${port}...`);
     });
