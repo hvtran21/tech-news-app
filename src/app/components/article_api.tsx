@@ -1,9 +1,7 @@
-import dotenv from 'dotenv';
-
-dotenv.config();
+import { Config } from "react-native-config"
 
 const retrieveArticles = () => {
-    
+
 }
 
 export default retrieveArticles;
