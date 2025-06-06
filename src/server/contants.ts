@@ -1,9 +1,11 @@
 export enum techGenres {
-    AI = 'ai',
-    DEVOPS = 'devops',
-    WEBDEV = 'webdev',
-    IT = 'it',
+    AI = 'artificial intelligence',
+    DEVOPS = 'development operations',
+    WEBDEV = 'web development',
+    IT = 'information technology',
     ROBOTICS = 'robotics',
-    TOP_NEWS_TECH = 'top news tech',
-    ENGINEERING = 'engineering'
+    TOP_NEWS_TECH = 'top tech news',
+    ENGINEERING = 'engineering',
+    START_UPS = 'Top start ups'
+
 };
