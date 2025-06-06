@@ -13,17 +13,11 @@ async function initDatabase() {
     }
 };
 
-
 const serverStart = () => {
     const server  = express();
-    const port = 8000;
-    
-    server.get('/', (req, res) => {
-        res.send('Hello');
-    });
+    const port = process.env.PORT;
 
-    server.get('/newsapi', (req, res) => {
-        res.send('calling newsapi');
+    server.get('/api', (req, res) => {
         fetchArticles();
     })
 
