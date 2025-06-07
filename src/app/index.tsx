@@ -6,8 +6,26 @@ import { NewsCard } from './components/news_card';
 import { BaseTemplate, GradientText, HorizonalLine } from './components/styling';
 import { TopNavigation, BottomNavigation } from './components/navigation';
 import { Link, router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export default function main() {
+const checkFirstLaunch = async () => {
+    try {
+        console.log('Checking first launch..')
+        const val = await AsyncStorage.getItem('firstLaunch');
+        if (val !== null) {
+            console.log('Not first launch')
+            return false;
+        } else {
+            console.log('First launch')
+            await AsyncStorage.setItem('firstLaunch', 'false');
+            return true;
+        }
+    } catch (error) {
+        throw new Error(`Error occurred: ${error}`)
+    }
+}
+
+export default function HomePage() {
     const [fontsLoaded] = useFonts({
         'Nunito-Light': require('../assets/fonts/Nunito/static/Nunito-Light.ttf'),
         'Nunito-Medium': require('../assets/fonts/Nunito/static/Nunito-Medium.ttf'),
