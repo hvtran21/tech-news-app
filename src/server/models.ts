@@ -1,6 +1,7 @@
 const articleTableDefinition = `
     CREATE TABLE IF NOT EXISTS articles (
     id UUID PRIMARY KEY,
+    genre VARCHAR(255),
     source VARCHAR(255),
     author VARCHAR(255),
     title TEXT,
