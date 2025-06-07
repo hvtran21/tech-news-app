@@ -60,14 +60,13 @@ export const BaseTemplate = StyleSheet.create({
     title: {
         paddingTop: 20,
         paddingHorizontal: 20,
-        fontWeight: 'bold',
-        fontFamily: 'Nunito-Bold',
+        fontFamily: 'WorkSans-Regular',
         fontSize: 32,
     },
 
     sub_title: {
         fontSize: 18,
-        fontFamily: 'Nunito-Medium',
+        fontFamily: 'WorkSans-LightItalic',
         marginTop: 4,
     },
 });
