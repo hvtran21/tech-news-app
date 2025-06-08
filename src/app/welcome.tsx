@@ -1,14 +1,18 @@
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
-import { View, Text, StyleSheet, TouchableOpacity, Button } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TouchableHighlight } from 'react-native';
 import { useEffect, useState } from 'react';
 import { Link, router } from 'expo-router';
 import { techGenres } from './components/article';
+import { openDatabaseAsync } from 'expo-sqlite';
+import { faArrowRight} from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 
 export const welcomePage = () => {
     const [genre, setGenres] = useState("");
+    const [submit, setSubmit] = useState(0);
     const [userGenreSelection, setuserGenreSelection] = useState<string[]>([]);
     const genre_arr = Object.values(techGenres) as string[];
-    const limit = 3;
+    const limit = 5;
 
     useEffect(() => {
         if (genre && !userGenreSelection.includes(genre) && userGenreSelection.length < limit) {
@@ -16,7 +20,6 @@ export const welcomePage = () => {
             console.log(`${genre} added to preferences.`);
         }
     }, [genre])
-    
     
     return (
         <SafeAreaProvider>
@@ -53,9 +56,8 @@ export const welcomePage = () => {
                 <View style={genreStyling.genre_container}>
                     {genre_arr.map((item, index) => {
                         return (
-                            <TouchableOpacity onPress={() => {setGenres(item)}}>
+                            <TouchableOpacity key={index} onPress={() => {setGenres(item)}}>
                                 <View 
-                                key={index}
                                 style={[genreStyling.icon_container, userGenreSelection.includes(item) && genreStyling.highlight_icon]}>
                                     <Text style={genreStyling.icon_text}>{item}</Text>
                                 </View>
@@ -81,7 +83,7 @@ export const welcomePage = () => {
                         opacity: 0.5,
                         margin: 2
                     }}>
-                        Select at least 3 
+                        Select up to 5
                     </Text>
                     <Text
                     style={{
@@ -89,20 +91,33 @@ export const welcomePage = () => {
                         fontSize: 14,
                         color: 'white',
                         opacity: 0.5,
-                        margin: 2
+                        marginTop: 15
                     }}>
-                        Or not. That's fine. 
+                        Or not, that's fine. 
                     </Text>
                 </View>
                 
                 {/* submit button view */}
                 <View
                 style={{
-                    borderColor: 'white',
-                    borderWidth: 1,
-                    width: '90%',
-                    height: '20%'
+                    width: '69%',
+                    height: '10%',
+                    justifyContent: 'center',
+                    alignItems: 'flex-end',
+                    marginTop: 20,
                 }}>
+
+                    <Link href={{ pathname: '/homepage', params: {genrePreference: userGenreSelection}}} onPress={() => {setSubmit(1)}}>
+                        <View style={{
+                            justifyContent: 'center',
+                            alignItems: 'flex-end'
+                        }}>
+                            <FontAwesomeIcon
+                            icon={faArrowRight}
+                            style={[genreStyling.submit_button, submit === 1 && genreStyling.submit_button_pushed]}/>
+                        </View>
+                    </Link>
+
                 </View>
             </SafeAreaView>
         </SafeAreaProvider>
@@ -127,8 +142,9 @@ const genreStyling = StyleSheet.create({
 
     icon_text: {
         color: 'white',
-        opacity: 0.8,
-        fontFamily: 'WorkSans-Regular', 
+        opacity: 0.9,
+        fontFamily: 'WorkSans-Light', 
+        fontSize: 16
     },
 
     genre_container: {
@@ -138,12 +154,10 @@ const genreStyling = StyleSheet.create({
         alignItems: 'center',
         flexDirection: 'row',
         height: 'auto',
-
-
     },
 
     highlight_icon: {
-        backgroundColor: '#141414',
+        backgroundColor: '#1f1f1f',
         width: 'auto',
         height: 56,
         justifyContent: 'center',
@@ -154,8 +168,18 @@ const genreStyling = StyleSheet.create({
         marginBottom: 8,
         borderRadius: 15,
         padding: 15,
-        borderColor: 'white',
-        borderWidth: 1
+        // borderColor: 'white',
+        // borderWidth: StyleSheet.hairlineWidth
+    },
+
+    submit_button: {
+        color: 'white',
+        opacity: 0.9
+    },
+
+    submit_button_pushed: {
+        color: 'white',
+        opacity: 0.5
     }
 })
 
@@ -184,7 +208,7 @@ const welcomeTemplate = StyleSheet.create({
     title_container: {
         paddingLeft: 15,
         paddingRight: 15,
-        paddingTop: 45,
+        paddingTop: 55,
         height: 'auto',
         flexDirection: 'column',
         justifyContent: 'center',
