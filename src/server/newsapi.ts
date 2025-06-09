@@ -93,3 +93,4 @@ async function fetchArticles(genre: string) {
 };
 
 export default fetchArticles;
+export {Article};
