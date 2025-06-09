@@ -25,70 +25,76 @@ async function fetchArticles(genre: string) {
 
     const apiKey = process.env.NEWS_API_KEY;
     var pageSize = 20;
-    var base_url = `https://newsapi.org/v2/top-headlines?q=${genre}&apiKey=${apiKey}&pageSize=${pageSize}`;
+    const country = 'us'; // should be based off of user preferences later
+    var page = 1;
+    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
     var totalProcesssed = 0;
     var totalResults = Infinity;
-    var page = 1;
     while (totalProcesssed < totalResults) {
         // fetch data from News API
         try {
-            // if there are more results, need to fetch all of them.
-            var url = base_url;
-            if (totalResults > pageSize) {
-                console.log(`Fetching page=${page}`);
-                url = `${base_url}&page=${page}`;
-                page += 1;
-            }
-            const encoded_url = encodeURI(url);
+            const encoded_url = encodeURI(
+                `https://newsapi.org/v2/top-headlines?q=${genre}&country=${country}&apiKey=${apiKey}&page=${page}`
+            );
             console.log('fetching data...')
             const response = await fetch(encoded_url);
-            if (!response.ok) {
-                throw new Error(`Response status: ${response.status}`);
+
+            if (response.status === 429) {
+                // rate limit hit
+                console.log('Rate limit hit. Next request in 3 seconds...');
+                await delay(3000);
+                continue;
             }
+
+            if (!response.ok) {
+                throw new Error(`Error ocurred, response status: ${response.status}`);
+            }
+
             // save data in memory
             var data = await response.json();
+
+            // don't save if data is undefined, articles is undefined, or length is 0
+            if (!data || !data.articles || data.articles.length === 0) {
+                console.log('Results are less than 0. Returning..');
+                return;
+            }
+
+            // set up data to be inserted into db
+            const articles: Article[] = data.articles;
+            totalResults = data.totalResults;
+            totalProcesssed += articles.length;
+            const lst = articles.map(article => ({
+                id: uuidv4(),
+                source: article.source.name,
+                author: article.author,
+                title: article.title,
+                description: article.description,
+                url: article.url,
+                url_to_image: article.urlToImage,
+                published_at: new Date(article.publishedAt),
+                content: article.content
+            }))
+
+            // add fetched articles to the database as a batch of inserts
+            try {
+                await db.tx(t => {
+                    const queries = lst.map(article => {
+                        return t.none(
+                            'INSERT INTO articles(id, genre, source, author, title, description, url, url_to_image, published_at, content) \
+                                VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)', [article.id, genre, article.source, article.author, article.title, article.description, article.url, article.url_to_image, article.published_at, article.content]
+                        );
+                    });
+                    return t.batch(queries);
+                })
+                page += 1;
+            } catch (error) {
+                console.log(`Error inserting articles into DB: ${error}`)
+            }
+
         } catch (error) {
-            console.error(error);
+            console.error(`Error ocurred: ${error}`);
         }
-        totalResults = data.totalResults;
-        if (totalResults <= 0) {
-            console.log('Results are less than 0. Returning..');
-            return;
-        }
-
-        // set up data to be inserted into db
-        const articles: Article[] = data.articles;
-        totalProcesssed += articles.length;
-        console.log(`totalResults: ${totalResults}`);
-        const lst = articles.map(article => ({
-            id: uuidv4(),
-            source: article.source.name,
-            author: article.author,
-            title: article.title,
-            description: article.description,
-            url: article.url,
-            url_to_image: article.urlToImage,
-            published_at: new Date(article.publishedAt),
-            content: article.content
-        }))
-
-        // add fetched articles to the database
-        db.tx(t => {
-            const queries = lst.map(article => {
-                return t.none(
-                    'INSERT INTO articles(id, genre, source, author, title, description, url, url_to_image, published_at, content) \
-                        VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)', [uuidv4(), genre, article.source, article.author, article.title, article.description, article.url, article.url_to_image, article.published_at, article.content]
-                );
-            });
-            return t.batch(queries);
-        })
-        .then(data => {
-            console.log('Total articles inserted:', data.length);
-        })
-        .catch(error => {
-            console.error('Error ocurred when inserting data:', error);
-        });
     };
 };
 

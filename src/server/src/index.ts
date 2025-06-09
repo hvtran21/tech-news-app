@@ -19,8 +19,10 @@ async function initDatabase() {
 };
 
 async function retrieveData() {
-    for (const val of Object.values(techGenres)) {
-        fetchArticles(val);
+    for (const val of Object.keys(techGenres)) {
+        console.log(`Fetching articles for: ${val}`)
+        // allow each genre to fetch specified articles and add them to db
+        await fetchArticles(val);
     }
 };
 
@@ -37,9 +39,9 @@ const serverStart = () => {
         // parse POST request
         var genres = req.body.genre?.genres as string;
         if (genres === '') {
-            genres = `${techGenres.BIG_TECH},${techGenres.APPLE},${techGenres.GOOGLE}`
+            genres = `${techGenres[0]},${techGenres[4]},${techGenres[6]}`
         }
-        const genreArray = genres.split(',');
+        const genreArray = genres.replaceAll('_', ' ').split(',');
         var results: any[] = [];
         console.log(genreArray);
         // send JSON response back
