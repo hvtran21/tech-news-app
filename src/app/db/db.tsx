@@ -2,11 +2,11 @@ import * as SQLite from 'expo-sqlite';
 
 const BASE_URL = 'http://localhost:8000'
 
-interface article {
+interface Article {
     id: string;
     genre: string;
     source: string;
-    author: string;
+    author: string | null;
     title: string;
     description: string;
     url: URL;
@@ -25,14 +25,14 @@ async function retrieveArticles(genres: string) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                genre: {genres}, // e.g., 'Artificial Intelligence,Dev Ops,Web Dev'
+                genre: {genres},   // comma seperated string
             }),
         });
         if (!response.ok) {
             throw new Error(`Error ocurred, response status: ${response.status}`);
         }
         var data = await response.json();
-        const articles = data.articles as article[];
+        const articles = data.articles as Article[];
         const results = articles.map(article => ({
             id: article.id,
             genre: article.genre,
@@ -48,8 +48,8 @@ async function retrieveArticles(genres: string) {
 
         // add results to database
         try {
-            const db = await SQLite.openDatabaseAsync('newsapp');
             await Promise.all(results.map(async (article) => {
+                const db = await SQLite.openDatabaseAsync('newsapp');
                 const statement = await db.prepareAsync(`INSERT INTO articles(id, genre, source, author, title, description, url, url_to_image, published_at, content) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
                 await statement.executeAsync([
                     article.id,

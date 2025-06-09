@@ -8,7 +8,15 @@ import { TopNavigation, BottomNavigation } from './components/navigation';
 import { Link, router, useLocalSearchParams } from 'expo-router';
 import { NewsCardProps } from './components/news_card';
 import retrieveArticles from './db/db';
+import { techGenres } from './components/article';
 
+export async function loadArticles(genreSelection: string) {
+    const genreArr = genreSelection.split(',');
+    for (const genre in genreArr) {
+        // ensure all articles are fetched and in the local database
+        await retrieveArticles(genre);
+    }
+}
 
 export function HomePage() {
     const title = 'Hackers broke into Commvaults cloud backup system and stole secret passwords';
@@ -26,11 +34,12 @@ export function HomePage() {
     const genreSelection = data as string;
 
     useEffect(() => {
-        const loadArticles = async () => {
-            await retrieveArticles(genreSelection);
-        }
-        loadArticles();
-    }, [])
+        const getArticles = async () => {
+            await loadArticles(genreSelection);
+        };
+        getArticles();
+    }, [genreSelection])
+    // const key = Object.keys(techGenres).find(k => techGenres[k as keyof typeof techGenres] === genre) as string;
 
     return (
         <SafeAreaProvider>
