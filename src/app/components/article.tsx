@@ -26,7 +26,7 @@ enum techGenres {
     AMAZON = 'Amazon',
     GAMING = 'Gaming',
     CYBERSECURITY = 'Cybersecurity',
-    GAME_DEV = 'Grame development'
+    GAME_DEV = 'Game development'
 }
 
 export default article;
