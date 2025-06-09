@@ -6,7 +6,6 @@ import { techGenres } from './components/article';
 import { openDatabaseAsync } from 'expo-sqlite';
 import { faArrowRight} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import retrieveArticles from './db/db'
 
 export const welcomePage = () => {
     const [genre, setGenres] = useState("");
@@ -21,6 +20,28 @@ export const welcomePage = () => {
             console.log(`${genre} added to preferences.`);
         }
     }, [genre])
+
+    useEffect(() => {
+        const initializeDatabase = async () => {
+            const db = openDatabaseAsync('articles.db');
+            (await db).execAsync(`
+                PRAGMA journal_mode = WAL;
+                CREATE TABLE IF NOT EXISTS articles (
+                id TEXT PRIMARY KEY,
+                genre VARCHAR(255),
+                source VARCHAR(255),
+                author VARCHAR(255),
+                title TEXT,
+                description TEXT,
+                url TEXT,
+                url_to_image TEXT,
+                published_at DATE,
+                content TEXT
+                );`
+            )
+        }
+        initializeDatabase();
+    }, []);
     
     return (
         <SafeAreaProvider>
@@ -169,8 +190,6 @@ const genreStyling = StyleSheet.create({
         marginBottom: 8,
         borderRadius: 15,
         padding: 15,
-        // borderColor: 'white',
-        // borderWidth: StyleSheet.hairlineWidth
     },
 
     submit_button: {
