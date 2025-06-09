@@ -3,6 +3,8 @@ import { articleTableDefinition } from '../models';
 import fetchArticles from '../newsapi';
 import techGenres from '../constants';
 import db from '../db'
+import { Article } from '../newsapi';
+import { TestContext } from 'node:test';
 
 // TODO: add a way so data is continuously retrieved. Similar to a scheduler
 
@@ -31,25 +33,36 @@ const serverStart = () => {
         retrieveData();
     });
 
-    server.get('/api/articles', (req, res) => {
+    server.post('/api/articles', (req, res) => {
         // parse POST request
-        const genre = req.body.genre;
-
+        var genres = req.body.genre?.genres as string;
+        if (genres === '') {
+            genres = `${techGenres.BIG_TECH},${techGenres.APPLE},${techGenres.GOOGLE}`
+        }
+        const genreArray = genres.split(',');
+        var results: any[] = [];
+        console.log(genreArray);
         // send JSON response back
         try {
             // fetch data from db
-            db.any('SELECT * FROM articles WEHRE genre = $1', [genre])
-                // data fetched, send response back as JSON
-                .then(data => {
-                    res.json(data);
+            db.tx(t => {
+                const queries = genreArray.map(genre => {
+                    return t.any('SELECT * FROM articles WHERE genre = $1', [genre])
                 })
-                .catch(error => {
-                    console.error(`Error ocurred when retrieving article data: ${error}`);
-                });
-
+                return t.batch(queries);
+            })
+            .then(data => {
+                results = data;
+                const articles = results.flat();
+                res.json({ articles });
+            })
+            .catch(error => {
+                console.error(`Error ocurred retrieving user preference articles: ${error}`);
+                
+            })
         } catch (error) {
             console.error(`Error occurred: ${error}`);
-        };      
+        };
     })
 
     server.listen(port, () => {
