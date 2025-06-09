@@ -15,22 +15,23 @@ export const welcomePage = () => {
     const limit = 5;
 
     useEffect(() => {
-        if (genre && !userGenreSelection.includes(genre) && userGenreSelection.length < limit) {
-            setuserGenreSelection(prev => [...prev, genre]);
+        const key = Object.keys(techGenres).find(k => techGenres[k as keyof typeof techGenres] === genre) as string;
+        if (genre && !userGenreSelection.includes(key) && userGenreSelection.length < limit) {
+            setuserGenreSelection(prev => [...prev, key]);
             console.log(`${genre} added to preferences.`);
         }
     }, [genre])
 
     useEffect(() => {
         const initializeDatabase = async () => {
-            const db = openDatabaseAsync('articles.db');
-            (await db).execAsync(`
+            const db = await openDatabaseAsync('newsapp');
+            await db.execAsync(`
                 PRAGMA journal_mode = WAL;
                 CREATE TABLE IF NOT EXISTS articles (
                 id TEXT PRIMARY KEY,
-                genre VARCHAR(255),
-                source VARCHAR(255),
-                author VARCHAR(255),
+                genre TEXT,
+                source TEXT,
+                author TEXT,
                 title TEXT,
                 description TEXT,
                 url TEXT,
