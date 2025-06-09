@@ -37,7 +37,7 @@ const serverStart = () => {
 
     server.post('/api/articles', (req, res) => {
         // parse POST request
-        var genres = req.body.genre?.genres as string;
+        var genres = req.body.genre?.genreSelection as string;
         if (genres === '') {
             genres = `${techGenres[0]},${techGenres[4]},${techGenres[6]}`
         }
