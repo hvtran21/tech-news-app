@@ -8,6 +8,7 @@ interface Article {
     // this interface allows us to map each parameter in the articles array
     // to this interface, allowing TS to see the types we intend on assigning.
     id: string;
+    genre: string,
     source: { name: string };
     author: string | null;
     title: string;
@@ -24,18 +25,17 @@ async function fetchArticles(genre: string) {
     // Fetches a news article from News API, and adds it to database
 
     const apiKey = process.env.NEWS_API_KEY;
-    var pageSize = 20;
     const country = 'us'; // should be based off of user preferences later
     var page = 1;
     const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
+    const search_genre = genre.replaceAll('_', ' ').toLowerCase();
     var totalProcesssed = 0;
     var totalResults = Infinity;
     while (totalProcesssed < totalResults) {
         // fetch data from News API
         try {
             const encoded_url = encodeURI(
-                `https://newsapi.org/v2/top-headlines?q=${genre}&country=${country}&apiKey=${apiKey}&page=${page}`
+                `https://newsapi.org/v2/top-headlines?q=${search_genre}&country=${country}&apiKey=${apiKey}&page=${page}`
             );
             console.log('fetching data...')
             const response = await fetch(encoded_url);
@@ -66,6 +66,7 @@ async function fetchArticles(genre: string) {
             totalProcesssed += articles.length;
             const lst = articles.map(article => ({
                 id: uuidv4(),
+                genre: genre,
                 source: article.source.name,
                 author: article.author,
                 title: article.title,
@@ -82,7 +83,7 @@ async function fetchArticles(genre: string) {
                     const queries = lst.map(article => {
                         return t.none(
                             'INSERT INTO articles(id, genre, source, author, title, description, url, url_to_image, published_at, content) \
-                                VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)', [article.id, genre, article.source, article.author, article.title, article.description, article.url, article.url_to_image, article.published_at, article.content]
+                                VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)', [article.id, article.genre, article.source, article.author, article.title, article.description, article.url, article.url_to_image, article.published_at, article.content]
                         );
                     });
                     return t.batch(queries);

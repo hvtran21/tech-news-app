@@ -41,7 +41,7 @@ const serverStart = () => {
         if (genres === '') {
             genres = `${techGenres[0]},${techGenres[4]},${techGenres[6]}`
         }
-        const genreArray = genres.replaceAll('_', ' ').split(',');
+        const genreArray = genres.split(',');
         var results: any[] = [];
         console.log(genreArray);
         // send JSON response back
