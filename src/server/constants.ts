@@ -1,7 +1,7 @@
 enum techGenres {
     AI = 'Artificial Intelligence',
-    DEVOPS = 'Development Operations',
-    WEBDEV = 'Web Development',
+    DEVOPS = 'Dev Ops',
+    WEBDEV = 'Web Dev',
     INFO_TECH = 'Information Iechnology',
     ROBOTICS = 'Robotics',
     BIG_TECH = 'Big Tech',
@@ -13,7 +13,7 @@ enum techGenres {
     AMAZON = 'Amazon',
     GAMING = 'Gaming',
     CYBERSECURITY = 'Cybersecurity',
-    GAME_DEV = 'Grame development'
+    GAME_DEV = 'Game development'
 };
 
 export default techGenres;
