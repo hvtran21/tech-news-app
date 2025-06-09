@@ -6,6 +6,7 @@ import { techGenres } from './components/article';
 import { openDatabaseAsync } from 'expo-sqlite';
 import { faArrowRight} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+import retrieveArticles from './db/db'
 
 export const welcomePage = () => {
     const [genre, setGenres] = useState("");
@@ -107,7 +108,7 @@ export const welcomePage = () => {
                     marginTop: 20,
                 }}>
 
-                    <Link href={{ pathname: '/homepage', params: {genrePreference: userGenreSelection}}} onPress={() => {setSubmit(1)}}>
+                    <Link href={{ pathname: '/homepage', params: {data: userGenreSelection.join(',')}}} onPress={() => {setSubmit(1)}}>
                         <View style={{
                             justifyContent: 'center',
                             alignItems: 'flex-end'
