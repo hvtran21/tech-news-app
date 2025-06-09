@@ -1,9 +1,21 @@
 import * as SQLite from 'expo-sqlite';
-import { Config } from "react-native-config"
 import { techGenres } from '../components/article';
 
 const db = SQLite.openDatabaseAsync('articles.db');
 const BASE_URL = 'http://localhost:8000'
+
+interface article {
+    id: string;
+    source: string;
+    author: string;
+    title: string;
+    description: string;
+    url: URL;
+    urlToImage: URL;
+    publishedAt: string;
+    content?: string;
+}
+
 
 async function retrieveArticles(genres: string) {
     try {
@@ -21,9 +33,12 @@ async function retrieveArticles(genres: string) {
         if (!response.ok) {
             throw new Error(`Error ocurred, response status: ${response.status}`);
         }
-        var data = await response.json();
-        console.log('data:', data)
+        var data = await response.json() as article[];
 
+        // TODO: create batch inserts of data into local DB
+        // const articles = data.map(article => {
+            
+        // })
 
     } catch (error) {
         console.error(`Error ocurred: ${error}`);
