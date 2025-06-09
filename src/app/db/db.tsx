@@ -1,11 +1,10 @@
 import * as SQLite from 'expo-sqlite';
-import { techGenres } from '../components/article';
 
-const db = SQLite.openDatabaseAsync('articles.db');
 const BASE_URL = 'http://localhost:8000'
 
 interface article {
     id: string;
+    genre: string;
     source: string;
     author: string;
     title: string;
@@ -15,7 +14,6 @@ interface article {
     publishedAt: string;
     content?: string;
 }
-
 
 async function retrieveArticles(genres: string) {
     try {
@@ -33,12 +31,45 @@ async function retrieveArticles(genres: string) {
         if (!response.ok) {
             throw new Error(`Error ocurred, response status: ${response.status}`);
         }
-        var data = await response.json() as article[];
+        var data = await response.json();
+        const articles = data.articles as article[];
+        const results = articles.map(article => ({
+            id: article.id,
+            genre: article.genre,
+            source: article.source,
+            author: article.author,
+            title: article.title,
+            description: article.description,
+            url: article.url,
+            url_to_image: article.urlToImage,
+            published_at: new Date(article.publishedAt),
+            content: article.content
+        }))
 
-        // TODO: create batch inserts of data into local DB
-        // const articles = data.map(article => {
-            
-        // })
+        // add results to database
+        try {
+            const db = await SQLite.openDatabaseAsync('newsapp');
+            await Promise.all(results.map(async (article) => {
+                const statement = await db.prepareAsync(`INSERT INTO articles(id, genre, source, author, title, description, url, url_to_image, published_at, content) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+                await statement.executeAsync([
+                    article.id,
+                    article.genre ?? null,
+                    article.source ?? null,
+                    article.author ?? null,
+                    article.title ?? null,
+                    article.description ?? null,
+                    article.url?.toString() ?? null,
+                    article.url_to_image?.toString() ?? null,
+                    new Date(article.published_at).toISOString(),
+                    article.content ?? null
+                ]);
+                await statement.finalizeAsync();
+            })
+        );
+
+        } catch (error) {
+            console.error(`Error ocurred inserting data into local DB: ${error}`)
+        }
 
     } catch (error) {
         console.error(`Error ocurred: ${error}`);
