@@ -35,40 +35,10 @@ export const HorizonalLine = () => {
     return  (
         <View style={{ 
             borderWidth: StyleSheet.hairlineWidth,
-            borderColor: '#141414', width: '98%' }}>
+            borderColor: '#141414', width: '98%'
+            }}>
         </View>
     )
 }
-
-export const BaseTemplate = StyleSheet.create({
-    theme: {
-        flex: 1,
-        backgroundColor: '#000000',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flexDirection: 'column',
-    },
-
-    config: {
-        flexDirection: 'column',
-        width: '100%',
-        height: '100%',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-
-    title: {
-        paddingTop: 20,
-        paddingHorizontal: 20,
-        fontFamily: 'WorkSans-Regular',
-        fontSize: 32,
-    },
-
-    sub_title: {
-        fontSize: 18,
-        fontFamily: 'WorkSans-LightItalic',
-        marginTop: 4,
-    },
-});
 
 export default GradientText;
