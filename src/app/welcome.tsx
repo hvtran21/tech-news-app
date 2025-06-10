@@ -8,16 +8,15 @@ import { faArrowRight} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 
 export const welcomePage = () => {
-    const [genre, setGenres] = useState("");
+    const [genre, setGenres] = useState('');
     const [submit, setSubmit] = useState(0);
     const [userGenreSelection, setuserGenreSelection] = useState<string[]>([]);
     const genre_arr = Object.values(techGenres) as string[];
     const limit = 5;
 
     useEffect(() => {
-        const key = Object.keys(techGenres).find(k => techGenres[k as keyof typeof techGenres] === genre) as string;
-        if (genre && !userGenreSelection.includes(key) && userGenreSelection.length < limit) {
-            setuserGenreSelection(prev => [...prev, key]);
+        if (genre && !userGenreSelection.includes(genre) && userGenreSelection.length < limit) {
+            setuserGenreSelection(prev => [...prev, genre]);
             console.log(`${genre} added to preferences.`);
         }
     }, [genre])
@@ -36,7 +35,7 @@ export const welcomePage = () => {
                 description TEXT,
                 url TEXT,
                 url_to_image TEXT,
-                published_at DATE,
+                published_at TEXT,
                 content TEXT
                 );`
             )
