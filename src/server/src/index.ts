@@ -19,12 +19,16 @@ async function initDatabase() {
 };
 
 async function retrieveData() {
-    for (const val of Object.keys(techGenres)) {
-        console.log(`Fetching articles for: ${val}`)
-        // allow each genre to fetch specified articles and add them to db
-        await fetchArticles(val);
+    for (const val of Object.values(techGenres)) {
+        await fetchArticles(val)
     }
 };
+
+function getEnumKey(val: string) {
+    return  Object.keys(techGenres).find((k) => {
+        return techGenres[k as keyof typeof techGenres]
+    })
+}
 
 const serverStart = () => {
     const server  = express();
@@ -39,23 +43,28 @@ const serverStart = () => {
         // parse POST request
         var genres = req.body.genre?.genreSelection as string;
         if (genres === '') {
-            genres = `${techGenres[0]},${techGenres[4]},${techGenres[6]}`
+            genres = `${techGenres.AI},${techGenres.APPLE},${techGenres.MICROSOFT},${techGenres.AMAZON}`
         }
         const genreArray = genres.split(',');
         var results: any[] = [];
-        console.log(genreArray);
+        console.log(`Recieved query: ${genreArray}`);
         // send JSON response back
         try {
             // fetch data from db
             db.tx(t => {
                 const queries = genreArray.map(genre => {
-                    return t.any('SELECT * FROM articles WHERE genre = $1', [genre])
+                    const enum_check = getEnumKey(genre);
+                    if (!enum_check) {
+                        throw new Error(`Error: Genre not in ENUM, got: $`)
+                    }
+                    return t.any('SELECT * FROM articles WHERE genre = $1', genre)
                 })
                 return t.batch(queries);
             })
             .then(data => {
                 results = data;
                 const articles = results.flat();
+                console.log('Sending data...')
                 res.json({ articles });
             })
             .catch(error => {
