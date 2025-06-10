@@ -1,17 +1,37 @@
 import { Text, View, StyleSheet, Image } from 'react-native';
-import { GradientText } from './styling';
-import { text } from '@fortawesome/fontawesome-svg-core';
+import { card } from '../homepage';
 
-export type NewsCardProps = {
-    // define new type with required data members
-    title: string;
-    date: string;
-    genre: string;
-    image_src: any;
-};
+function formatDate(date: Date): string {
+    if (!(date instanceof Date) || isNaN(date.getTime())) {
+        throw new Error("Invalid input: Please provide a valid Date object.");
+    }
 
-export const NewsCard = ({ title, image_src, date, genre }: NewsCardProps) => {
+    const months: string[] = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+    ];
+
+    const month: string = months[date.getMonth()];
+    const day: number = date.getDate();
+
+    function getOrdinalSuffix(day: number): string {
+        if (day > 3 && day < 21) {
+            return 'th';
+        }
+        switch (day % 10) {
+            case 1:  return 'st';
+            case 2:  return 'nd';
+            case 3:  return 'rd';
+            default: return 'th';
+        }
+    }
+
+  return `${month} ${day}${getOrdinalSuffix(day)}`;
+}
+
+export const NewsCard = ({ title, url_to_image, published_at, genre }: card) => {
     // renders a news card based off of 'title' prop, and 'image_src' prop
+    const date = formatDate(new Date(published_at));
     return (
         <View style={card_style.main_card}>
             <View style={{
@@ -28,7 +48,7 @@ export const NewsCard = ({ title, image_src, date, genre }: NewsCardProps) => {
                 </View>
 
                 <View style={card_style.thumbnail_frame}>
-                    <Image source={image_src} alt="Image" style={card_style.thumbnail_image} />
+                    <Image source={{ uri: url_to_image }} alt="Image" style={card_style.thumbnail_image} />
                 </View>
             </View>
         </View>
