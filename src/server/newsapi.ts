@@ -24,20 +24,19 @@ async function fetchArticles(genre: string) {
     // Return: None
     // Fetches a news article from News API, and adds it to database
 
+    console.log(`Fetching articles for: ${genre}`);
     const apiKey = process.env.NEWS_API_KEY;
     const country = 'us'; // should be based off of user preferences later
     var page = 1;
     const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-    const search_genre = genre.replaceAll('_', ' ').toLowerCase();
     var totalProcesssed = 0;
     var totalResults = Infinity;
     while (totalProcesssed < totalResults) {
         // fetch data from News API
         try {
             const encoded_url = encodeURI(
-                `https://newsapi.org/v2/top-headlines?q=${search_genre}&country=${country}&apiKey=${apiKey}&page=${page}`
+                `https://newsapi.org/v2/top-headlines?q=${genre}&country=${country}&apiKey=${apiKey}&page=${page}`
             );
-            console.log('fetching data...')
             const response = await fetch(encoded_url);
 
             if (response.status === 429) {
@@ -53,12 +52,6 @@ async function fetchArticles(genre: string) {
 
             // save data in memory
             var data = await response.json();
-
-            // don't save if data is undefined, articles is undefined, or length is 0
-            if (!data || !data.articles || data.articles.length === 0) {
-                console.log('Results are less than 0. Returning..');
-                return;
-            }
 
             // set up data to be inserted into db
             const articles: Article[] = data.articles;
@@ -96,6 +89,7 @@ async function fetchArticles(genre: string) {
         } catch (error) {
             console.error(`Error ocurred: ${error}`);
         }
+        await delay(2000);
     };
 };
 
