@@ -2,8 +2,17 @@ import { View, StyleSheet, ScrollView, Text, ImageURISource, Image, TouchableOpa
 import React, { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faUser, faMagnifyingGlass, faBookmark } from '@fortawesome/free-solid-svg-icons';
+import { genre } from '../homepage';
 
-export const TopNavigation = () => {
+export const TopNavigation = ({value}: genre) => {
+    const [genres, setGenres] = useState<string[]>([]);
+    useEffect(() => {
+        const get_genres = () => {
+            setGenres(value.split(','));
+        }
+        get_genres();
+    }, [value])
+    
     return (
         <View style={TopNavBar.nav_bar_container}>
             <ScrollView
@@ -14,18 +23,13 @@ export const TopNavigation = () => {
                 <TouchableOpacity style={TopNavBar.single_nav}>
                     <Text style={TopNavBar.single_nav_text}>Top News</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={TopNavBar.single_nav}>
-                    <Text style={TopNavBar.single_nav_text}>Tech</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={TopNavBar.single_nav}>
-                    <Text style={TopNavBar.single_nav_text}>WebDev</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={TopNavBar.single_nav}>
-                    <Text style={TopNavBar.single_nav_text}>DevOps</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={TopNavBar.single_nav}>
-                    <Text style={TopNavBar.single_nav_text}>AI</Text>
-                </TouchableOpacity>
+                {genres.map((genre, index) => {
+                    return (
+                        <TouchableOpacity key={index} style={TopNavBar.single_nav}>
+                            <Text style={TopNavBar.single_nav_text}>{genre}</Text>
+                        </TouchableOpacity>
+                    )
+                })}
             </ScrollView>
         </View>
     );
