@@ -6,11 +6,10 @@ import { NewsCard } from './components/news_card';
 import { BaseTemplate, GradientText, HorizonalLine } from './components/styling';
 import { TopNavigation, BottomNavigation } from './components/navigation';
 import { Link, router, useLocalSearchParams } from 'expo-router';
-import { NewsCardProps } from './components/news_card';
-import { techGenres } from './components/article';
 import * as SQLite from 'expo-sqlite';
+import { clear } from 'console';
 
-const BASE_URL = 'http://localhost:8000'
+const BASE_URL = 'http://192.168.0.207:8000'
 
 interface Article {
     id: string;
@@ -19,13 +18,29 @@ interface Article {
     author: string | null;
     title: string;
     description: string;
-    url: URL;
-    urlToImage: URL;
-    publishedAt: string;
+    url: string;
+    url_to_image: string;
+    published_at: string;
     content?: string;
 }
 
-async function retrieveArticles(genreSelection: string) {
+interface card {
+    genre: string;
+    published_at: string;
+    url_to_image: string;
+    title: string;
+}
+
+interface genre {
+    value: string;
+}
+
+async function clearArticleTable() {
+    const db = await SQLite.openDatabaseAsync('newsapp');
+    await db.execAsync('DELETE FROM articles')
+}
+
+async function articleAPI(genreSelection: string) {
     try {
         var response = await fetch(`${BASE_URL}/api/articles`, {
             // TODO: Add authorization somewhere. Maybe here, maybe not.
@@ -51,16 +66,22 @@ async function retrieveArticles(genreSelection: string) {
             title: article.title,
             description: article.description,
             url: article.url,
-            url_to_image: article.urlToImage,
-            published_at: new Date(article.publishedAt),
+            url_to_image: article.url_to_image,
+            published_at: article.published_at,
             content: article.content
         }))
 
         // add results to database
         try {
             await Promise.all(results.map(async (article) => {
+                console.log(`Inserting article: ${article.id}`)
                 const db = await SQLite.openDatabaseAsync('newsapp');
-                const statement = await db.prepareAsync(`INSERT INTO articles(id, genre, source, author, title, description, url, url_to_image, published_at, content) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+                const existing_article = await db.getFirstAsync('SELECT id FROM articles WHERE id = ?', [article.id]);
+                if (existing_article) {
+                    console.log(`Article with ID ${article.id} exists in DB. Skipping.`);
+                    return;
+                }
+                const statement = await db.prepareAsync('INSERT INTO articles(id, genre, source, author, title, description, url, url_to_image, published_at, content) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
                 await statement.executeAsync([
                     article.id,
                     article.genre ?? null,
@@ -70,7 +91,7 @@ async function retrieveArticles(genreSelection: string) {
                     article.description ?? null,
                     article.url?.toString() ?? null,
                     article.url_to_image?.toString() ?? null,
-                    new Date(article.published_at).toISOString(),
+                    article.published_at ?? null,
                     article.content ?? null
                 ]);
                 await statement.finalizeAsync();
@@ -86,34 +107,45 @@ async function retrieveArticles(genreSelection: string) {
     }
 }
 
+async function getArticles(genreSelection: string) {
+    const genreArr = genreSelection.split(',');
+    const db = await SQLite.openDatabaseAsync('newsapp');
+    const results = Promise.all(genreArr.map(async(genre) => {
+        const query_results = await db.getAllAsync('SELECT * FROM articles WHERE genre = ? LIMIT 5', [genre]);
+        return query_results
+    }))
+    return (await results).flat()
+}
+
 export async function loadArticles(genreSelection: string) {
     // ensure all articles are fetched and in the local database
-    await retrieveArticles(genreSelection);
-
+    await articleAPI(genreSelection);
+    const results = await getArticles(genreSelection);
+    return results;
 }
 
 export function HomePage() {
-    const title = 'Hackers broke into Commvaults cloud backup system and stole secret passwords';
-    const image_src = require('/Users/htran/repos/tech-news-app/src/assets/images/computer.jpg');
-    const date = 'May 24th';
-    const genre = 'Cybersecurity';
-
-    const title_2 =
-        'Product-Led Growth (PLG) changed the game. Instead of being sold bloated software over steak dinners.';
-    const image_src_2 = require('/Users/htran/repos/tech-news-app/src/assets/images/computer_2.jpg');
-    const date_2 = 'May 24th';
-    const genre_2 = 'AI';
-
     const { data } = useLocalSearchParams();
     const genreSelection = data as string;
+    const [articles, setArticles] = useState<Article[]>([]);
+    const [loading, setLoading] = useState(0);
 
     useEffect(() => {
         const getArticles = async () => {
-            await loadArticles(genreSelection);
+            // need to handle case if this is empty.
+            setLoading(1);
+            try {
+                const articles = await loadArticles(genreSelection) as Article[];
+                setArticles(articles);
+            } catch (error) {
+                console.error(`Error ocurred: ${error}`);
+            } finally {
+                setLoading(0);
+            }
         };
         getArticles();
     }, [genreSelection])
-    // const key = Object.keys(techGenres).find(k => techGenres[k as keyof typeof techGenres] === genre) as string;
+
 
     return (
         <SafeAreaProvider>
@@ -131,27 +163,25 @@ export function HomePage() {
                         style={BaseTemplate.sub_title}
                     ></GradientText>
 
-                    <TopNavigation />
+                    <TopNavigation value={genreSelection}/>
                     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ 
                         flexDirection: 'column',
                         justifyContent: 'center',
                         alignItems: 'center'
                      }}>
-                        <NewsCard
-                            title={title_2}
-                            image_src={image_src_2}
-                            date={date_2}
-                            genre={genre_2}
-                        />
-                        <HorizonalLine />
-                        <NewsCard
-                            title={title}
-                            image_src={image_src}
-                            date={date}
-                            genre={genre}
-                        />
-                        <HorizonalLine />
-
+                        {articles.map((item, index) => {
+                            return (
+                                <React.Fragment key={index}>
+                                    <NewsCard 
+                                    title={item.title}
+                                    url_to_image={item.url_to_image}
+                                    published_at={item.published_at}
+                                    genre={item.genre}
+                                    />
+                                    <HorizonalLine />
+                                </React.Fragment>
+                            )
+                        })}
                     </ScrollView>
                     <BottomNavigation />
                 </View>
@@ -161,3 +191,4 @@ export function HomePage() {
 }
 
 export default HomePage;
+export { card, genre }
