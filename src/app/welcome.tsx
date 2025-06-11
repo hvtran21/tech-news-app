@@ -2,16 +2,28 @@ import { SafeAreaView, SafeAreaProvider, useSafeAreaInsets } from 'react-native-
 import { View, Text, StyleSheet, TouchableOpacity, TouchableHighlight } from 'react-native';
 import { useEffect, useState } from 'react';
 import { Link, router } from 'expo-router';
-import { techGenres } from './components/article';
 import { openDatabaseAsync } from 'expo-sqlite';
-import { faArrowRight} from '@fortawesome/free-solid-svg-icons'
+import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+
+
+enum options {
+    AI = 'Artificial Intelligence',
+    ML = 'Machine Learning',
+    APPLE = 'Apple',
+    MICROSOFT = 'Microsoft',
+    AMAZON = 'Amazon',
+    GAMING = 'Gaming',
+    CYBERSECURITY = 'Cybersecurity',
+    GAME_DEVELOPMENT = 'Game development',
+    NINTENDO = 'Nintendo',
+}
 
 export const welcomePage = () => {
     const [genre, setGenres] = useState('');
     const [submit, setSubmit] = useState(0);
     const [userGenreSelection, setuserGenreSelection] = useState<string[]>([]);
-    const genre_arr = Object.values(techGenres) as string[];
+    const genre_arr = Object.values(options) as string[];
     const limit = 5;
     const insets = useSafeAreaInsets();
 
@@ -23,6 +35,7 @@ export const welcomePage = () => {
     }, [genre])
 
     useEffect(() => {
+        
         const initializeDatabase = async () => {
             const db = await openDatabaseAsync('newsapp');
             await db.execAsync(`
@@ -30,6 +43,7 @@ export const welcomePage = () => {
                 CREATE TABLE IF NOT EXISTS articles (
                 id TEXT PRIMARY KEY,
                 genre TEXT,
+                category, TEXT,
                 source TEXT,
                 author TEXT,
                 title TEXT,
