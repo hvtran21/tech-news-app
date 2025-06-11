@@ -6,7 +6,6 @@ import { openDatabaseAsync } from 'expo-sqlite';
 import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 
-
 enum options {
     AI = 'Artificial Intelligence',
     ML = 'Machine Learning',
@@ -57,7 +56,7 @@ export const welcomePage = () => {
         }
         initializeDatabase();
     }, []);
-    
+
     return (
         <SafeAreaProvider>
             <SafeAreaView style={welcomeTemplate.theme} edges={['top', 'left', 'right', 'bottom']}>
