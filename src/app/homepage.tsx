@@ -7,15 +7,16 @@ import { GradientText, HorizonalLine } from './components/styling';
 import { BottomNavigation } from './components/navigation';
 import { useLocalSearchParams } from 'expo-router';
 import * as SQLite from 'expo-sqlite';
-import { faBars, faCaretDown, faCaretUp } from '@fortawesome/free-solid-svg-icons';
+import { faBars, faAngleDown, faAngleUp } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 
 
-const BASE_URL = 'http://192.168.0.15:8000'
+const BASE_URL = 'http://192.168.0.207:8000'
 
 interface Article {
     id: string;
-    genre: string;
+    genre: string | null;
+    category: string | null;
     source: string;
     author: string | null;
     title: string;
@@ -27,15 +28,12 @@ interface Article {
 }
 
 interface card {
-    genre: string;
-    published_at: string;
-    url_to_image: string;
     title: string;
+    url_to_image: string;
+    published_at: string;
+    genre: string;
 }
 
-interface genre {
-    value: string;
-}
 
 async function clearArticleTable() {
     const db = await SQLite.openDatabaseAsync('newsapp');
@@ -63,6 +61,7 @@ async function articleAPI(genreSelection: string) {
         const results = articles.map(article => ({
             id: article.id,
             genre: article.genre,
+            category: article.category,
             source: article.source,
             author: article.author,
             title: article.title,
@@ -83,10 +82,11 @@ async function articleAPI(genreSelection: string) {
                     console.log(`Article with ID ${article.id} exists in DB. Skipping.`);
                     return;
                 }
-                const statement = await db.prepareAsync('INSERT INTO articles(id, genre, source, author, title, description, url, url_to_image, published_at, content) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+                const statement = await db.prepareAsync('INSERT INTO articles(id, genre, category, source, author, title, description, url, url_to_image, published_at, content) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
                 await statement.executeAsync([
                     article.id,
                     article.genre ?? null,
+                    article.category ?? null,
                     article.source ?? null,
                     article.author ?? null,
                     article.title ?? null,
@@ -110,13 +110,18 @@ async function articleAPI(genreSelection: string) {
 }
 
 async function getArticles(genreSelection: string) {
-    const genreArr = genreSelection.split(',');
     const db = await SQLite.openDatabaseAsync('newsapp');
-    const results = Promise.all(genreArr.map(async(genre) => {
-        const query_results = await db.getAllAsync('SELECT * FROM articles WHERE genre = ? LIMIT 5', [genre]);
-        return query_results
-    }))
-    return (await results).flat()
+    if (genreSelection === '') {
+        const query_results = await db.getAllAsync('SELECT * FROM articles LIMIT 20');
+        return query_results.flat()
+    } else {
+        const genreArr = genreSelection.split(',');
+        const results = Promise.all(genreArr.map(async(genre) => {
+            const query_results = await db.getAllAsync('SELECT * FROM articles WHERE genre = ? LIMIT 5', [genre]);
+            return query_results
+        }))
+        return (await results).flat()
+    }
 }
 
 export async function loadArticles(genreSelection: string) {
@@ -128,9 +133,7 @@ export async function loadArticles(genreSelection: string) {
 
 export function HomePage() {
     var { data } = useLocalSearchParams();
-    if (!data || data.length === 0) {
-        data = 'Apple';
-    }
+
     const genreSelection = data as string;
     const [articles, setArticles] = useState<Article[]>([]);
     const [loading, setLoading] = useState(0);
@@ -172,14 +175,11 @@ export function HomePage() {
                                 text='Tech News'
                                 style={BaseTemplate.title}
                             ></GradientText>
-                            <View style={{flexDirection: 'row-reverse', justifyContent: 'flex-start', width: '60%'}}>
-                                <FontAwesomeIcon icon={faBars}  size={20} style={{color: 'white', opacity: 0.5, marginRight: 5}}/>
-
+                            <View style={{flexDirection: 'row', justifyContent: 'flex-start', width: '65%'}}>
+                                <FontAwesomeIcon icon={faAngleDown}  size={16} style={{color: 'white', opacity: 0.5, marginRight: 5}}/>
                             </View>
                     </View>
 
-
-                    {/* <TopNavigation value={genreSelection}/> */}
                     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ 
                         flexDirection: 'column',
                         justifyContent: 'center',
@@ -192,7 +192,7 @@ export function HomePage() {
                                     title={item.title}
                                     url_to_image={item.url_to_image}
                                     published_at={item.published_at}
-                                    genre={item.genre}
+                                    genre={item.genre ?? ''}
                                     />
                                     <HorizonalLine />
                                 </React.Fragment>
@@ -241,4 +241,4 @@ export const BaseTemplate = StyleSheet.create({
 });
 
 export default HomePage;
-export { card, genre }
+export { card }
