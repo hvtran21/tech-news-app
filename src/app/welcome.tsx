@@ -71,7 +71,7 @@ export const welcomePage = () => {
                     marginTop: 30,
                     }}>
                     <Text style={welcomeTemplate.sub_title}>
-                        What do you like?
+                        Choose some preferences
                     </Text>
                 </View>
                 {/* render all genres. TODO: Make this a ScrollView/FlatList */}
@@ -219,7 +219,7 @@ const welcomeTemplate = StyleSheet.create({
     },
 
     sub_title: {
-        fontFamily: 'WorkSans-Regular',
+        fontFamily: 'WorkSans-Light',
         color: 'white',
         opacity: 0.6,
         fontSize: 24
