@@ -93,7 +93,7 @@ export const card_style = StyleSheet.create({
         flexDirection: 'row',
         fontSize: 13,
         color: 'white',
-        fontFamily: 'WorkSans-LightItalic',
+        fontFamily: 'WorkSans-Light',
         width: '100%',
         paddingLeft: 3,
         paddingBottom: 5,
