@@ -32,6 +32,7 @@ function formatDate(date: Date): string {
 export const NewsCard = ({ title, url_to_image, published_at, genre }: card) => {
     // renders a news card based off of 'title' prop, and 'image_src' prop
     const date = formatDate(new Date(published_at));
+    const uri_image = url_to_image ?? '/Users/htran/repos/tech-news-app/src/assets/images/computer_2.jpg'
     return (
         <View style={card_style.main_card}>
             <View style={{
@@ -48,7 +49,7 @@ export const NewsCard = ({ title, url_to_image, published_at, genre }: card) => 
                 </View>
 
                 <View style={card_style.thumbnail_frame}>
-                    <Image source={{ uri: url_to_image }} alt="Image" style={card_style.thumbnail_image} />
+                    <Image source={{ uri: uri_image }} alt="Image" style={card_style.thumbnail_image} />
                 </View>
             </View>
         </View>
