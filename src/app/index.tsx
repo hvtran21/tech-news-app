@@ -5,21 +5,21 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const checkFirstLaunch = async () => {
     try {
-        console.log('Checking first launch..')
+        console.log('Checking first launch..');
         AsyncStorage.removeItem('firstLaunch'); // for dev purposes
         const val = await AsyncStorage.getItem('firstLaunch');
         if (val !== null) {
-            console.log('Not first launch')
+            console.log('Not first launch');
             return false;
         } else {
-            console.log('First launch')
+            console.log('First launch');
             await AsyncStorage.setItem('firstLaunch', 'false');
             return true;
         }
     } catch (error) {
-        throw new Error(`Error occurred: ${error}`)
+        throw new Error(`Error occurred: ${error}`);
     }
-}
+};
 
 export default function main() {
     const [fontsLoaded] = useFonts({
@@ -29,7 +29,7 @@ export default function main() {
         'WorkSans-Light': require('../assets/fonts/WorkSans/WorkSans-Light.ttf'),
         'WorkSans-LightItalic': require('../assets/fonts/WorkSans/WorkSans-LightItalic.ttf'),
         'WorkSans-ExtraLight': require('../assets/fonts/WorkSans/WorkSans-ExtraLight.ttf'),
-    })
+    });
     useEffect(() => {
         const init = async () => {
             // await setFirstLaunch();
@@ -39,7 +39,7 @@ export default function main() {
             } else {
                 router.push('/homepage');
             }
-        }
+        };
         init();
-    }, [])
+    }, []);
 }

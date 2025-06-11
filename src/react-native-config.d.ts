@@ -3,6 +3,6 @@ declare module 'react-native-config' {
         BASE_URL: string;
     }
 
-    export const Config: NativeConfig
-    export default Config
+    export const Config: NativeConfig;
+    export default Config;
 }

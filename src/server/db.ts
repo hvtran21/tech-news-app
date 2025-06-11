@@ -1,4 +1,4 @@
-import pgPromise from 'pg-promise'
+import pgPromise from 'pg-promise';
 
 const cn = {
     host: 'localhost',
@@ -6,7 +6,7 @@ const cn = {
     database: 'newsapp',
     user: 'dev',
     password: 'dev',
-}
+};
 
 const pgp = pgPromise();
 

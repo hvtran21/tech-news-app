@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react';
 import * as SQLite from 'expo-sqlite';
 import { ScrollView, View, Text, StyleSheet, Modal, TouchableOpacity } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
@@ -8,9 +8,14 @@ import { BottomNavigation } from './components/navigation';
 import { useLocalSearchParams } from 'expo-router';
 import { faBars, faAngleDown, faAngleUp } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import Animated, {useSharedValue, withTiming, useAnimatedStyle, Easing} from 'react-native-reanimated';
+import Animated, {
+    useSharedValue,
+    withTiming,
+    useAnimatedStyle,
+    Easing,
+} from 'react-native-reanimated';
 
-const BASE_URL = 'http://192.168.0.207:8000'
+const BASE_URL = 'http://192.168.0.207:8000';
 
 interface Article {
     id: string;
@@ -34,7 +39,7 @@ interface card {
 // function is just for development purposes
 async function clearArticleTable() {
     const db = await SQLite.openDatabaseAsync('newsapp');
-    await db.execAsync('DELETE FROM articles')
+    await db.execAsync('DELETE FROM articles');
 }
 
 async function articleAPI(genreSelection: string) {
@@ -43,11 +48,11 @@ async function articleAPI(genreSelection: string) {
             // TODO: Add authorization somewhere. Maybe here, maybe not.
             method: 'POST',
             headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                genre: {genreSelection},   // comma seperated string, e.g., APPLE,AMAZON,BIG TECH, ... , etc
+                genre: { genreSelection }, // comma seperated string, e.g., APPLE,AMAZON,BIG TECH, ... , etc
             }),
         });
         if (!response.ok) {
@@ -55,7 +60,7 @@ async function articleAPI(genreSelection: string) {
         }
         var data = await response.json();
         const articles = data.articles as Article[];
-        const results = articles.map(article => ({
+        const results = articles.map((article) => ({
             id: article.id,
             genre: article.genre,
             category: article.category,
@@ -66,41 +71,45 @@ async function articleAPI(genreSelection: string) {
             url: article.url,
             url_to_image: article.url_to_image,
             published_at: article.published_at,
-            content: article.content
-        }))
+            content: article.content,
+        }));
 
         // add results to database
         try {
-            await Promise.all(results.map(async (article) => {
-                console.log(`Inserting article: ${article.id}`)
-                const db = await SQLite.openDatabaseAsync('newsapp');
-                const existing_article = await db.getFirstAsync('SELECT id FROM articles WHERE id = ?', [article.id]);
-                if (existing_article) {
-                    console.log(`Article with ID ${article.id} exists in DB. Skipping.`);
-                    return;
-                }
-                const statement = await db.prepareAsync('INSERT INTO articles(id, genre, category, source, author, title, description, url, url_to_image, published_at, content) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-                await statement.executeAsync([
-                    article.id,
-                    article.genre ?? null,
-                    article.category ?? null,
-                    article.source ?? null,
-                    article.author ?? null,
-                    article.title ?? null,
-                    article.description ?? null,
-                    article.url?.toString() ?? null,
-                    article.url_to_image?.toString() ?? null,
-                    article.published_at ?? null,
-                    article.content ?? null
-                ]);
-                await statement.finalizeAsync();
-            })
-        );
-
+            await Promise.all(
+                results.map(async (article) => {
+                    console.log(`Inserting article: ${article.id}`);
+                    const db = await SQLite.openDatabaseAsync('newsapp');
+                    const existing_article = await db.getFirstAsync(
+                        'SELECT id FROM articles WHERE id = ?',
+                        [article.id],
+                    );
+                    if (existing_article) {
+                        console.log(`Article with ID ${article.id} exists in DB. Skipping.`);
+                        return;
+                    }
+                    const statement = await db.prepareAsync(
+                        'INSERT INTO articles(id, genre, category, source, author, title, description, url, url_to_image, published_at, content) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    );
+                    await statement.executeAsync([
+                        article.id,
+                        article.genre ?? null,
+                        article.category ?? null,
+                        article.source ?? null,
+                        article.author ?? null,
+                        article.title ?? null,
+                        article.description ?? null,
+                        article.url?.toString() ?? null,
+                        article.url_to_image?.toString() ?? null,
+                        article.published_at ?? null,
+                        article.content ?? null,
+                    ]);
+                    await statement.finalizeAsync();
+                }),
+            );
         } catch (error) {
-            console.error(`Error ocurred inserting data into local DB: ${error}`)
+            console.error(`Error ocurred inserting data into local DB: ${error}`);
         }
-
     } catch (error) {
         console.error(`Error ocurred: ${error}`);
     }
@@ -110,14 +119,19 @@ async function getArticles(genreSelection: string | undefined) {
     const db = await SQLite.openDatabaseAsync('newsapp');
     if (genreSelection === undefined) {
         const query_results = await db.getAllAsync('SELECT * FROM articles LIMIT 20');
-        return query_results.flat()
+        return query_results.flat();
     } else {
         const genreArr = genreSelection.split(',');
-        const results = Promise.all(genreArr.map(async(genre) => {
-            const query_results = await db.getAllAsync('SELECT * FROM articles WHERE genre = ? LIMIT 5', [genre]);
-            return query_results
-        }))
-        return (await results).flat()
+        const results = Promise.all(
+            genreArr.map(async (genre) => {
+                const query_results = await db.getAllAsync(
+                    'SELECT * FROM articles WHERE genre = ? LIMIT 5',
+                    [genre],
+                );
+                return query_results;
+            }),
+        );
+        return (await results).flat();
     }
 }
 
@@ -139,26 +153,26 @@ export function HomePage() {
     // setup for modal
     const [visible, setVisible] = useState(false);
     const triggerRef = useRef<View>(null);
-    const [position, setPosition] = useState({x: 0, y: 0, width: 0, height: 0});
+    const [position, setPosition] = useState({ x: 0, y: 0, width: 0, height: 0 });
 
     useEffect(() => {
         const openModal = () => {
             if (visible && triggerRef.current) {
                 triggerRef.current.measure((width, height, px, py) => {
-                    setPosition({x: px, y: py, width, height})
-                })
+                    setPosition({ x: px, y: py, width, height });
+                });
             }
-        }
+        };
         openModal();
-    }, [visible])
-    
+    }, [visible]);
+
     // loading articles
     useEffect(() => {
         const getArticles = async () => {
             // need to handle case if this is empty.
             setLoading(1);
             try {
-                const articles = await loadArticles(genreSelection) as Article[];
+                const articles = (await loadArticles(genreSelection)) as Article[];
                 setArticles(articles);
             } catch (error) {
                 console.error(`Error ocurred: ${error}`);
@@ -167,38 +181,56 @@ export function HomePage() {
             }
         };
         getArticles();
-    }, [genreSelection])
-
+    }, [genreSelection]);
 
     return (
         <SafeAreaProvider>
             <SafeAreaView style={BaseTemplate.theme} edges={['top', 'left', 'right', 'bottom']}>
                 <View style={BaseTemplate.config}>
-
-                    <View style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        width: '100%',
-                        paddingHorizontal: 16,
-                        paddingVertical: 10,
-                        borderBottomColor: '#141414',
-                        borderBottomWidth: StyleSheet.hairlineWidth,
-                    }}>
-                            <GradientText
-                                colors={['#8B5CF6', '#EC4899']}
-                                text='Tech News'
-                                style={BaseTemplate.title}
-                            ></GradientText>
-                            <View style={{flexDirection: 'row', justifyContent: 'flex-start', width: '65%', overflow: 'visible'}}>
-                                <TouchableOpacity ref={triggerRef} onPress={() => {setVisible(state => !state)}} hitSlop={{ right: 5, top: 5, bottom: 5, left: 5 }}>
-                                    <FontAwesomeIcon icon={visible ? faAngleUp : faAngleDown}  size={14} style={{color: 'white', opacity: 0.5, marginRight: 5}}/>
-                                </TouchableOpacity>
-                                {visible && (
-                                    <View style={{
+                    <View
+                        style={{
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            width: '100%',
+                            paddingHorizontal: 16,
+                            paddingVertical: 10,
+                            borderBottomColor: '#141414',
+                            borderBottomWidth: StyleSheet.hairlineWidth,
+                        }}
+                    >
+                        <GradientText
+                            colors={['#8B5CF6', '#EC4899']}
+                            text="Tech News"
+                            style={BaseTemplate.title}
+                        ></GradientText>
+                        <View
+                            style={{
+                                flexDirection: 'row',
+                                justifyContent: 'flex-start',
+                                width: '65%',
+                                overflow: 'visible',
+                            }}
+                        >
+                            <TouchableOpacity
+                                ref={triggerRef}
+                                onPress={() => {
+                                    setVisible((state) => !state);
+                                }}
+                                hitSlop={{ right: 5, top: 5, bottom: 5, left: 5 }}
+                            >
+                                <FontAwesomeIcon
+                                    icon={visible ? faAngleUp : faAngleDown}
+                                    size={14}
+                                    style={{ color: 'white', opacity: 0.5, marginRight: 5 }}
+                                />
+                            </TouchableOpacity>
+                            {visible && (
+                                <View
+                                    style={{
                                         position: 'absolute',
                                         top: position.y + position.height + 10,
-                                        left: position.x - 150/2 - 14,
+                                        left: position.x - 150 / 2 - 14,
                                         backgroundColor: '#141414',
                                         padding: 10,
                                         borderRadius: 6,
@@ -210,29 +242,32 @@ export function HomePage() {
                                         zIndex: 10,
                                         width: 150,
                                         height: 200,
-                                    }}>
-                                    </View>
-                                )}
-                            </View>
+                                    }}
+                                ></View>
+                            )}
+                        </View>
                     </View>
 
-                    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ 
-                        flexDirection: 'column',
-                        justifyContent: 'center',
-                        alignItems: 'center'
-                     }}>
+                    <ScrollView
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={{
+                            flexDirection: 'column',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                        }}
+                    >
                         {articles.map((item, index) => {
                             return (
                                 <React.Fragment key={index}>
-                                    <NewsCard 
-                                    title={item.title}
-                                    url_to_image={item.url_to_image}
-                                    published_at={item.published_at}
-                                    genre={item.genre ?? ''}
+                                    <NewsCard
+                                        title={item.title}
+                                        url_to_image={item.url_to_image}
+                                        published_at={item.published_at}
+                                        genre={item.genre ?? ''}
                                     />
                                     <HorizonalLine />
                                 </React.Fragment>
-                            )
+                            );
                         })}
                     </ScrollView>
                     <BottomNavigation />
@@ -264,7 +299,6 @@ export const BaseTemplate = StyleSheet.create({
         alignContent: 'center',
         fontFamily: 'WorkSans-Bold',
         fontSize: 24,
-        
     },
 
     sub_title: {
@@ -275,4 +309,4 @@ export const BaseTemplate = StyleSheet.create({
 });
 
 export default HomePage;
-export { card }
+export { card };

@@ -8,7 +8,10 @@ export function BottomNavigation() {
         <View style={BottomNavBar.nav_bar_container}>
             <View style={BottomNavBar.nav_icon_config}>
                 <FontAwesomeIcon icon={faUser} style={{ color: 'white', opacity: 0.9 }} />
-                <FontAwesomeIcon icon={faMagnifyingGlass} style={{ color: 'white', opacity: 0.9 }} />
+                <FontAwesomeIcon
+                    icon={faMagnifyingGlass}
+                    style={{ color: 'white', opacity: 0.9 }}
+                />
                 <FontAwesomeIcon icon={faBookmark} style={{ color: 'white', opacity: 0.9 }} />
             </View>
         </View>
@@ -24,7 +27,7 @@ const BottomNavBar = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: '#000000',
         borderTopColor: '#141414',
-        borderWidth: StyleSheet.hairlineWidth
+        borderWidth: StyleSheet.hairlineWidth,
     },
 
     nav_icon_config: {

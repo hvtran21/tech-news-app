@@ -14,4 +14,4 @@ const articleTableDefinition = `
     );
 `;
 
-export {articleTableDefinition};
+export { articleTableDefinition };

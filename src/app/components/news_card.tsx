@@ -3,12 +3,22 @@ import { card } from '../homepage';
 
 function formatDate(date: Date): string {
     if (!(date instanceof Date) || isNaN(date.getTime())) {
-        throw new Error("Invalid input: Please provide a valid Date object.");
+        throw new Error('Invalid input: Please provide a valid Date object.');
     }
 
     const months: string[] = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December',
     ];
 
     const month: string = months[date.getMonth()];
@@ -19,26 +29,33 @@ function formatDate(date: Date): string {
             return 'th';
         }
         switch (day % 10) {
-            case 1:  return 'st';
-            case 2:  return 'nd';
-            case 3:  return 'rd';
-            default: return 'th';
+            case 1:
+                return 'st';
+            case 2:
+                return 'nd';
+            case 3:
+                return 'rd';
+            default:
+                return 'th';
         }
     }
 
-  return `${month} ${day}${getOrdinalSuffix(day)}`;
+    return `${month} ${day}${getOrdinalSuffix(day)}`;
 }
 
 export const NewsCard = ({ title, url_to_image, published_at, genre }: card) => {
     // renders a news card based off of 'title' prop, and 'image_src' prop
     const date = formatDate(new Date(published_at));
-    const uri_image = url_to_image ?? '/Users/htran/repos/tech-news-app/src/assets/images/computer_2.jpg'
+    const uri_image =
+        url_to_image ?? '/Users/htran/repos/tech-news-app/src/assets/images/computer_2.jpg';
     return (
         <View style={card_style.main_card}>
-            <View style={{
-                flexDirection: 'row',
-                alignItems: 'center'
-            }}>
+            <View
+                style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                }}
+            >
                 <View style={{ width: '60%', flexDirection: 'column', height: 'auto' }}>
                     <Text style={card_style.date}>
                         {date} | {genre}
@@ -49,7 +66,11 @@ export const NewsCard = ({ title, url_to_image, published_at, genre }: card) => 
                 </View>
 
                 <View style={card_style.thumbnail_frame}>
-                    <Image source={{ uri: uri_image }} alt="Image" style={card_style.thumbnail_image} />
+                    <Image
+                        source={{ uri: uri_image }}
+                        alt="Image"
+                        style={card_style.thumbnail_image}
+                    />
                 </View>
             </View>
         </View>
@@ -66,7 +87,7 @@ export const card_style = StyleSheet.create({
         width: '98%',
         alignContent: 'center',
         justifyContent: 'center',
-        height: 150
+        height: 150,
     },
 
     card_title: {
@@ -98,7 +119,7 @@ export const card_style = StyleSheet.create({
         width: '100%',
         paddingLeft: 3,
         paddingBottom: 5,
-        opacity: 0.5
+        opacity: 0.5,
     },
 });
 

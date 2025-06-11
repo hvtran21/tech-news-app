@@ -8,13 +8,13 @@ enum techGenres {
     CYBERSECURITY = 'Cybersecurity',
     GAME_DEVELOPMENT = 'Game development',
     NINTENDO = 'Nintendo',
- };
+}
 
- enum categories {
+enum categories {
     TECHNOLOGY = 'Technology',
     SCIENCE = 'Science',
     ENTERTAINMENT = 'Entertainment',
- }
+}
 
 export default techGenres;
-export {categories};
+export { categories };
