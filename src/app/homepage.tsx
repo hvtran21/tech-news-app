@@ -1,15 +1,17 @@
 import * as React from 'react';
 import { useEffect, useState } from 'react';
-import { ScrollView, View, Text } from 'react-native';
+import { ScrollView, View, Text, StyleSheet } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { NewsCard } from './components/news_card';
-import { BaseTemplate, GradientText, HorizonalLine } from './components/styling';
-import { TopNavigation, BottomNavigation } from './components/navigation';
-import { Link, router, useLocalSearchParams } from 'expo-router';
+import { GradientText, HorizonalLine } from './components/styling';
+import { BottomNavigation } from './components/navigation';
+import { useLocalSearchParams } from 'expo-router';
 import * as SQLite from 'expo-sqlite';
-import { clear } from 'console';
+import { faBars, faCaretDown, faCaretUp } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 
-const BASE_URL = 'http://192.168.0.207:8000'
+
+const BASE_URL = 'http://192.168.0.15:8000'
 
 interface Article {
     id: string;
@@ -125,7 +127,10 @@ export async function loadArticles(genreSelection: string) {
 }
 
 export function HomePage() {
-    const { data } = useLocalSearchParams();
+    var { data } = useLocalSearchParams();
+    if (!data || data.length === 0) {
+        data = 'Apple';
+    }
     const genreSelection = data as string;
     const [articles, setArticles] = useState<Article[]>([]);
     const [loading, setLoading] = useState(0);
@@ -151,19 +156,30 @@ export function HomePage() {
         <SafeAreaProvider>
             <SafeAreaView style={BaseTemplate.theme} edges={['top', 'left', 'right', 'bottom']}>
                 <View style={BaseTemplate.config}>
-                    <GradientText
-                        colors={['#8B5CF6', '#EC4899']}
-                        text="Tech Newsletter"
-                        style={BaseTemplate.title}
-                    ></GradientText>
 
-                    <GradientText
-                        colors={['#8B5CF6', '#EC4899']}
-                        text="Yep. That's it."
-                        style={BaseTemplate.sub_title}
-                    ></GradientText>
+                    <View style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        width: '100%',
+                        paddingHorizontal: 16,
+                        paddingVertical: 10,
+                        borderBottomColor: '#141414',
+                        borderBottomWidth: StyleSheet.hairlineWidth,
+                    }}>
+                            <GradientText
+                                colors={['#8B5CF6', '#EC4899']}
+                                text='Tech News'
+                                style={BaseTemplate.title}
+                            ></GradientText>
+                            <View style={{flexDirection: 'row-reverse', justifyContent: 'flex-start', width: '60%'}}>
+                                <FontAwesomeIcon icon={faBars}  size={20} style={{color: 'white', opacity: 0.5, marginRight: 5}}/>
 
-                    <TopNavigation value={genreSelection}/>
+                            </View>
+                    </View>
+
+
+                    {/* <TopNavigation value={genreSelection}/> */}
                     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ 
                         flexDirection: 'column',
                         justifyContent: 'center',
@@ -189,6 +205,40 @@ export function HomePage() {
         </SafeAreaProvider>
     );
 }
+
+export const BaseTemplate = StyleSheet.create({
+    theme: {
+        flex: 1,
+        backgroundColor: '#000000',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flexDirection: 'column',
+    },
+
+    config: {
+        width: '100%',
+        height: '100%',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        // borderColor: 'white',
+        // borderWidth: 1
+    },
+
+    title: {
+        justifyContent: 'center',
+        alignContent: 'center',
+        fontFamily: 'WorkSans-Bold',
+        fontSize: 24,
+        
+    },
+
+    sub_title: {
+        fontSize: 18,
+        fontFamily: 'WorkSans-LightItalic',
+        marginTop: 4,
+    },
+});
 
 export default HomePage;
 export { card, genre }
