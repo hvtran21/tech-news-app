@@ -1,15 +1,14 @@
-import * as React from 'react';
-import { useEffect, useState } from 'react';
-import { ScrollView, View, Text, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react'
+import * as SQLite from 'expo-sqlite';
+import { ScrollView, View, Text, StyleSheet, Modal, TouchableOpacity } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { NewsCard } from './components/news_card';
 import { GradientText, HorizonalLine } from './components/styling';
 import { BottomNavigation } from './components/navigation';
 import { useLocalSearchParams } from 'expo-router';
-import * as SQLite from 'expo-sqlite';
 import { faBars, faAngleDown, faAngleUp } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-
+import Animated, {useSharedValue, withTiming, useAnimatedStyle, Easing} from 'react-native-reanimated';
 
 const BASE_URL = 'http://192.168.0.207:8000'
 
@@ -26,15 +25,13 @@ interface Article {
     published_at: string;
     content?: string;
 }
-
 interface card {
     title: string;
     url_to_image: string;
     published_at: string;
     genre: string;
 }
-
-
+// function is just for development purposes
 async function clearArticleTable() {
     const db = await SQLite.openDatabaseAsync('newsapp');
     await db.execAsync('DELETE FROM articles')
@@ -109,9 +106,9 @@ async function articleAPI(genreSelection: string) {
     }
 }
 
-async function getArticles(genreSelection: string) {
+async function getArticles(genreSelection: string | undefined) {
     const db = await SQLite.openDatabaseAsync('newsapp');
-    if (genreSelection === '') {
+    if (genreSelection === undefined) {
         const query_results = await db.getAllAsync('SELECT * FROM articles LIMIT 20');
         return query_results.flat()
     } else {
@@ -124,20 +121,38 @@ async function getArticles(genreSelection: string) {
     }
 }
 
-export async function loadArticles(genreSelection: string) {
+export async function loadArticles(genreSelection: string | undefined) {
     // ensure all articles are fetched and in the local database
-    await articleAPI(genreSelection);
+    if (genreSelection !== undefined) {
+        await articleAPI(genreSelection);
+    }
     const results = await getArticles(genreSelection);
     return results;
 }
 
 export function HomePage() {
     var { data } = useLocalSearchParams();
-
     const genreSelection = data as string;
     const [articles, setArticles] = useState<Article[]>([]);
     const [loading, setLoading] = useState(0);
 
+    // setup for modal
+    const [visible, setVisible] = useState(false);
+    const triggerRef = useRef<View>(null);
+    const [position, setPosition] = useState({x: 0, y: 0, width: 0, height: 0});
+
+    useEffect(() => {
+        const openModal = () => {
+            if (visible && triggerRef.current) {
+                triggerRef.current.measure((width, height, px, py) => {
+                    setPosition({x: px, y: py, width, height})
+                })
+            }
+        }
+        openModal();
+    }, [visible])
+    
+    // loading articles
     useEffect(() => {
         const getArticles = async () => {
             // need to handle case if this is empty.
@@ -175,8 +190,29 @@ export function HomePage() {
                                 text='Tech News'
                                 style={BaseTemplate.title}
                             ></GradientText>
-                            <View style={{flexDirection: 'row', justifyContent: 'flex-start', width: '65%'}}>
-                                <FontAwesomeIcon icon={faAngleDown}  size={16} style={{color: 'white', opacity: 0.5, marginRight: 5}}/>
+                            <View style={{flexDirection: 'row', justifyContent: 'flex-start', width: '65%', overflow: 'visible'}}>
+                                <TouchableOpacity ref={triggerRef} onPress={() => {setVisible(state => !state)}} hitSlop={{ right: 5, top: 5, bottom: 5, left: 5 }}>
+                                    <FontAwesomeIcon icon={visible ? faAngleUp : faAngleDown}  size={14} style={{color: 'white', opacity: 0.5, marginRight: 5}}/>
+                                </TouchableOpacity>
+                                {visible && (
+                                    <View style={{
+                                        position: 'absolute',
+                                        top: position.y + position.height + 10,
+                                        left: position.x - 150/2 - 14,
+                                        backgroundColor: '#141414',
+                                        padding: 10,
+                                        borderRadius: 6,
+                                        shadowColor: '#000',
+                                        shadowOffset: { width: 0, height: 2 },
+                                        shadowOpacity: 0.8,
+                                        shadowRadius: 4,
+                                        elevation: 10,
+                                        zIndex: 10,
+                                        width: 150,
+                                        height: 200,
+                                    }}>
+                                    </View>
+                                )}
                             </View>
                     </View>
 
@@ -221,8 +257,6 @@ export const BaseTemplate = StyleSheet.create({
         flexDirection: 'column',
         justifyContent: 'space-between',
         alignItems: 'center',
-        // borderColor: 'white',
-        // borderWidth: 1
     },
 
     title: {
