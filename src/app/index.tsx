@@ -28,6 +28,7 @@ export default function main() {
         'WorkSans-SemiBold': require('../assets/fonts/WorkSans/WorkSans-SemiBold.ttf'),
         'WorkSans-Light': require('../assets/fonts/WorkSans/WorkSans-Light.ttf'),
         'WorkSans-LightItalic': require('../assets/fonts/WorkSans/WorkSans-LightItalic.ttf'),
+        'WorkSans-ExtraLight': require('../assets/fonts/WorkSans/WorkSans-ExtraLight.ttf'),
     })
     useEffect(() => {
         const init = async () => {
