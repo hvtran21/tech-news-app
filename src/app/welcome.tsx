@@ -1,4 +1,4 @@
-import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaView, SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, Text, StyleSheet, TouchableOpacity, TouchableHighlight } from 'react-native';
 import { useEffect, useState } from 'react';
 import { Link, router } from 'expo-router';
@@ -13,6 +13,7 @@ export const welcomePage = () => {
     const [userGenreSelection, setuserGenreSelection] = useState<string[]>([]);
     const genre_arr = Object.values(techGenres) as string[];
     const limit = 5;
+    const insets = useSafeAreaInsets();
 
     useEffect(() => {
         if (genre && !userGenreSelection.includes(genre) && userGenreSelection.length < limit) {
@@ -122,22 +123,16 @@ export const welcomePage = () => {
                 {/* submit button view */}
                 <View
                 style={{
-                    width: '69%',
-                    height: '10%',
-                    justifyContent: 'center',
-                    alignItems: 'flex-end',
-                    marginTop: 20,
+                    position: 'absolute',
+                    bottom: insets.bottom + 24,
+                    right: 50
                 }}>
 
                     <Link href={{ pathname: '/homepage', params: {data: userGenreSelection.join(',')}}} onPress={() => {setSubmit(1)}}>
-                        <View style={{
-                            justifyContent: 'center',
-                            alignItems: 'flex-end'
-                        }}>
-                            <FontAwesomeIcon
-                            icon={faArrowRight}
-                            style={[genreStyling.submit_button, submit === 1 && genreStyling.submit_button_pushed]}/>
-                        </View>
+                        <FontAwesomeIcon
+                        icon={faArrowRight}
+                        size={20}
+                        style={[genreStyling.submit_button, submit === 1 && genreStyling.submit_button_pushed]}/>
                     </Link>
 
                 </View>
@@ -215,7 +210,8 @@ const welcomeTemplate = StyleSheet.create({
         fontFamily: 'WorkSans-Bold',
         color: 'white',
         opacity: 0.8,
-        fontSize: 40
+        fontSize: 40,
+        marginTop: 20
     },
 
     sub_title: {
