@@ -8,7 +8,8 @@ interface Article {
     // this interface allows us to map each parameter in the articles array
     // to this interface, allowing TS to see the types we intend on assigning.
     id: string;
-    genre: string,
+    genre: string | null,
+    category: string | null
     source: { name: string };
     author: string | null;
     title: string;
@@ -19,24 +20,29 @@ interface Article {
     content?: string;
 }
 
-async function fetchArticles(genre: string) {
+async function fetchArticles(genre?: string | undefined, category?: string | undefined) {
     // Parameters: None
     // Return: None
     // Fetches a news article from News API, and adds it to database
 
-    console.log(`Fetching articles for: ${genre}`);
     const apiKey = process.env.NEWS_API_KEY;
     const country = 'us'; // should be based off of user preferences later
     var page = 1;
     const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
     var totalProcesssed = 0;
     var totalResults = Infinity;
+    var url = '';
     while (totalProcesssed < totalResults) {
         // fetch data from News API
         try {
-            const encoded_url = encodeURI(
-                `https://newsapi.org/v2/top-headlines?q=${genre}&country=${country}&apiKey=${apiKey}&page=${page}`
-            );
+            if (genre !== undefined && category === undefined) {
+                url = `https://newsapi.org/v2/top-headlines?q=${genre}&country=${country}&apiKey=${apiKey}&page=${page}`
+            } else if (category !== undefined && genre === undefined) {
+                const cat = category.toLowerCase();
+                url = `https://newsapi.org/v2/top-headlines?country=${country}&category=${cat}&apiKey=${apiKey}&page=${page}`
+            }
+
+            const encoded_url = encodeURI(url);
             const response = await fetch(encoded_url);
 
             if (response.status === 429) {
@@ -60,6 +66,7 @@ async function fetchArticles(genre: string) {
             const lst = articles.map(article => ({
                 id: uuidv4(),
                 genre: genre,
+                category: category,
                 source: article.source.name,
                 author: article.author,
                 title: article.title,
@@ -75,12 +82,15 @@ async function fetchArticles(genre: string) {
                 await db.tx(t => {
                     const queries = lst.map(article => {
                         return t.none(
-                            'INSERT INTO articles(id, genre, source, author, title, description, url, url_to_image, published_at, content) \
-                                VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)', [article.id, article.genre, article.source, article.author, article.title, article.description, article.url, article.url_to_image, article.published_at, article.content]
+                            'INSERT INTO articles(id, genre, category, source, author, title, description, url, url_to_image, published_at, content) \
+                                VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)', [article.id, article.genre, article.category, article.source, article.author, article.title, article.description, article.url, article.url_to_image, article.published_at, article.content]
                         );
                     });
                     return t.batch(queries);
                 })
+
+                console.log(`Inserted ${articles.length} for ${genre ?? category}`)
+                console.log(`Total left to process: ${totalResults - totalProcesssed}`)
                 page += 1;
             } catch (error) {
                 console.log(`Error inserting articles into DB: ${error}`)

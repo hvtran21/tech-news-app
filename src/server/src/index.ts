@@ -1,12 +1,8 @@
 import express from 'express';
 import { articleTableDefinition } from '../models';
 import fetchArticles from '../newsapi';
-import techGenres from '../constants';
+import techGenres, { categories } from '../constants';
 import db from '../db'
-import { Article } from '../newsapi';
-import { TestContext } from 'node:test';
-
-// TODO: add a way so data is continuously retrieved. Similar to a scheduler
 
 async function initDatabase() {
     try {
@@ -19,15 +15,20 @@ async function initDatabase() {
 };
 
 async function retrieveData() {
-    for (const val of Object.values(techGenres)) {
+    for(const val of Object.values(techGenres)) {
         await fetchArticles(val)
     }
+
+    // for(const val of Object.values(categories)) {
+    //     await fetchArticles(undefined, val)
+    // }
+
 };
 
 function getEnumKey(val: string) {
-    return  Object.keys(techGenres).find((k) => {
-        return techGenres[k as keyof typeof techGenres]
-    })
+    return Object.keys(techGenres).find((k) => {
+        return techGenres[k as keyof typeof techGenres] === val;
+  });
 }
 
 const serverStart = () => {
