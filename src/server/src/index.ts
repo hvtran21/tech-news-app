@@ -3,6 +3,7 @@ import { articleTableDefinition } from '../models';
 import fetchArticles from '../newsapi';
 import techGenres, { categories } from '../constants';
 import db from '../db';
+import { error } from 'console';
 
 async function initDatabase() {
     try {
@@ -39,18 +40,34 @@ const serverStart = () => {
         retrieveData();
     });
 
+    server.post('/api/articles/top', (req, res) => {
+        var category = req.body.category?.category  as string;
+        try {
+            console.log(`Recieved category: ${category}`);
+            var results = null;
+            db.any('SELECT * FROM articles WHERE category = $1', category)
+                .then(data => {
+                    results = data.flat();
+                    res.json({ results });
+                })
+                .catch(error => {
+                    console.error(`Error ocurred retrieving data by category: ${error}`);                    
+                })
+        } catch (error) {
+            console.error(`Error ocurred: ${error}`);
+        }
+    })
+
     server.post('/api/articles', (req, res) => {
         // parse POST request
         var genres = req.body.genre?.genreSelection as string;
-        if (genres === '') {
-            genres = `${techGenres.AI},${techGenres.APPLE},${techGenres.MICROSOFT},${techGenres.AMAZON}`;
-        }
-        const genreArray = genres.split(',');
         var results: any[] = [];
-        console.log(`Recieved query: ${genreArray}`);
+
         // send JSON response back
         try {
-            // fetch data from db
+            // fetch articles by genre
+            const genreArray = genres.split(',');
+            console.log(`Recieved query: ${genreArray}`);
             db.tx((t) => {
                 const queries = genreArray.map((genre) => {
                     const enum_check = getEnumKey(genre);
