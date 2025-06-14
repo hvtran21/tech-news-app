@@ -10,7 +10,8 @@ const articleTableDefinition = `
     url TEXT,
     url_to_image TEXT,
     published_at DATE,
-    content TEXT
+    content TEXT,
+    UNIQUE(url, title)
     );
 `;
 

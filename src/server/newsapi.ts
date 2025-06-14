@@ -83,7 +83,8 @@ async function fetchArticles(genre?: string | undefined, category?: string | und
                     const queries = lst.map((article) => {
                         return t.none(
                             'INSERT INTO articles(id, genre, category, source, author, title, description, url, url_to_image, published_at, content) \
-                                VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',
+                                VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) \
+                                ON CONFLICT (url, title) DO NOTHING',
                             [
                                 article.id,
                                 article.genre,
