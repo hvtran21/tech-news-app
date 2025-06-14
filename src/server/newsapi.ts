@@ -61,6 +61,11 @@ async function fetchArticles(genre?: string | undefined, category?: string | und
 
             // set up data to be inserted into db
             const articles: Article[] = data.articles;
+            if (articles.length === 0) {
+                console.log('0 articles to process. Exiting.');
+                break;
+            }
+
             totalResults = data.totalResults;
             totalProcesssed += articles.length;
             const lst = articles.map((article) => ({
@@ -78,6 +83,7 @@ async function fetchArticles(genre?: string | undefined, category?: string | und
             }));
 
             // add fetched articles to the database as a batch of inserts
+            var insertion_count = 0;
             try {
                 await db.tx((t) => {
                     const queries = lst.map((article) => {
@@ -100,11 +106,11 @@ async function fetchArticles(genre?: string | undefined, category?: string | und
                             ],
                         );
                     });
+                    insertion_count = queries.length;
                     return t.batch(queries);
                 });
 
-                console.log(`Inserted ${articles.length} for ${genre ?? category}`);
-                console.log(`Total left to process: ${totalResults - totalProcesssed}`);
+                console.log(`Inserted ${insertion_count} for ${genre ?? category}. ${totalResults - totalProcesssed} left to process`);
                 page += 1;
             } catch (error) {
                 console.log(`Error inserting articles into DB: ${error}`);
