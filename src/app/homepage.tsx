@@ -1,21 +1,27 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, ReactNode } from 'react';
 import * as SQLite from 'expo-sqlite';
-import { ScrollView, View, Text, StyleSheet, Modal, TouchableOpacity } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Animated, ActivityIndicator, TextStyle, TouchableHighlight } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { NewsCard } from './components/news_card';
 import { GradientText, HorizonalLine } from './components/styling';
 import { BottomNavigation } from './components/navigation';
 import { useLocalSearchParams } from 'expo-router';
-import { faBars, faAngleDown, faAngleUp } from '@fortawesome/free-solid-svg-icons';
+import { faHouse, faAngleDown, faAngleUp, faBolt, faClock} from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import Animated, {
-    useSharedValue,
-    withTiming,
-    useAnimatedStyle,
-    Easing,
-} from 'react-native-reanimated';
+import { IconProp } from '@fortawesome/fontawesome-svg-core'
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { generatePrime } from 'crypto';
+import { clear } from 'console';
+
 
 const BASE_URL = 'http://192.168.0.207:8000';
+
+type menuOptionProp = {
+    title: string,
+    textStyle: TextStyle,
+    icon: IconProp,
+    onPress: () => void,
+}
 
 interface Article {
     id: string;
@@ -30,6 +36,16 @@ interface Article {
     published_at: string;
     content?: string;
 }
+
+interface FilteArticles {
+    articles: Article[],
+    filterBy: string,
+}
+
+interface menuFilterProp {
+    setFilter: (filterType: string) => void;
+}
+
 interface card {
     title: string;
     url_to_image: string;
@@ -117,7 +133,7 @@ async function articleAPI(genreSelection: string) {
 
 async function getArticles(genreSelection: string | undefined) {
     const db = await SQLite.openDatabaseAsync('newsapp');
-    if (genreSelection === undefined) {
+    if (genreSelection === undefined || genreSelection === '') {
         const query_results = await db.getAllAsync('SELECT * FROM articles LIMIT 20');
         return query_results.flat();
     } else {
@@ -137,47 +153,172 @@ async function getArticles(genreSelection: string | undefined) {
 
 export async function loadArticles(genreSelection: string | undefined) {
     // ensure all articles are fetched and in the local database
-    if (genreSelection !== undefined) {
+    if (genreSelection !== undefined && genreSelection !== '') {
+        await AsyncStorage.setItem('genreSelection', genreSelection)
         await articleAPI(genreSelection);
     }
     const results = await getArticles(genreSelection);
     return results;
 }
 
+const MenuOption = ({title, textStyle, icon, onPress}: menuOptionProp) => {
+    return (
+        // whatever option is selected, should automatically be highlighted for the user.
+        <TouchableHighlight onPress={onPress}>
+            <View style={{ flexDirection: 'row', flex: 1, alignItems: 'center', backgroundColor: '#141414' }}>
+                <View style={{ width: 20, height: 20, justifyContent: 'center', alignItems: 'center', margin: 8}}>
+                    <FontAwesomeIcon icon={icon} style={{color: 'white', opacity: 0.8 }} />
+                </View>
+                <View style={{ marginTop: 8, marginBottom: 8}}>
+                    <Text style={textStyle}>{title}</Text>
+                </View>
+            </View>
+        </TouchableHighlight>
+    )
+}
+
+// articles is the list of articles retrieved by preference
+// how to sort by Top? Probably use the category=technology API.
+// filter by home and Recent first.
+// filterBy = {Home, Top, Recent}
+const DisplayArticles: React.FC<FilteArticles> = ({ articles, filterBy }) => {
+    // the filterBy option should be a state
+    var articles_to_display: Article[] = [];
+    if (filterBy === 'Home') {
+        articles_to_display = articles;
+    } else if (filterBy === 'Recent') {
+        // should this fetch the Recent data from server with the user given preferences?
+        articles.sort((a, b) => {
+            const date_a = new Date(a.published_at).getTime();
+            const date_b = new Date(b.published_at).getTime();
+            return date_b - date_a;
+        })
+        articles_to_display = articles;
+    } else {
+        // TOP -> fetch articles by category technology. involves modifying articleAPI to accept a category.
+        // also inolves in processing a category option on the backend
+        // also involves changing the backend to use a diff url.
+        // category 'genre' could just be 'Top'.. dunno.
+    }
+
+    return (
+        <>
+            {articles_to_display.map((item, index) => {
+                return (
+                    <React.Fragment key={index}>
+                        <NewsCard
+                            title={item.title}
+                            url_to_image={item.url_to_image}
+                            published_at={item.published_at}
+                            genre={item.genre ?? ''}
+                        />
+                        <HorizonalLine />
+                    </React.Fragment>
+                );
+            })}
+        </>
+    )
+}
+
+const FilterMenu = ({setFilter}: menuFilterProp) => {
+    // should accept the setState function and updates it accordingly
+    const filterByHome = () => {setFilter('Home')};
+    const filterByTop = () => {setFilter('Top')};
+    const filterByRecent = () => {setFilter('Recent')};
+
+    const menuOptionArray: ReactNode[] = [
+        <MenuOption key={0} title='Home' textStyle={menuStyling.text_style} icon={faHouse} onPress={()=>{ filterByHome() }} />,
+        <MenuOption key={1} title='Recent' textStyle={menuStyling.text_style} icon={faClock} onPress={()=>{ filterByRecent() }} />,
+        <MenuOption key={2} title='Top' textStyle={menuStyling.text_style} icon={faBolt} onPress={()=>{ filterByTop() }} />,
+    ]
+
+    return (<>{menuOptionArray}</>)
+}
+
 export function HomePage() {
+    // params passed in from welcome page
     var { data } = useLocalSearchParams();
     const genreSelection = data as string;
+
+    // setup for loading articles
     const [articles, setArticles] = useState<Article[]>([]);
-    const [loading, setLoading] = useState(0);
+    const [loading, setLoading] = useState(false);
+    const [filter, setFilter] = useState('Home');
 
     // setup for modal
     const [visible, setVisible] = useState(false);
     const triggerRef = useRef<View>(null);
     const [position, setPosition] = useState({ x: 0, y: 0, width: 0, height: 0 });
+    const [render, setRender] = useState(false);
+    const heightAnim = useRef(new Animated.Value(0)).current;
+    const fadeAnimArticles = useRef(new Animated.Value(0)).current;
 
+    const fadeIn = () => {
+        Animated.timing(fadeAnimArticles, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true
+        }).start()
+    }
+
+    const modalOpenAnim = () => {
+        heightAnim.setValue(0);
+        setRender(true);
+        //
+        requestAnimationFrame(() => {
+            Animated.timing(heightAnim, {
+                toValue: 1,
+                duration: 140,
+                useNativeDriver: true,
+            }).start();
+        })
+    };
+
+    const modalCloseAnim = () => {
+        Animated.timing(heightAnim, {
+            toValue: 0,
+            duration: 140,
+            useNativeDriver: true,
+        }).start(() => {
+            setRender(false)
+        });
+    };
+
+    useEffect(() => {
+        fadeAnimArticles.setValue(0);
+        fadeIn();
+    }, [filter])
+    
+
+    // control opening filter menu
     useEffect(() => {
         const openModal = () => {
             if (visible && triggerRef.current) {
                 triggerRef.current.measure((width, height, px, py) => {
                     setPosition({ x: px, y: py, width, height });
                 });
+                modalOpenAnim();
+            }
+            if (!visible) {
+                modalCloseAnim();
             }
         };
         openModal();
     }, [visible]);
 
-    // loading articles
+    // initialization of loading articles
     useEffect(() => {
         const getArticles = async () => {
             // need to handle case if this is empty.
-            setLoading(1);
+            setLoading(true);
             try {
                 const articles = (await loadArticles(genreSelection)) as Article[];
                 setArticles(articles);
             } catch (error) {
                 console.error(`Error ocurred: ${error}`);
             } finally {
-                setLoading(0);
+                setLoading(false);
+                fadeIn();
             }
         };
         getArticles();
@@ -208,7 +349,7 @@ export function HomePage() {
                             style={{
                                 flexDirection: 'row',
                                 justifyContent: 'flex-start',
-                                width: '65%',
+                                width: '70%',
                                 overflow: 'visible',
                             }}
                         >
@@ -222,28 +363,33 @@ export function HomePage() {
                                 <FontAwesomeIcon
                                     icon={visible ? faAngleUp : faAngleDown}
                                     size={14}
-                                    style={{ color: 'white', opacity: 0.5, marginRight: 5 }}
+                                    style={{ color: 'white', opacity: 0.5, marginLeft: 8, marginRight: 8, marginBottom: 2 }}
                                 />
                             </TouchableOpacity>
-                            {visible && (
-                                <View
+                            {render && (
+                                <Animated.View
                                     style={{
                                         position: 'absolute',
                                         top: position.y + position.height + 10,
-                                        left: position.x - 150 / 2 - 14,
+                                        // position.x - width of container / 2 - width of icon
+                                        left: position.x - 100 / 2 - 14,
                                         backgroundColor: '#141414',
-                                        padding: 10,
-                                        borderRadius: 6,
+                                        borderRadius: 8,
                                         shadowColor: '#000',
                                         shadowOffset: { width: 0, height: 2 },
                                         shadowOpacity: 0.8,
                                         shadowRadius: 4,
                                         elevation: 10,
                                         zIndex: 10,
-                                        width: 150,
-                                        height: 200,
+                                        width: 100,
+                                        transformOrigin: 'top',
+                                        transform: [{scaleY: heightAnim}],
+                                        overflow: 'hidden',
+                                        justifyContent: 'center',
                                     }}
-                                ></View>
+                                >
+                                    <FilterMenu setFilter={setFilter}/>
+                                </Animated.View>
                             )}
                         </View>
                     </View>
@@ -256,19 +402,14 @@ export function HomePage() {
                             alignItems: 'center',
                         }}
                     >
-                        {articles.map((item, index) => {
-                            return (
-                                <React.Fragment key={index}>
-                                    <NewsCard
-                                        title={item.title}
-                                        url_to_image={item.url_to_image}
-                                        published_at={item.published_at}
-                                        genre={item.genre ?? ''}
-                                    />
-                                    <HorizonalLine />
-                                </React.Fragment>
-                            );
-                        })}
+                        {loading ? (
+                            <ActivityIndicator size='small' color='#fff' />
+                        ) : (
+                            <Animated.View style={{ opacity: fadeAnimArticles }}>
+                                <DisplayArticles articles={articles} filterBy={filter} />
+                            </Animated.View>
+                        )}
+
                     </ScrollView>
                     <BottomNavigation />
                 </View>
@@ -276,6 +417,15 @@ export function HomePage() {
         </SafeAreaProvider>
     );
 }
+
+const menuStyling = StyleSheet.create({
+    text_style: {
+      opacity: 0.8,
+      fontFamily: 'WorkSans-Light',
+      fontSize: 16,
+      color: 'white',
+    }
+})
 
 export const BaseTemplate = StyleSheet.create({
     theme: {
