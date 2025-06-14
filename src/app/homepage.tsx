@@ -40,6 +40,7 @@ interface Article {
 interface FilteArticles {
     articles: Article[],
     filterBy: string,
+    setLoading: (loadType: boolean) => void;
 }
 
 interface menuFilterProp {
@@ -58,7 +59,16 @@ async function clearArticleTable() {
     await db.execAsync('DELETE FROM articles');
 }
 
-async function articleAPI(genreSelection: string) {
+async function articleAPI(genreSelection: string | undefined, category: string | undefined) {
+    var genre = '';
+    var cat = '';
+
+    if (genreSelection !== undefined) {
+        genre = genreSelection;
+    } else if (category !== undefined) {
+        cat = category;
+    }
+
     try {
         var response = await fetch(`${BASE_URL}/api/articles`, {
             // TODO: Add authorization somewhere. Maybe here, maybe not.
@@ -68,7 +78,8 @@ async function articleAPI(genreSelection: string) {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                genre: { genreSelection }, // comma seperated string, e.g., APPLE,AMAZON,BIG TECH, ... , etc
+                genre: { genre },
+                category: { cat }
             }),
         });
         if (!response.ok) {
@@ -131,14 +142,13 @@ async function articleAPI(genreSelection: string) {
     }
 }
 
-async function getArticles(genreSelection: string | undefined) {
+async function getArticles(genreSelection: string | undefined, category: string | undefined) {
     const db = await SQLite.openDatabaseAsync('newsapp');
-    if (genreSelection === undefined || genreSelection === '') {
-        const query_results = await db.getAllAsync('SELECT * FROM articles LIMIT 20');
-        return query_results.flat();
-    } else {
+    var results = null;
+
+    if (genreSelection !== undefined && category === undefined) {
         const genreArr = genreSelection.split(',');
-        const results = Promise.all(
+        results = Promise.all(
             genreArr.map(async (genre) => {
                 const query_results = await db.getAllAsync(
                     'SELECT * FROM articles WHERE genre = ? LIMIT 5',
@@ -148,16 +158,35 @@ async function getArticles(genreSelection: string | undefined) {
             }),
         );
         return (await results).flat();
+
+    } else if (category !== undefined && genreSelection === undefined) {
+        results = db.getAllAsync('SELECT * FROM articles WHERE category = ?', [category])
+        return (await results).flat();
     }
 }
 
-export async function loadArticles(genreSelection: string | undefined) {
-    // ensure all articles are fetched and in the local database
+export async function loadArticles(genreSelection: string | undefined, category: string | undefined) {
+
+    // get articles by genre selection
+    var results = null;
     if (genreSelection !== undefined && genreSelection !== '') {
-        await AsyncStorage.setItem('genreSelection', genreSelection)
-        await articleAPI(genreSelection);
+        await AsyncStorage.setItem('genreSelection', genreSelection) // save user preferences for later
+        results = await getArticles(genreSelection, undefined);
+        if (!results || results.length === 0) {
+            await articleAPI(genreSelection, undefined);
+            results = await getArticles(genreSelection, undefined);
+        }
+    
+    // get articles by category
+    } else {
+        // there are no user preferences to save
+        results = await getArticles(undefined, category);
+        if (!results || results.length === 0) {
+            await articleAPI(undefined, category);
+            results = await getArticles(undefined, category);
+        }
     }
-    const results = await getArticles(genreSelection);
+
     return results;
 }
 
@@ -177,33 +206,28 @@ const MenuOption = ({title, textStyle, icon, onPress}: menuOptionProp) => {
     )
 }
 
-// articles is the list of articles retrieved by preference
-// how to sort by Top? Probably use the category=technology API.
-// filter by home and Recent first.
-// filterBy = {Home, Top, Recent}
-const DisplayArticles: React.FC<FilteArticles> = ({ articles, filterBy }) => {
-    // the filterBy option should be a state
-    var articles_to_display: Article[] = [];
-    if (filterBy === 'Home') {
-        articles_to_display = articles;
-    } else if (filterBy === 'Recent') {
-        // should this fetch the Recent data from server with the user given preferences?
-        articles.sort((a, b) => {
-            const date_a = new Date(a.published_at).getTime();
-            const date_b = new Date(b.published_at).getTime();
-            return date_b - date_a;
-        })
-        articles_to_display = articles;
-    } else {
-        // TOP -> fetch articles by category technology. involves modifying articleAPI to accept a category.
-        // also inolves in processing a category option on the backend
-        // also involves changing the backend to use a diff url.
-        // category 'genre' could just be 'Top'.. dunno.
-    }
+
+const DisplayArticles: React.FC<FilteArticles> = ({ articles, filterBy, setLoading }) => {
+    const [articlesToDisplay, setArticlesToDisplay] = useState<Article[]>([]);
+    useEffect(() => {
+        // Home is the preferences determined by the user
+        if (filterBy === 'Home') {
+            setArticlesToDisplay(articles);
+
+        // Recent is sorting by Date, and should also be fetching new data from the server
+        } else if (filterBy === 'Recent') {
+            const sortedArticles = [...articles].sort((a, b) => {
+                const date_a = new Date(a.published_at).getTime();
+                const date_b = new Date(b.published_at).getTime();
+                return date_b - date_a;
+            })
+            setArticlesToDisplay(sortedArticles);
+        }
+    }, [filterBy, articles])
 
     return (
         <>
-            {articles_to_display.map((item, index) => {
+            {articlesToDisplay.map((item, index) => {
                 return (
                     <React.Fragment key={index}>
                         <NewsCard
@@ -312,7 +336,12 @@ export function HomePage() {
             // need to handle case if this is empty.
             setLoading(true);
             try {
-                const articles = (await loadArticles(genreSelection)) as Article[];
+                var articles: Article[] = [];
+                if (genreSelection !== undefined) {
+                    articles = (await loadArticles(genreSelection, undefined)) as Article[];
+                } else {
+                    articles = (await loadArticles(undefined, 'Top')) as Article[];
+                }
                 setArticles(articles);
             } catch (error) {
                 console.error(`Error ocurred: ${error}`);
@@ -403,10 +432,10 @@ export function HomePage() {
                         }}
                     >
                         {loading ? (
-                            <ActivityIndicator size='small' color='#fff' />
+                            <ActivityIndicator size='small' color='#fff' style={{ opacity: 0.8 }} />
                         ) : (
                             <Animated.View style={{ opacity: fadeAnimArticles }}>
-                                <DisplayArticles articles={articles} filterBy={filter} />
+                                <DisplayArticles articles={articles} filterBy={filter} setLoading={setLoading}/>
                             </Animated.View>
                         )}
 
