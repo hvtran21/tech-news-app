@@ -12,13 +12,13 @@ import { IconProp } from '@fortawesome/fontawesome-svg-core'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
-const BASE_URL = 'http://192.168.0.207:8000';
+const BASE_URL = 'http://192.168.0.20:8000';
 
 type menuOptionProp = {
     title: string,
     textStyle: TextStyle,
     icon: IconProp,
-    onPress: () => void,
+    onPress: () => void
 }
 
 interface Article {
@@ -63,11 +63,10 @@ async function articleAPI(genreSelection: string | undefined, category: string |
 
     if (genreSelection !== undefined) {
         genre = genreSelection;
-    } else if (category !== undefined) {
-        if (category === 'Top') {
-            cat = 'Technology';
+    }
 
-        }
+    if (category !== undefined) {
+        cat = category;
     }
 
     try {
@@ -168,7 +167,7 @@ async function getArticles(genreSelection: string | undefined, category: string 
 export async function loadArticles(genreSelection: string | undefined, category: string | undefined) {
     // get articles by genre selection
     var results = null;
-    if (genreSelection !== undefined && category === undefined) {
+    if (genreSelection !== undefined) {
         await AsyncStorage.setItem('genreSelection', genreSelection) // save user preferences for later
         await articleAPI(genreSelection, undefined);
         results = await getArticles(genreSelection, undefined);
@@ -176,14 +175,10 @@ export async function loadArticles(genreSelection: string | undefined, category:
     // get articles by category
     } else {
         // there are no user preferences to save
-        var searchCategory = '';
-        if (category === 'Top') {
-            searchCategory = 'Technology';
-        }
-        results = await getArticles(undefined, searchCategory);
+        results = await getArticles(undefined, category);
         if (!results || results.length === 0) {
-            await articleAPI(undefined, searchCategory);
-            results = await getArticles(undefined, searchCategory);
+            await articleAPI(undefined, category);
+            results = await getArticles(undefined, category);
         }
     }
     return results;
@@ -323,13 +318,13 @@ export function HomePage() {
             try {
                 let articles: Article[] = [];
                 if (filter === 'Top') {
-                    articles = await loadArticles(undefined, 'Top') as Article[];
+                    articles = await loadArticles(undefined, 'Technology') as Article[];
                 } else if (filter === 'Home') {
                     const existingPreferences = await AsyncStorage.getItem('genreSelection');
                     if (existingPreferences) {
                         articles = await loadArticles(existingPreferences, undefined) as Article[];
                     } else {
-                        articles = await loadArticles(undefined, 'Top') as Article[];
+                        articles = await loadArticles(undefined, 'Technology') as Article[];
                     }
 
                 } else if (filter === 'Recent') {
@@ -340,7 +335,7 @@ export function HomePage() {
                             new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
                         );
                     } else {
-                        articles = await loadArticles(undefined, 'Top') as Article[];
+                        articles = await loadArticles(undefined, 'Technology') as Article[];
                     }
                 }
 
