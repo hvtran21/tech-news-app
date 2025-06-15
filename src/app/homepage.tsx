@@ -10,8 +10,6 @@ import { faHouse, faAngleDown, faAngleUp, faBolt, faClock} from '@fortawesome/fr
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { IconProp } from '@fortawesome/fontawesome-svg-core'
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { generatePrime } from 'crypto';
-import { clear } from 'console';
 
 
 const BASE_URL = 'http://192.168.0.207:8000';
@@ -116,7 +114,7 @@ async function articleAPI(genreSelection: string | undefined, category: string |
                         return;
                     }
                     const statement = await db.prepareAsync(
-                        'INSERT INTO articles(id, genre, category, source, author, title, description, url, url_to_image, published_at, content) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                        'INSERT OR IGNORE INTO articles(id, genre, category, source, author, title, description, url, url_to_image, published_at, content) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                     );
                     await statement.executeAsync([
                         article.id,
@@ -160,22 +158,17 @@ async function getArticles(genreSelection: string | undefined, category: string 
         return (await results).flat();
 
     } else if (category !== undefined && genreSelection === undefined) {
-        results = db.getAllAsync('SELECT * FROM articles WHERE category = ?', [category])
-        return (await results).flat();
+        return await db.getAllAsync('SELECT * FROM articles WHERE category = ?', [category])
     }
 }
 
 export async function loadArticles(genreSelection: string | undefined, category: string | undefined) {
-
     // get articles by genre selection
     var results = null;
-    if (genreSelection !== undefined && genreSelection !== '') {
+    if (genreSelection !== undefined && category === undefined) {
         await AsyncStorage.setItem('genreSelection', genreSelection) // save user preferences for later
+        await articleAPI(genreSelection, undefined);
         results = await getArticles(genreSelection, undefined);
-        if (!results || results.length === 0) {
-            await articleAPI(genreSelection, undefined);
-            results = await getArticles(genreSelection, undefined);
-        }
     
     // get articles by category
     } else {
@@ -186,7 +179,6 @@ export async function loadArticles(genreSelection: string | undefined, category:
             results = await getArticles(undefined, category);
         }
     }
-
     return results;
 }
 
@@ -203,44 +195,6 @@ const MenuOption = ({title, textStyle, icon, onPress}: menuOptionProp) => {
                 </View>
             </View>
         </TouchableHighlight>
-    )
-}
-
-
-const DisplayArticles: React.FC<FilteArticles> = ({ articles, filterBy, setLoading }) => {
-    const [articlesToDisplay, setArticlesToDisplay] = useState<Article[]>([]);
-    useEffect(() => {
-        // Home is the preferences determined by the user
-        if (filterBy === 'Home') {
-            setArticlesToDisplay(articles);
-
-        // Recent is sorting by Date, and should also be fetching new data from the server
-        } else if (filterBy === 'Recent') {
-            const sortedArticles = [...articles].sort((a, b) => {
-                const date_a = new Date(a.published_at).getTime();
-                const date_b = new Date(b.published_at).getTime();
-                return date_b - date_a;
-            })
-            setArticlesToDisplay(sortedArticles);
-        }
-    }, [filterBy, articles])
-
-    return (
-        <>
-            {articlesToDisplay.map((item, index) => {
-                return (
-                    <React.Fragment key={index}>
-                        <NewsCard
-                            title={item.title}
-                            url_to_image={item.url_to_image}
-                            published_at={item.published_at}
-                            genre={item.genre ?? ''}
-                        />
-                        <HorizonalLine />
-                    </React.Fragment>
-                );
-            })}
-        </>
     )
 }
 
@@ -276,7 +230,7 @@ export function HomePage() {
     const [render, setRender] = useState(false);
     const heightAnim = useRef(new Animated.Value(0)).current;
     const fadeAnimArticles = useRef(new Animated.Value(0)).current;
-
+ 
     const fadeIn = () => {
         Animated.timing(fadeAnimArticles, {
             toValue: 1,
@@ -308,11 +262,11 @@ export function HomePage() {
         });
     };
 
+    // fade animation for content to load in
     useEffect(() => {
         fadeAnimArticles.setValue(0);
         fadeIn();
     }, [filter])
-    
 
     // control opening filter menu
     useEffect(() => {
@@ -333,15 +287,18 @@ export function HomePage() {
     // initialization of loading articles
     useEffect(() => {
         const getArticles = async () => {
-            // need to handle case if this is empty.
             setLoading(true);
             try {
                 var articles: Article[] = [];
                 if (genreSelection !== undefined) {
-                    articles = (await loadArticles(genreSelection, undefined)) as Article[];
+                    articles = await loadArticles(genreSelection, undefined) as Article[];
                 } else {
-                    articles = (await loadArticles(undefined, 'Top')) as Article[];
+                    const existingPreferences = await AsyncStorage.getItem('genreSelection');
+                    if (existingPreferences !== null) {
+                        articles = await loadArticles(existingPreferences, undefined) as Article[];
+                    }
                 }
+
                 setArticles(articles);
             } catch (error) {
                 console.error(`Error ocurred: ${error}`);
@@ -352,6 +309,46 @@ export function HomePage() {
         };
         getArticles();
     }, [genreSelection]);
+
+    useEffect(() => {
+        const getArticlesByFilter = async () => {
+            setLoading(true);
+            try {
+                let articles: Article[] = [];
+                if (filter === 'Top') {
+                    articles = await loadArticles(undefined, 'Top') as Article[];
+                } else if (filter === 'Home') {
+                    const existingPreferences = await AsyncStorage.getItem('genreSelection');
+                    if (existingPreferences) {
+                        articles = await loadArticles(existingPreferences, undefined) as Article[];
+                    } else {
+                        articles = await loadArticles(undefined, 'Top') as Article[];
+                    }
+
+                } else if (filter === 'Recent') {
+                    const existingPreferences = await AsyncStorage.getItem('genreSelection');
+                    if (existingPreferences) {
+                        articles = await loadArticles(existingPreferences, undefined) as Article[];
+                        articles = [...articles].sort((a, b) =>
+                            new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
+                        );
+                    } else {
+                        articles = await loadArticles(undefined, 'Top') as Article[];
+                    }
+                }
+
+                setArticles(articles);
+            } catch (error) {
+                console.error(`Error occurred: ${error}`);
+            } finally {
+                setLoading(false);
+                fadeIn();
+            }
+        };
+
+        getArticlesByFilter();
+    }, [filter]);
+
 
     return (
         <SafeAreaProvider>
@@ -371,7 +368,7 @@ export function HomePage() {
                     >
                         <GradientText
                             colors={['#8B5CF6', '#EC4899']}
-                            text="Tech News"
+                            text="Your Tech News"
                             style={BaseTemplate.title}
                         ></GradientText>
                         <View
@@ -431,13 +428,26 @@ export function HomePage() {
                             alignItems: 'center',
                         }}
                     >
-                        {loading ? (
-                            <ActivityIndicator size='small' color='#fff' style={{ opacity: 0.8 }} />
-                        ) : (
+                        {!loading ? (
                             <Animated.View style={{ opacity: fadeAnimArticles }}>
-                                <DisplayArticles articles={articles} filterBy={filter} setLoading={setLoading}/>
+                                {articles.map((item, index) => {
+                                    return (
+                                        <React.Fragment key={index}>
+                                            <NewsCard
+                                                title={item.title}
+                                                url_to_image={item.url_to_image}
+                                                published_at={item.published_at}
+                                                genre={item.genre ?? ''}
+                                            />
+                                            <HorizonalLine />
+                                        </React.Fragment>
+                                    );
+                                })}
                             </Animated.View>
-                        )}
+                            ) : (
+                                <ActivityIndicator size="small" color="#fff" style={{ opacity: 0.8 }} />
+                            )
+                        }   
 
                     </ScrollView>
                     <BottomNavigation />
