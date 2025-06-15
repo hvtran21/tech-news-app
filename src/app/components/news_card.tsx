@@ -50,7 +50,6 @@ export const NewsCard = ({ title, url_to_image, published_at, genre }: card) => 
     const [badLoad, setBadLoad] = useState(false)
     const date = formatDate(new Date(published_at));
     const fallBackImage = require('../../assets/images/computer_2.jpg');
-    console.log(url_to_image)
     const uri_image = url_to_image ? { uri: url_to_image } : {uri: fallBackImage};
     const label = genre === '' ? 'Top' : genre;
 
