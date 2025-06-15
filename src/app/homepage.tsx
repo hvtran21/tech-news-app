@@ -64,7 +64,10 @@ async function articleAPI(genreSelection: string | undefined, category: string |
     if (genreSelection !== undefined) {
         genre = genreSelection;
     } else if (category !== undefined) {
-        cat = category;
+        if (category === 'Top') {
+            cat = 'Technology';
+
+        }
     }
 
     try {
@@ -173,10 +176,14 @@ export async function loadArticles(genreSelection: string | undefined, category:
     // get articles by category
     } else {
         // there are no user preferences to save
-        results = await getArticles(undefined, category);
+        var searchCategory = '';
+        if (category === 'Top') {
+            searchCategory = 'Technology';
+        }
+        results = await getArticles(undefined, searchCategory);
         if (!results || results.length === 0) {
-            await articleAPI(undefined, category);
-            results = await getArticles(undefined, category);
+            await articleAPI(undefined, searchCategory);
+            results = await getArticles(undefined, searchCategory);
         }
     }
     return results;
