@@ -41,7 +41,7 @@ export const welcomePage = () => {
                 CREATE TABLE IF NOT EXISTS articles (
                 id TEXT PRIMARY KEY,
                 genre TEXT,
-                category, TEXT,
+                category TEXT,
                 source TEXT,
                 author TEXT,
                 title TEXT,
