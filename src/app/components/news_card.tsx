@@ -1,4 +1,5 @@
 import { Text, View, StyleSheet, Image } from 'react-native';
+import { useState } from 'react'
 import { card } from '../homepage';
 
 function formatDate(date: Date): string {
@@ -44,10 +45,15 @@ function formatDate(date: Date): string {
 }
 
 export const NewsCard = ({ title, url_to_image, published_at, genre }: card) => {
-    // renders a news card based off of 'title' prop, and 'image_src' prop
+    const [imageLoaded, setImageLoaded] = useState(false);
+    const [imageError, setImageError] = useState(false);
+    const [badLoad, setBadLoad] = useState(false)
     const date = formatDate(new Date(published_at));
-    const uri_image =
-        url_to_image ?? '/Users/htran/repos/tech-news-app/src/assets/images/computer_2.jpg';
+    const fallBackImage = require('../../assets/images/computer_2.jpg');
+    console.log(url_to_image)
+    const uri_image = url_to_image ? { uri: url_to_image } : {uri: fallBackImage};
+    const label = genre === '' ? 'Top' : genre;
+
     return (
         <View style={card_style.main_card}>
             <View
@@ -58,7 +64,7 @@ export const NewsCard = ({ title, url_to_image, published_at, genre }: card) => 
             >
                 <View style={{ width: '60%', flexDirection: 'column', height: 'auto' }}>
                     <Text style={card_style.date}>
-                        {date} | {genre}
+                        {date} | {label}
                     </Text>
                     <View style={{ width: '95%' }}>
                         <Text style={card_style.card_title}>{title}</Text>
@@ -66,11 +72,22 @@ export const NewsCard = ({ title, url_to_image, published_at, genre }: card) => 
                 </View>
 
                 <View style={card_style.thumbnail_frame}>
-                    <Image
-                        source={{ uri: uri_image }}
-                        alt="Image"
+                    {badLoad && !imageLoaded && (
+                        <Image 
+                        source={fallBackImage}
+                        alt='Image'
                         style={card_style.thumbnail_image}
-                    />
+                        />
+                    )}
+                    {!imageError && (
+                        <Image
+                            source={imageError ? fallBackImage : uri_image}
+                            alt='Image'
+                            style={card_style.thumbnail_image}
+                            onLoad={(e) => {}}
+                            onError={() => {setImageError(true)}}
+                        />
+                    )}
                 </View>
             </View>
         </View>
