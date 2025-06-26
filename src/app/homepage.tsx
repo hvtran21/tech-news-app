@@ -11,8 +11,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { IconProp } from '@fortawesome/fontawesome-svg-core'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-
-const BASE_URL = 'http://192.168.0.20:8000';
+const BASE_URL = 'http://192.168.0.186:8000';
 
 type menuOptionProp = {
     title: string,
@@ -322,7 +321,7 @@ export function HomePage() {
                 } else if (filter === 'Home') {
                     const existingPreferences = await AsyncStorage.getItem('genreSelection');
                     if (existingPreferences) {
-                        articles = await loadArticles(existingPreferences, undefined) as Article[];
+                        articles = await getArticles(existingPreferences, undefined) as Article[];
                     } else {
                         articles = await loadArticles(undefined, 'Technology') as Article[];
                     }
@@ -330,12 +329,12 @@ export function HomePage() {
                 } else if (filter === 'Recent') {
                     const existingPreferences = await AsyncStorage.getItem('genreSelection');
                     if (existingPreferences) {
-                        articles = await loadArticles(existingPreferences, undefined) as Article[];
+                        articles = await getArticles(existingPreferences, undefined) as Article[];
                         articles = [...articles].sort((a, b) =>
                             new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
                         );
                     } else {
-                        articles = await loadArticles(undefined, 'Technology') as Article[];
+                        articles = await getArticles(undefined, 'Technology') as Article[];
                     }
                 }
 
