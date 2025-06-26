@@ -17,6 +17,7 @@ type menuOptionProp = {
     title: string,
     textStyle: TextStyle,
     icon: IconProp,
+    selected: boolean,
     onPress: () => void
 }
 
@@ -183,11 +184,11 @@ export async function loadArticles(genreSelection: string | undefined, category:
     return results;
 }
 
-const MenuOption = ({title, textStyle, icon, onPress}: menuOptionProp) => {
+const MenuOption = ({title, textStyle, selected, icon, onPress}: menuOptionProp) => {
     return (
         // whatever option is selected, should automatically be highlighted for the user.
         <TouchableHighlight onPress={onPress}>
-            <View style={{ flexDirection: 'row', flex: 1, alignItems: 'center', backgroundColor: '#141414' }}>
+            <View style={{ flexDirection: 'row', flex: 1, alignItems: 'center', backgroundColor: selected ? '#2a2a2a' :'#141414' }}>
                 <View style={{ width: 20, height: 20, justifyContent: 'center', alignItems: 'center', margin: 8}}>
                     <FontAwesomeIcon icon={icon} style={{color: 'white', opacity: 0.8 }} />
                 </View>
@@ -201,14 +202,33 @@ const MenuOption = ({title, textStyle, icon, onPress}: menuOptionProp) => {
 
 const FilterMenu = ({setFilter}: menuFilterProp) => {
     // should accept the setState function and updates it accordingly
-    const filterByHome = () => {setFilter('Home')};
-    const filterByTop = () => {setFilter('Top')};
-    const filterByRecent = () => {setFilter('Recent')};
+    const [home, setHome] = useState(true);
+    const [recent, setRecent] = useState(false);
+    const [top, setTop] = useState(false);
+
+    const filterByHome = () => {
+        setHome((state) => !state);
+        setTop(false);
+        setRecent(false);
+        setFilter('Home')
+    }; 
+    const filterByTop = () => {
+        setTop((state) => !state); 
+        setHome(false);
+        setRecent(false);
+        setFilter('Top')
+    };
+    const filterByRecent = () => {
+        setRecent((state) => !state); 
+        setTop(false);
+        setHome(false);
+        setFilter('Recent')
+    };
 
     const menuOptionArray: ReactNode[] = [
-        <MenuOption key={0} title='Home' textStyle={menuStyling.text_style} icon={faHouse} onPress={()=>{ filterByHome() }} />,
-        <MenuOption key={1} title='Recent' textStyle={menuStyling.text_style} icon={faClock} onPress={()=>{ filterByRecent() }} />,
-        <MenuOption key={2} title='Top' textStyle={menuStyling.text_style} icon={faBolt} onPress={()=>{ filterByTop() }} />,
+        <MenuOption key={0} title='Home' textStyle={menuStyling.text_style} icon={faHouse} selected={home} onPress={()=>{ filterByHome() }} />,
+        <MenuOption key={1} title='Recent' textStyle={menuStyling.text_style} icon={faClock} selected={recent} onPress={()=>{ filterByRecent() }} />,
+        <MenuOption key={2} title='Top' textStyle={menuStyling.text_style} icon={faBolt} selected={top} onPress={()=>{ filterByTop() }} />,
     ]
 
     return (<>{menuOptionArray}</>)
