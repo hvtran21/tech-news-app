@@ -43,6 +43,9 @@ interface FilteArticles {
 
 interface menuFilterProp {
     setFilter: (filterType: string) => void;
+    home: boolean;
+    recent: boolean;
+    top: boolean;
 }
 
 interface card {
@@ -200,28 +203,19 @@ const MenuOption = ({title, textStyle, selected, icon, onPress}: menuOptionProp)
     )
 }
 
-const FilterMenu = ({setFilter}: menuFilterProp) => {
+const FilterMenu = ({setFilter, home, top, recent}: menuFilterProp) => {
     // should accept the setState function and updates it accordingly
-    const [home, setHome] = useState(true);
-    const [recent, setRecent] = useState(false);
-    const [top, setTop] = useState(false);
 
+    // TODO: State of filter option isn't persistent with box drops down
+    // should probably use Async storage to track the state or something
+    // or the state should be tracked in the homepage component, as it gets reset everytime its collapsed.
     const filterByHome = () => {
-        setHome((state) => !state);
-        setTop(false);
-        setRecent(false);
         setFilter('Home')
-    }; 
+    };
     const filterByTop = () => {
-        setTop((state) => !state); 
-        setHome(false);
-        setRecent(false);
         setFilter('Top')
     };
-    const filterByRecent = () => {
-        setRecent((state) => !state); 
-        setTop(false);
-        setHome(false);
+    const filterByRecent = () => {;
         setFilter('Recent')
     };
 
@@ -243,6 +237,9 @@ export function HomePage() {
     const [articles, setArticles] = useState<Article[]>([]);
     const [loading, setLoading] = useState(false);
     const [filter, setFilter] = useState('Home');
+    const [home, setHome] = useState(true);
+    const [recent, setRecent] = useState(false);
+    const [top, setTop] = useState(false);
 
     // setup for modal
     const [visible, setVisible] = useState(false);
@@ -338,6 +335,10 @@ export function HomePage() {
                 let articles: Article[] = [];
                 if (filter === 'Top') {
                     articles = await loadArticles(undefined, 'Technology') as Article[];
+                    setTop(true);
+                    setHome(false);
+                    setRecent(false);
+
                 } else if (filter === 'Home') {
                     const existingPreferences = await AsyncStorage.getItem('genreSelection');
                     if (existingPreferences) {
@@ -345,6 +346,9 @@ export function HomePage() {
                     } else {
                         articles = await loadArticles(undefined, 'Technology') as Article[];
                     }
+                    setHome(true);
+                    setRecent(false);
+                    setTop(false);
 
                 } else if (filter === 'Recent') {
                     const existingPreferences = await AsyncStorage.getItem('genreSelection');
@@ -356,6 +360,9 @@ export function HomePage() {
                     } else {
                         articles = await getArticles(undefined, 'Technology') as Article[];
                     }
+                    setRecent(true);
+                    setHome(false);
+                    setTop(false);
                 }
 
                 setArticles(articles);
@@ -435,7 +442,7 @@ export function HomePage() {
                                         justifyContent: 'center',
                                     }}
                                 >
-                                    <FilterMenu setFilter={setFilter}/>
+                                    <FilterMenu setFilter={setFilter} home={home} recent={recent} top={top}/>
                                 </Animated.View>
                             )}
                         </View>
