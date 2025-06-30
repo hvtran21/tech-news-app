@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, ReactNode } from 'react';
 import * as SQLite from 'expo-sqlite';
-import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Animated, ActivityIndicator, TextStyle, TouchableHighlight } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Animated, ActivityIndicator, TextStyle, TouchableHighlight, Modal } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { NewsCard } from './components/news_card';
 import { GradientText, HorizonalLine } from './components/styling';
@@ -53,7 +53,11 @@ interface card {
     url_to_image: string;
     published_at: string;
     genre: string;
+    id: string;
+    setShowModal: (show: boolean) => void;
+    setArticle: (article: Article) => void;
 }
+
 // function is just for development purposes
 async function clearArticleTable() {
     const db = await SQLite.openDatabaseAsync('newsapp');
@@ -145,6 +149,31 @@ async function articleAPI(genreSelection: string | undefined, category: string |
     }
 }
 
+export async function getArticleByID(id: string) {
+    const db = await SQLite.openDatabaseAsync('newsapp');
+    try {
+        const article = await db.getFirstAsync('SELECT * FROM articles WHERE id = ?', [id]) as Article;
+        if (!article) {
+            throw new Error(`Article with ID ${id} not found`);
+        }
+        return {
+            id: article.id,
+            genre: article.genre,
+            category: article.category,
+            source: article.source,
+            author: article.author,
+            title: article.title,
+            description: article.description,
+            url: article.url,
+            url_to_image: article.url_to_image,
+            published_at: article.published_at,
+            content: article.content,
+        };
+    } catch (error) {
+        console.error(`Error ocurred: ${error}`);
+    }
+}
+
 async function getArticles(genreSelection: string | undefined, category: string | undefined) {
     const db = await SQLite.openDatabaseAsync('newsapp');
     var results = null;
@@ -225,7 +254,11 @@ const FilterMenu = ({setFilter, home, top, recent}: menuFilterProp) => {
         <MenuOption key={2} title='Top' textStyle={menuStyling.text_style} icon={faBolt} selected={top} onPress={()=>{ filterByTop() }} />,
     ]
 
-    return (<>{menuOptionArray}</>)
+    return (
+        <>
+            {menuOptionArray}
+        </>
+    )
 }
 
 export function HomePage() {
@@ -241,14 +274,19 @@ export function HomePage() {
     const [recent, setRecent] = useState(false);
     const [top, setTop] = useState(false);
 
-    // setup for modal
+    // setup for filter menu
     const [visible, setVisible] = useState(false);
     const triggerRef = useRef<View>(null);
     const [position, setPosition] = useState({ x: 0, y: 0, width: 0, height: 0 });
     const [render, setRender] = useState(false);
     const heightAnim = useRef(new Animated.Value(0)).current;
     const fadeAnimArticles = useRef(new Animated.Value(0)).current;
+
+    // states for showing the modal
+    const [showModal, setShowModal] = useState(false);
+    const [selectedArticle, setSelectedArticle] = useState<Article>();
  
+    // animation for content to load
     const fadeIn = () => {
         Animated.timing(fadeAnimArticles, {
             toValue: 1,
@@ -260,7 +298,6 @@ export function HomePage() {
     const modalOpenAnim = () => {
         heightAnim.setValue(0);
         setRender(true);
-        //
         requestAnimationFrame(() => {
             Animated.timing(heightAnim, {
                 toValue: 1,
@@ -466,6 +503,9 @@ export function HomePage() {
                                                 url_to_image={item.url_to_image}
                                                 published_at={item.published_at}
                                                 genre={item.genre ?? ''}
+                                                id={item.id}
+                                                setShowModal={setShowModal}
+                                                setArticle={setSelectedArticle}
                                             />
                                             <HorizonalLine />
                                         </React.Fragment>
@@ -479,6 +519,20 @@ export function HomePage() {
 
                     </ScrollView>
                     <BottomNavigation />
+                    <Modal
+                        animationType='slide'
+                        transparent={true}
+                        visible={showModal}
+                        onRequestClose={() => setShowModal(!showModal)}
+
+                    >
+                        <View style={{ backgroundColor: '#fff', height: '50%', width: '100%' }}>
+                            <Text>
+                                This is a modal.
+                            </Text>
+                        </View>
+
+                    </Modal>
                 </View>
             </SafeAreaView>
         </SafeAreaProvider>
