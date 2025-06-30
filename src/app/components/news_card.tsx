@@ -1,4 +1,6 @@
-import { Text, View, StyleSheet, Image } from 'react-native';
+import { Text, View, StyleSheet, Image, Pressable, TouchableOpacity } from 'react-native';
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+import { faEllipsisV, faEllipsisH } from '@fortawesome/free-solid-svg-icons';
 import { useState } from 'react'
 import { card } from '../homepage';
 
@@ -44,17 +46,22 @@ function formatDate(date: Date): string {
     return `${month} ${day}${getOrdinalSuffix(day)}`;
 }
 
-export const NewsCard = ({ title, url_to_image, published_at, genre }: card) => {
+export const NewsCard = ({ title, url_to_image, published_at, genre, id, setShowModal, setArticle }: card) => {
+    // update image states, should switch over to storing images on client side, fetch from server
     const [imageLoaded, setImageLoaded] = useState(false);
     const [imageError, setImageError] = useState(false);
-    const [badLoad, setBadLoad] = useState(false)
+    const [badLoad, setBadLoad] = useState(false);
     const date = formatDate(new Date(published_at));
     const fallBackImage = require('../../assets/images/computer_2.jpg');
     const uri_image = url_to_image ? { uri: url_to_image } : {uri: fallBackImage};
     const label = genre === '' ? 'Top' : genre;
+    // TODO: add ID field, so we know what article this is when the ellipsis is pressed
 
     return (
         <View style={card_style.main_card}>
+            <TouchableOpacity style={{ position: 'absolute', top: 0, right: 14 }}>
+                <FontAwesomeIcon icon={faEllipsisH} color='white' size={18} style={{ opacity: 0.5, marginBottom: 10 }}/>
+            </TouchableOpacity>
             <View
                 style={{
                     flexDirection: 'row',
@@ -98,7 +105,6 @@ export const card_style = StyleSheet.create({
     main_card: {
         flexDirection: 'row',
         backgroundColor: '#000000',
-        borderRadius: 5,
         maxHeight: 175,
         width: '98%',
         alignContent: 'center',
@@ -122,8 +128,8 @@ export const card_style = StyleSheet.create({
     },
 
     thumbnail_image: {
-        width: '100%',
-        height: '100%',
+        width: '95%',
+        height: '95%',
         borderRadius: 15,
     },
 
