@@ -55,11 +55,16 @@ export const NewsCard = ({ title, url_to_image, published_at, genre, id, setShow
     const fallBackImage = require('../../assets/images/computer_2.jpg');
     const uri_image = url_to_image ? { uri: url_to_image } : {uri: fallBackImage};
     const label = genre === '' ? 'Top' : genre;
-    // TODO: add ID field, so we know what article this is when the ellipsis is pressed
+    const [visible, setVisible] = useState(false);
+
+    const handleEllipsisPress = () => {
+        setArticle(id);
+        setShowModal((showModal) => !showModal)
+    }
 
     return (
         <View style={card_style.main_card}>
-            <TouchableOpacity style={{ position: 'absolute', top: 0, right: 14 }}>
+            <TouchableOpacity style={{ position: 'absolute', top: 0, right: 14 }} onPress={() => {handleEllipsisPress()}}>
                 <FontAwesomeIcon icon={faEllipsisH} color='white' size={18} style={{ opacity: 0.5, marginBottom: 10 }}/>
             </TouchableOpacity>
             <View
