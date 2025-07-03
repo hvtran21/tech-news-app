@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useRef, ReactNode } from 'react';
 import * as SQLite from 'expo-sqlite';
-import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Animated, ActivityIndicator, TextStyle, TouchableHighlight, Modal } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Animated, ActivityIndicator, TextStyle, TouchableHighlight, Modal, Dimensions, TouchableNativeFeedback, TouchableWithoutFeedback, Pressable } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { NewsCard } from './components/news_card';
 import { GradientText, HorizonalLine } from './components/styling';
 import { BottomNavigation } from './components/navigation';
 import { useLocalSearchParams } from 'expo-router';
-import { faHouse, faAngleDown, faAngleUp, faBolt, faClock} from '@fortawesome/free-solid-svg-icons';
+import { faHouse, faAngleDown, faAngleUp, faBolt, faClock, faBookmark, faCircleInfo} from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { IconProp } from '@fortawesome/fontawesome-svg-core'
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Button } from '@react-navigation/elements';
+import { request } from 'http';
 
 const BASE_URL = 'http://192.168.0.186:8000';
 
@@ -54,8 +56,8 @@ interface card {
     published_at: string;
     genre: string;
     id: string;
-    setShowModal: (show: boolean) => void;
-    setArticle: (article: Article) => void;
+    setShowModal: React.Dispatch<React.SetStateAction<boolean>>;
+    setArticle: React.Dispatch<React.SetStateAction<string>>;
 }
 
 // function is just for development purposes
@@ -156,19 +158,7 @@ export async function getArticleByID(id: string) {
         if (!article) {
             throw new Error(`Article with ID ${id} not found`);
         }
-        return {
-            id: article.id,
-            genre: article.genre,
-            category: article.category,
-            source: article.source,
-            author: article.author,
-            title: article.title,
-            description: article.description,
-            url: article.url,
-            url_to_image: article.url_to_image,
-            published_at: article.published_at,
-            content: article.content,
-        };
+        return article
     } catch (error) {
         console.error(`Error ocurred: ${error}`);
     }
@@ -284,8 +274,26 @@ export function HomePage() {
 
     // states for showing the modal
     const [showModal, setShowModal] = useState(false);
-    const [selectedArticle, setSelectedArticle] = useState<Article>();
- 
+    const [selectedArticleID, setSelectedArticleID] = useState('');
+    const [modalArticle, setModalArticle] = useState<Article>();
+    const { height } = Dimensions.get('window');
+
+    useEffect(() => {
+        // show the modal, need to set modalArticle
+        // note, if showModal is true, then we know selectedArticleID is also set
+        if (showModal === true) {
+            const fetchArticle = async (id: string) => {
+                const article = await getArticleByID(id)
+                if (article) {
+                    setModalArticle(article);
+                }
+            }
+            fetchArticle(selectedArticleID);
+        }
+
+    }, [selectedArticleID, showModal])
+    
+
     // animation for content to load
     const fadeIn = () => {
         Animated.timing(fadeAnimArticles, {
@@ -505,7 +513,7 @@ export function HomePage() {
                                                 genre={item.genre ?? ''}
                                                 id={item.id}
                                                 setShowModal={setShowModal}
-                                                setArticle={setSelectedArticle}
+                                                setArticle={setSelectedArticleID}
                                             />
                                             <HorizonalLine />
                                         </React.Fragment>
@@ -524,14 +532,46 @@ export function HomePage() {
                         transparent={true}
                         visible={showModal}
                         onRequestClose={() => setShowModal(!showModal)}
+                    >   
+                        <TouchableWithoutFeedback onPress={() => {setShowModal((state) => !state)}}>
+                            <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0)' }}/>
+                        </TouchableWithoutFeedback>
+                        <View style={{ 
+                            position: 'absolute',
+                            backgroundColor: '#141414',
+                            justifyContent: 'center',
+                            alignContent: 'center',
+                            top: height - 350,
+                            height: 350,
+                            borderRadius: 20,
+                            padding: 20,
+                            width: '100%',
+                            borderTopLeftRadius: 20,
+                            borderTopRightRadius: 20,
+                         }}>
+                            <Pressable onPress={() => {}}>
+                                <View style={{
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    flexDirection: 'column'
+                                    }}>
+                                    <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <FontAwesomeIcon icon={faBookmark} color='white' size={20} style={{ opacity: 0.8, marginRight: 5 }}/>
+                                        <Text style={{ fontFamily: 'WorkSans-Regular', fontSize: 20 ,color: 'white', opacity: 0.8 }}>
+                                            Save
+                                        </Text>
+                                    </TouchableOpacity>
 
-                    >
-                        <View style={{ backgroundColor: '#fff', height: '50%', width: '100%' }}>
-                            <Text>
-                                This is a modal.
-                            </Text>
+                                    <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <FontAwesomeIcon icon={faCircleInfo} color='white' size={20} style={{ opacity: 0.8, marginRight: 5 }}/>
+                                        <Text style={{ fontFamily: 'WorkSans-Regular', fontSize: 20 ,color: 'white', opacity: 0.8 }}>
+                                            {modalArticle?.description ?? 'Empty description.'}
+                                        </Text>
+                                    </TouchableOpacity>
+                                    
+                                </View>
+                            </Pressable>
                         </View>
-
                     </Modal>
                 </View>
             </SafeAreaView>
