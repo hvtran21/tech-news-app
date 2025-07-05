@@ -571,6 +571,7 @@ const ModalOptions = ({ setShowModal, article }: ModalProps) => {
         }
     }, []);
 
+
     return (
         <>
             <View style={{
@@ -610,7 +611,7 @@ const ModalOptions = ({ setShowModal, article }: ModalProps) => {
                 <TouchableOpacity style={modalStyling.modal_option}>
                     <FontAwesomeIcon icon={faBan} color='white' size={18} style={{ opacity: 0.8, marginRight: 10 }}/>
                     <Text style={{ fontFamily: 'WorkSans-Regular', fontSize: 18 ,color: 'white', opacity: 0.8 }}>
-                        Don't suggest this
+                        Not Interested
                     </Text>
                 </TouchableOpacity>
 
