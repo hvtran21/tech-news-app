@@ -6,7 +6,7 @@ import { NewsCard } from './components/news_card';
 import { GradientText, HorizonalLine } from './components/styling';
 import { BottomNavigation } from './components/navigation';
 import { useLocalSearchParams } from 'expo-router';
-import { faHouse, faAngleDown, faAngleUp, faBolt, faClock, faBookmark, faCircleInfo} from '@fortawesome/free-solid-svg-icons';
+import { faHouse, faAngleDown, faAngleUp, faBolt, faClock, faBookmark, faCircleInfo, faCircleXmark} from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { IconProp } from '@fortawesome/fontawesome-svg-core'
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -541,28 +541,37 @@ export function HomePage() {
                             backgroundColor: '#141414',
                             justifyContent: 'center',
                             alignContent: 'center',
-                            top: height - 350,
-                            height: 350,
+                            top: height - 200,
+                            height: 200,
                             borderRadius: 20,
                             padding: 20,
                             width: '100%',
                             borderTopLeftRadius: 20,
                             borderTopRightRadius: 20,
                          }}>
+                            <View style={{
+                                flexDirection: 'row',
+                                justifyContent: 'flex-end',
+                            }}>
+                                <TouchableOpacity onPress={() => {setShowModal((state) => !state)}}>
+                                    <FontAwesomeIcon icon={faCircleXmark} color='white' size={20} style={{ opacity: 0.8 }}/>
+                                </TouchableOpacity>
+                            </View>
+
                             <Pressable onPress={() => {}}>
                                 <View style={{
-                                    justifyContent: 'center',
+                                    justifyContent: 'flex-start',
                                     alignItems: 'center',
                                     flexDirection: 'column'
                                     }}>
-                                    <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start' }}>
                                         <FontAwesomeIcon icon={faBookmark} color='white' size={20} style={{ opacity: 0.8, marginRight: 5 }}/>
                                         <Text style={{ fontFamily: 'WorkSans-Regular', fontSize: 20 ,color: 'white', opacity: 0.8 }}>
                                             Save
                                         </Text>
                                     </TouchableOpacity>
 
-                                    <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start' }}>
                                         <FontAwesomeIcon icon={faCircleInfo} color='white' size={20} style={{ opacity: 0.8, marginRight: 5 }}/>
                                         <Text style={{ fontFamily: 'WorkSans-Regular', fontSize: 20 ,color: 'white', opacity: 0.8 }}>
                                             {modalArticle?.description ?? 'Empty description.'}
