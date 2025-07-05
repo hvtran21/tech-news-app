@@ -1,17 +1,15 @@
-import React, { useState, useEffect, useRef, ReactNode } from 'react';
+import React, { useState, useEffect, useRef, ReactNode, useCallback } from 'react';
 import * as SQLite from 'expo-sqlite';
-import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Animated, ActivityIndicator, TextStyle, TouchableHighlight, Modal, Dimensions, TouchableNativeFeedback, TouchableWithoutFeedback, Pressable } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Animated, ActivityIndicator, TextStyle, TouchableHighlight, Modal, Dimensions, TouchableWithoutFeedback, Linking } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { NewsCard } from './components/news_card';
 import { GradientText, HorizonalLine } from './components/styling';
 import { BottomNavigation } from './components/navigation';
 import { useLocalSearchParams } from 'expo-router';
-import { faHouse, faAngleDown, faAngleUp, faBolt, faClock, faBookmark, faCircleInfo, faCircleXmark} from '@fortawesome/free-solid-svg-icons';
+import { faHouse, faAngleDown, faAngleUp, faBolt, faClock, faBookmark, faCircleInfo, faCircleXmark, faFlag, faBan, faUpRightFromSquare} from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { IconProp } from '@fortawesome/fontawesome-svg-core'
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Button } from '@react-navigation/elements';
-import { request } from 'http';
 
 const BASE_URL = 'http://192.168.0.186:8000';
 
@@ -541,45 +539,15 @@ export function HomePage() {
                             backgroundColor: '#141414',
                             justifyContent: 'center',
                             alignContent: 'center',
-                            top: height - 200,
-                            height: 200,
+                            top: height - 225,
+                            height: 225,
                             borderRadius: 20,
                             padding: 20,
                             width: '100%',
                             borderTopLeftRadius: 20,
                             borderTopRightRadius: 20,
                          }}>
-                            <View style={{
-                                flexDirection: 'row',
-                                justifyContent: 'flex-end',
-                            }}>
-                                <TouchableOpacity onPress={() => {setShowModal((state) => !state)}}>
-                                    <FontAwesomeIcon icon={faCircleXmark} color='white' size={20} style={{ opacity: 0.8 }}/>
-                                </TouchableOpacity>
-                            </View>
-
-                            <Pressable onPress={() => {}}>
-                                <View style={{
-                                    justifyContent: 'flex-start',
-                                    alignItems: 'center',
-                                    flexDirection: 'column'
-                                    }}>
-                                    <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start' }}>
-                                        <FontAwesomeIcon icon={faBookmark} color='white' size={20} style={{ opacity: 0.8, marginRight: 5 }}/>
-                                        <Text style={{ fontFamily: 'WorkSans-Regular', fontSize: 20 ,color: 'white', opacity: 0.8 }}>
-                                            Save
-                                        </Text>
-                                    </TouchableOpacity>
-
-                                    <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start' }}>
-                                        <FontAwesomeIcon icon={faCircleInfo} color='white' size={20} style={{ opacity: 0.8, marginRight: 5 }}/>
-                                        <Text style={{ fontFamily: 'WorkSans-Regular', fontSize: 20 ,color: 'white', opacity: 0.8 }}>
-                                            {modalArticle?.description ?? 'Empty description.'}
-                                        </Text>
-                                    </TouchableOpacity>
-                                    
-                                </View>
-                            </Pressable>
+                            <ModalOptions setShowModal={setShowModal} article={modalArticle} />
                         </View>
                     </Modal>
                 </View>
@@ -587,6 +555,84 @@ export function HomePage() {
         </SafeAreaProvider>
     );
 }
+
+type ModalProps = {
+    setShowModal: React.Dispatch<React.SetStateAction<boolean>>;
+    article: Article | undefined
+}
+
+const ModalOptions = ({ setShowModal, article }: ModalProps) => {
+    const handleOpenInBrowser = useCallback(async () => {
+        if (article) {
+            const supported = await Linking.canOpenURL(article.url);
+            if (supported) {
+                await Linking.openURL(article.url);
+            }
+        }
+    }, []);
+
+    return (
+        <>
+            <View style={{
+                top: 15,
+                right: 15,
+                position: 'absolute',
+                flexDirection: 'row',
+                justifyContent: 'flex-end',
+                width: '100%'
+            }}>
+                <TouchableOpacity onPress={() => {setShowModal((state) => !state)}} hitSlop={10}>
+                    <FontAwesomeIcon icon={faCircleXmark} color='white' size={20} style={{ opacity: 0.8 }}/>
+                </TouchableOpacity>
+            </View>
+
+            <View style={{
+                justifyContent: 'flex-start',
+                flexDirection: 'column',
+                width: '100%',
+                padding: 20
+                }}>
+                <TouchableOpacity style={modalStyling.modal_option}>
+                    <FontAwesomeIcon icon={faBookmark} color='white' size={18} style={{ opacity: 0.8, marginRight: 10 }}/>
+                    <Text style={{ fontFamily: 'WorkSans-Regular', fontSize: 18 ,color: 'white', opacity: 0.8 }}>
+                        Save
+                    </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={modalStyling.modal_option} onPress={handleOpenInBrowser}>
+                    <FontAwesomeIcon icon={faUpRightFromSquare} color='white' size={18} style={{ opacity: 0.8, marginRight: 10 }}/>
+                    <Text style={{ fontFamily: 'WorkSans-Regular', fontSize: 18 ,color: 'white', opacity: 0.8 }}>
+                        Open in browser
+                    </Text>
+                </TouchableOpacity>
+
+
+                <TouchableOpacity style={modalStyling.modal_option}>
+                    <FontAwesomeIcon icon={faBan} color='white' size={18} style={{ opacity: 0.8, marginRight: 10 }}/>
+                    <Text style={{ fontFamily: 'WorkSans-Regular', fontSize: 18 ,color: 'white', opacity: 0.8 }}>
+                        Don't suggest this
+                    </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={modalStyling.modal_option}>
+                    <FontAwesomeIcon icon={faFlag} color='#FF6B6B' size={18} style={{ opacity: 0.8, marginRight: 10 }}/>
+                    <Text style={{ fontFamily: 'WorkSans-Regular', fontSize: 18 ,color: '#FF6B6B', opacity: 0.8 }}>
+                        Report
+                    </Text>
+                </TouchableOpacity>
+            </View>
+        </>
+    )
+}
+
+const modalStyling = StyleSheet.create({
+    modal_option: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        marginVertical: 8
+    }
+})
 
 const menuStyling = StyleSheet.create({
     text_style: {
