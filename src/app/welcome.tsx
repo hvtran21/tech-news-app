@@ -36,6 +36,7 @@ export const welcomePage = () => {
     useEffect(() => {
         const initializeDatabase = async () => {
             const db = await openDatabaseAsync('newsapp');
+            await db.execAsync('DROP TABLE IF EXISTS articles;');
             await db.execAsync(`
                 PRAGMA journal_mode = WAL;
                 CREATE TABLE IF NOT EXISTS articles (
@@ -49,10 +50,11 @@ export const welcomePage = () => {
                 url TEXT,
                 url_to_image TEXT,
                 published_at TEXT,
-                content TEXT
+                content TEXT,
+                saved INTEGER CHECK (saved IN (0, 1)) DEFAULT 0
                 );`);
         };
-        initializeDatabase();
+        initializeDatabase().catch(console.error);
     }, []);
 
     return (
