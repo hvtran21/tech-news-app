@@ -7,11 +7,13 @@ import { GradientText, HorizonalLine } from './components/styling';
 import { BottomNavigation } from './components/navigation';
 import { useLocalSearchParams } from 'expo-router';
 import { faHouse, faAngleDown, faAngleUp, faBolt, faClock, faBookmark, faCircleInfo, faCircleXmark, faFlag, faBan, faUpRightFromSquare} from '@fortawesome/free-solid-svg-icons';
+import IconFeather from '@react-native-vector-icons/feather'
+import IconFontAwesome from '@react-native-vector-icons/fontawesome'
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { IconProp } from '@fortawesome/fontawesome-svg-core'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const BASE_URL = 'http://192.168.0.186:8000';
+const BASE_URL = 'http://192.168.0.177:8000';
 
 type menuOptionProp = {
     title: string,
@@ -33,6 +35,7 @@ interface Article {
     url_to_image: string;
     published_at: string;
     content?: string;
+    saved: number;
 }
 
 interface FilteArticles {
@@ -56,12 +59,6 @@ interface card {
     id: string;
     setShowModal: React.Dispatch<React.SetStateAction<boolean>>;
     setArticle: React.Dispatch<React.SetStateAction<string>>;
-}
-
-// function is just for development purposes
-async function clearArticleTable() {
-    const db = await SQLite.openDatabaseAsync('newsapp');
-    await db.execAsync('DELETE FROM articles');
 }
 
 async function articleAPI(genreSelection: string | undefined, category: string | undefined) {
@@ -275,6 +272,7 @@ export function HomePage() {
     const [selectedArticleID, setSelectedArticleID] = useState('');
     const [modalArticle, setModalArticle] = useState<Article>();
     const { height } = Dimensions.get('window');
+    const [savedArticle, setSavedArticle] = useState(false);
 
     useEffect(() => {
         // show the modal, need to set modalArticle
@@ -284,13 +282,19 @@ export function HomePage() {
                 const article = await getArticleByID(id)
                 if (article) {
                     setModalArticle(article);
+                    if (article.saved === 1) {
+                        setSavedArticle(true)
+                    }
                 }
             }
             fetchArticle(selectedArticleID);
+        } else {
+            // modal is closing, set back to default (false)
+            setSavedArticle(false);
         }
+        
 
     }, [selectedArticleID, showModal])
-    
 
     // animation for content to load
     const fadeIn = () => {
@@ -301,6 +305,7 @@ export function HomePage() {
         }).start()
     }
 
+    // animation logic for filter modal open
     const modalOpenAnim = () => {
         heightAnim.setValue(0);
         setRender(true);
@@ -313,6 +318,7 @@ export function HomePage() {
         })
     };
 
+    // animation logic for filter modal close
     const modalCloseAnim = () => {
         Animated.timing(heightAnim, {
             toValue: 0,
@@ -371,6 +377,7 @@ export function HomePage() {
         getArticles();
     }, [genreSelection]);
 
+    // filtering of articles
     useEffect(() => {
         const getArticlesByFilter = async () => {
             setLoading(true);
@@ -419,7 +426,6 @@ export function HomePage() {
 
         getArticlesByFilter();
     }, [filter]);
-
 
     return (
         <SafeAreaProvider>
