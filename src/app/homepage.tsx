@@ -12,8 +12,9 @@ import IconFontAwesome from '@react-native-vector-icons/fontawesome'
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { IconProp } from '@fortawesome/fontawesome-svg-core'
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { setSourceMapsEnabled } from 'process';
 
-const BASE_URL = 'http://192.168.0.177:8000';
+const BASE_URL = 'http://192.168.0.12:8000';
 
 type menuOptionProp = {
     title: string,
@@ -282,18 +283,10 @@ export function HomePage() {
                 const article = await getArticleByID(id)
                 if (article) {
                     setModalArticle(article);
-                    if (article.saved === 1) {
-                        setSavedArticle(true)
-                    }
                 }
             }
             fetchArticle(selectedArticleID);
-        } else {
-            // modal is closing, set back to default (false)
-            setSavedArticle(false);
         }
-        
-
     }, [selectedArticleID, showModal])
 
     // animation for content to load
@@ -568,6 +561,8 @@ type ModalProps = {
 }
 
 const ModalOptions = ({ setShowModal, article }: ModalProps) => {
+    const [saved, setSaved] = useState(false);
+
     const handleOpenInBrowser = useCallback(async () => {
         if (article) {
             const supported = await Linking.canOpenURL(article.url);
@@ -577,6 +572,27 @@ const ModalOptions = ({ setShowModal, article }: ModalProps) => {
         }
     }, []);
 
+    const handleSave = useCallback(async () => {
+        setSaved((state) => !state);
+        if (article) {
+            const db = await SQLite.openDatabaseAsync('newsapp');
+            // handle save option
+            if (article.saved === 0) {
+                article.saved = 1;
+                await db.runAsync('UPDATE articles SET saved = 1 WHERE id = ?', article.id);
+
+            } else {
+                // handle unsave option
+                article.saved = 0;
+                await db.runAsync('UPDATE articles SET saved = 0 WHERE id = ?', article.id);
+            }
+        }
+    }, []);
+
+    // TODO: need to set saved state properly when modal is opened
+    //       -> in theory article.saved should change everytime, but it doesn't
+    //       -> db.runAsync not updating artciel table with ID
+    console.log(article?.id);
 
     return (
         <>
@@ -599,12 +615,22 @@ const ModalOptions = ({ setShowModal, article }: ModalProps) => {
                 width: '100%',
                 padding: 20
                 }}>
-                <TouchableOpacity style={modalStyling.modal_option}>
-                    <FontAwesomeIcon icon={faBookmark} color='white' size={18} style={{ opacity: 0.8, marginRight: 10 }}/>
-                    <Text style={{ fontFamily: 'WorkSans-Regular', fontSize: 18 ,color: 'white', opacity: 0.8 }}>
-                        Save
-                    </Text>
-                </TouchableOpacity>
+                
+                    {!saved ? (
+                        <TouchableOpacity style={modalStyling.modal_option} onPress={handleSave}>
+                            <IconFontAwesome name='bookmark-o' color='white' size={18} style={{ opacity: 0.8, marginRight: 10 }}/>
+                            <Text style={{ fontFamily: 'WorkSans-Regular', fontSize: 18 ,color: 'white', opacity: 0.8 }}>
+                                Save
+                            </Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <TouchableOpacity style={modalStyling.modal_option} onPress={handleSave}>
+                            <IconFontAwesome name='bookmark' color='white' size={18} style={{ opacity: 0.8, marginRight: 10 }} />
+                            <Text style={{ fontFamily: 'WorkSans-Regular', fontSize: 18 ,color: 'white', opacity: 0.8 }}>
+                                Unsave
+                            </Text>
+                        </TouchableOpacity>
+                    )}
 
                 <TouchableOpacity style={modalStyling.modal_option} onPress={handleOpenInBrowser}>
                     <FontAwesomeIcon icon={faUpRightFromSquare} color='white' size={18} style={{ opacity: 0.8, marginRight: 10 }}/>
