@@ -211,11 +211,6 @@ const MenuOption = ({title, textStyle, selected, icon, onPress}: menuOptionProp)
 }
 
 const FilterMenu = ({setFilter, home, top, recent}: menuFilterProp) => {
-    // should accept the setState function and updates it accordingly
-
-    // TODO: State of filter option isn't persistent with box drops down
-    // should probably use Async storage to track the state or something
-    // or the state should be tracked in the homepage component, as it gets reset everytime its collapsed.
     const filterByHome = () => {
         setFilter('Home')
     };
