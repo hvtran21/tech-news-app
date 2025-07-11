@@ -7,14 +7,13 @@ import { GradientText, HorizonalLine } from './components/styling';
 import { BottomNavigation } from './components/navigation';
 import { useLocalSearchParams } from 'expo-router';
 import { faHouse, faAngleDown, faAngleUp, faBolt, faClock, faBookmark, faCircleInfo, faCircleXmark, faFlag, faBan, faUpRightFromSquare} from '@fortawesome/free-solid-svg-icons';
-import IconFeather from '@react-native-vector-icons/feather'
 import IconFontAwesome from '@react-native-vector-icons/fontawesome'
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { IconProp } from '@fortawesome/fontawesome-svg-core'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setSourceMapsEnabled } from 'process';
 
-const BASE_URL = 'http://192.168.0.12:8000';
+const BASE_URL = 'http://192.168.0.24:8000';
 
 type menuOptionProp = {
     title: string,
@@ -58,8 +57,7 @@ interface card {
     published_at: string;
     genre: string;
     id: string;
-    setShowModal: React.Dispatch<React.SetStateAction<boolean>>;
-    setArticle: React.Dispatch<React.SetStateAction<string>>;
+    handleEllipsisPress: (id: string) => void;
 }
 
 async function articleAPI(genreSelection: string | undefined, category: string | undefined) {
@@ -270,25 +268,28 @@ export function HomePage() {
 
     // states for showing the modal
     const [showModal, setShowModal] = useState(false);
-    const [selectedArticleID, setSelectedArticleID] = useState('');
     const [modalArticle, setModalArticle] = useState<Article>();
     const { height } = Dimensions.get('window');
-    const [savedArticle, setSavedArticle] = useState(false);
+
+    const handleEllipsisPress = (id: string) => {
+        const fetchArticle = async () => {
+            const db = await SQLite.openDatabaseAsync('newsapp');
+            const article = await db.getFirstAsync('SELECT * FROM articles WHERE id = ?', [id]) as Article;
+            if (article) {
+                setModalArticle(article);
+            } else {
+                throw new Error(`Article with ID ${id} not found in database`);
+            }
+        }
+        fetchArticle();
+    }
 
     useEffect(() => {
-        // show the modal, need to set modalArticle
-        // note, if showModal is true, then we know selectedArticleID is also set
-        if (showModal === true) {
-            const fetchArticle = async (id: string) => {
-                const article = await getArticleByID(id)
-                if (article) {
-                    setModalArticle(article);
-                }
-            }
-            fetchArticle(selectedArticleID);
+        if (modalArticle) {
+            setShowModal(true);
         }
-    }, [selectedArticleID, showModal])
-
+    }, [modalArticle])
+    
     // animation for content to load
     const fadeIn = () => {
         Animated.timing(fadeAnimArticles, {
@@ -509,8 +510,7 @@ export function HomePage() {
                                                 published_at={item.published_at}
                                                 genre={item.genre ?? ''}
                                                 id={item.id}
-                                                setShowModal={setShowModal}
-                                                setArticle={setSelectedArticleID}
+                                                handleEllipsisPress={handleEllipsisPress}
                                             />
                                             <HorizonalLine />
                                         </React.Fragment>
@@ -528,12 +528,12 @@ export function HomePage() {
                         animationType='slide'
                         transparent={true}
                         visible={showModal}
-                        onRequestClose={() => setShowModal(!showModal)}
+                        onRequestClose={() => setShowModal(false)}
                     >   
-                        <TouchableWithoutFeedback onPress={() => {setShowModal((state) => !state)}}>
+                        <TouchableWithoutFeedback onPress={() => {setShowModal(false)}}>
                             <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0)' }}/>
                         </TouchableWithoutFeedback>
-                        <View style={{ 
+                        <View style={{
                             position: 'absolute',
                             backgroundColor: '#141414',
                             justifyContent: 'center',
@@ -572,27 +572,38 @@ const ModalOptions = ({ setShowModal, article }: ModalProps) => {
         }
     }, []);
 
-    const handleSave = useCallback(async () => {
-        setSaved((state) => !state);
+    const handleSave = async () => {
         if (article) {
+            setSaved((state) => !state);
             const db = await SQLite.openDatabaseAsync('newsapp');
             // handle save option
             if (article.saved === 0) {
                 article.saved = 1;
+                console.log('Setting article to saved');
                 await db.runAsync('UPDATE articles SET saved = 1 WHERE id = ?', article.id);
 
             } else {
                 // handle unsave option
+                console.log('Setting article to unsaved');
                 article.saved = 0;
                 await db.runAsync('UPDATE articles SET saved = 0 WHERE id = ?', article.id);
             }
         }
-    }, []);
+    };
 
-    // TODO: need to set saved state properly when modal is opened
-    //       -> in theory article.saved should change everytime, but it doesn't
-    //       -> db.runAsync not updating artciel table with ID
-    console.log(article?.id);
+    useEffect(() => {
+        const checkArticleSaved = () => {
+            if (article) {
+                console.log(`Article ID: ${article?.id} saved: ${article?.saved}`)
+                if (article.saved === 1) {
+                    setSaved(true);
+                } else {
+                    setSaved(false);
+                }
+            }
+        }
+        checkArticleSaved();
+    }, [])
 
     return (
         <>
@@ -602,7 +613,6 @@ const ModalOptions = ({ setShowModal, article }: ModalProps) => {
                 position: 'absolute',
                 flexDirection: 'row',
                 justifyContent: 'flex-end',
-                width: '100%'
             }}>
                 <TouchableOpacity onPress={() => {setShowModal((state) => !state)}} hitSlop={10}>
                     <FontAwesomeIcon icon={faCircleXmark} color='white' size={20} style={{ opacity: 0.8 }}/>
@@ -613,9 +623,9 @@ const ModalOptions = ({ setShowModal, article }: ModalProps) => {
                 justifyContent: 'flex-start',
                 flexDirection: 'column',
                 width: '100%',
-                padding: 20
+                paddingHorizontal: 20,
                 }}>
-                
+
                     {!saved ? (
                         <TouchableOpacity style={modalStyling.modal_option} onPress={handleSave}>
                             <IconFontAwesome name='bookmark-o' color='white' size={18} style={{ opacity: 0.8, marginRight: 10 }}/>
