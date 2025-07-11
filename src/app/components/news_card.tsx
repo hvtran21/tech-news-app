@@ -46,7 +46,7 @@ function formatDate(date: Date): string {
     return `${month} ${day}${getOrdinalSuffix(day)}`;
 }
 
-export const NewsCard = ({ title, url_to_image, published_at, genre, id, setShowModal, setArticle }: card) => {
+export const NewsCard = ({ title, url_to_image, published_at, genre, id, handleEllipsisPress }: card) => {
     // update image states, should switch over to storing images on client side, fetch from server
     const [imageLoaded, setImageLoaded] = useState(false);
     const [imageError, setImageError] = useState(false);
@@ -55,16 +55,10 @@ export const NewsCard = ({ title, url_to_image, published_at, genre, id, setShow
     const fallBackImage = require('../../assets/images/computer_2.jpg');
     const uri_image = url_to_image ? { uri: url_to_image } : {uri: fallBackImage};
     const label = genre === '' ? 'Top' : genre;
-    const [visible, setVisible] = useState(false);
-
-    const handleEllipsisPress = () => {
-        setArticle(id);
-        setShowModal((showModal) => !showModal)
-    }
 
     return (
         <View style={card_style.main_card}>
-            <TouchableOpacity style={{ position: 'absolute', top: 0, right: 14 }} onPress={() => {handleEllipsisPress()}}>
+            <TouchableOpacity style={{ position: 'absolute', top: 0, right: 14 }} onPress={() => {handleEllipsisPress(id)}}>
                 <FontAwesomeIcon icon={faEllipsisH} color='white' size={18} style={{ opacity: 0.5, marginBottom: 10 }}/>
             </TouchableOpacity>
             <View
