@@ -38,12 +38,6 @@ interface Article {
     saved: number;
 }
 
-interface FilteArticles {
-    articles: Article[],
-    filterBy: string,
-    setLoading: (loadType: boolean) => void;
-}
-
 interface menuFilterProp {
     setFilter: (filterType: string) => void;
     home: boolean;
