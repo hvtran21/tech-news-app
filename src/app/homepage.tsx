@@ -13,7 +13,7 @@ import { IconProp } from '@fortawesome/fontawesome-svg-core'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setSourceMapsEnabled } from 'process';
 
-const BASE_URL = 'http://192.168.0.24:8000';
+const BASE_URL = 'http://192.168.0.6:8000';
 
 type menuOptionProp = {
     title: string,
@@ -492,7 +492,7 @@ export function HomePage() {
                             <Animated.View style={{ opacity: fadeAnimArticles }}>
                                 {articles.map((item, index) => {
                                     return (
-                                        <React.Fragment key={index}>
+                                        <View key={index} style={{ flexDirection: 'column' }}>
                                             <NewsCard
                                                 title={item.title}
                                                 url_to_image={item.url_to_image}
@@ -502,7 +502,7 @@ export function HomePage() {
                                                 handleEllipsisPress={handleEllipsisPress}
                                             />
                                             <HorizonalLine />
-                                        </React.Fragment>
+                                        </View>
                                     );
                                 })}
                             </Animated.View>
