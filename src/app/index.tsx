@@ -6,7 +6,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const checkFirstLaunch = async () => {
     try {
         console.log('Checking first launch..');
-        AsyncStorage.removeItem('firstLaunch'); // for dev purposes
         const val = await AsyncStorage.getItem('firstLaunch');
         if (val !== null) {
             console.log('Not first launch');
