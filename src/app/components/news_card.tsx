@@ -1,8 +1,15 @@
-import { Text, View, StyleSheet, Image, Pressable, TouchableOpacity } from 'react-native';
+import { Text, View, StyleSheet, Image, Pressable, TouchableOpacity, TouchableHighlight } from 'react-native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faEllipsisV, faEllipsisH } from '@fortawesome/free-solid-svg-icons';
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { card } from '../homepage';
+import Animated, {
+    interpolate,
+    useAnimatedStyle,
+    withTiming,
+} from 'react-native-reanimated';
+import { url } from 'inspector';
+import { setDefaultAutoSelectFamilyAttemptTimeout } from 'net';
 
 function formatDate(date: Date): string {
     if (!(date instanceof Date) || isNaN(date.getTime())) {
@@ -46,8 +53,69 @@ function formatDate(date: Date): string {
     return `${month} ${day}${getOrdinalSuffix(day)}`;
 }
 
-export const NewsCard = ({ title, url_to_image, published_at, genre, id, handleEllipsisPress }: card) => {
-    // update image states, should switch over to storing images on client side, fetch from server
+// type FlipCardProps = {
+//     isFlipped: boolean
+//     cardStyle: React.CSSProperties
+//     direction: string
+//     duration: number
+//     RegularContent: React.ReactNode
+//     FlippedContent: React.ReactNode
+// }
+
+// const FlipCard = ({
+//   isFlipped,
+//   cardStyle,
+//   direction = 'y',
+//   duration = 500,
+//   RegularContent,
+//   FlippedContent,
+// }: FlipCardProps) => {
+//   const isDirectionX = direction === 'x';
+
+//   const regularCardAnimatedStyle = useAnimatedStyle(() => {
+//     const spinValue = interpolate(Number(isFlipped.value), [0, 1], [0, 180]);
+//     const rotateValue = withTiming(`${spinValue}deg`, { duration });
+
+//     return {
+//       transform: [
+//         isDirectionX ? { rotateX: rotateValue } : { rotateY: rotateValue },
+//       ],
+//     };
+//   });
+
+//   const flippedCardAnimatedStyle = useAnimatedStyle(() => {
+//     const spinValue = interpolate(Number(isFlipped.value), [0, 1], [180, 360]);
+//     const rotateValue = withTiming(`${spinValue}deg`, { duration });
+
+//     return {
+//       transform: [
+//         isDirectionX ? { rotateX: rotateValue } : { rotateY: rotateValue },
+//       ],
+//     };
+//   });
+
+//   return (
+//     <View>
+//       <Animated.View
+//         style={[
+//           flipCardStyles.regularCard,
+//           cardStyle,
+//           regularCardAnimatedStyle,
+//         ]}>
+//         {RegularContent}
+//       </Animated.View>
+//       <Animated.View
+//         style={[
+//           flipCardStyles.flippedCard,
+//           cardStyle,
+//           flippedCardAnimatedStyle,
+//         ]}>
+//         {FlippedContent}
+//       </Animated.View>
+//     </View>
+//   );
+
+export const NewsCardFront = ({ title, url_to_image, published_at, genre, id, handleEllipsisPress}: card) => {
     const [imageLoaded, setImageLoaded] = useState(false);
     const [imageError, setImageError] = useState(false);
     const [badLoad, setBadLoad] = useState(false);
@@ -57,7 +125,7 @@ export const NewsCard = ({ title, url_to_image, published_at, genre, id, handleE
     const label = genre === '' ? 'Top' : genre;
 
     return (
-        <View style={card_style.main_card}>
+                <View style={card_style.main_card}>
             <TouchableOpacity style={{ position: 'absolute', top: 0, right: 14 }} onPress={() => {handleEllipsisPress(id)}}>
                 <FontAwesomeIcon icon={faEllipsisH} color='white' size={18} style={{ opacity: 0.5, marginBottom: 10 }}/>
             </TouchableOpacity>
@@ -96,6 +164,38 @@ export const NewsCard = ({ title, url_to_image, published_at, genre, id, handleE
                 </View>
             </View>
         </View>
+    )
+}
+
+export const NewsCardBack = () => {
+    
+}
+
+export const NewsCard = ({ title, url_to_image, published_at, genre, id, handleEllipsisPress }: card) => {
+    const [flipped, setFlipped] = useState(false);
+    
+    useEffect(() => {
+        if (!flipped) {
+            console.log('Card facing front')
+        } else {
+            console.log('Card facing back')
+        }
+
+    }, [flipped])
+
+    return (
+        <TouchableHighlight onPress={() => {setFlipped((state) => !state)}}>
+            <View>
+                <NewsCardFront
+                    title={title}
+                    url_to_image={url_to_image}
+                    published_at={published_at}
+                    genre={genre}
+                    id={id}
+                    handleEllipsisPress={handleEllipsisPress}
+                />
+            </View>
+        </TouchableHighlight>
     );
 };
 
