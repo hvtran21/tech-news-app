@@ -218,7 +218,7 @@ export const NewsCard = ({
                 isFlipped={isFlipped}
                 cardStyle={flipCardStyles.flipCard}
                 direction="x"
-                duration={500}
+                duration={300}
                 FlippedContent={<NewsCardBack id={id} />}
                 RegularContent={
                     <NewsCardFront
