@@ -1,27 +1,53 @@
 import React, { useState, useEffect, useRef, ReactNode, useCallback } from 'react';
 import * as SQLite from 'expo-sqlite';
-import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Animated, ActivityIndicator, TextStyle, TouchableHighlight, Modal, Dimensions, TouchableWithoutFeedback, Linking } from 'react-native';
+import {
+    ScrollView,
+    View,
+    Text,
+    StyleSheet,
+    TouchableOpacity,
+    Animated,
+    ActivityIndicator,
+    TextStyle,
+    TouchableHighlight,
+    Modal,
+    Dimensions,
+    TouchableWithoutFeedback,
+    Linking,
+} from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { NewsCard } from './components/news_card';
 import { GradientText, HorizonalLine } from './components/styling';
 import { BottomNavigation } from './components/navigation';
 import { useLocalSearchParams } from 'expo-router';
-import { faHouse, faAngleDown, faAngleUp, faBolt, faClock, faBookmark, faCircleInfo, faCircleXmark, faFlag, faBan, faUpRightFromSquare} from '@fortawesome/free-solid-svg-icons';
-import IconFontAwesome from '@react-native-vector-icons/fontawesome'
+import {
+    faHouse,
+    faAngleDown,
+    faAngleUp,
+    faBolt,
+    faClock,
+    faBookmark,
+    faCircleInfo,
+    faCircleXmark,
+    faFlag,
+    faBan,
+    faUpRightFromSquare,
+} from '@fortawesome/free-solid-svg-icons';
+import IconFontAwesome from '@react-native-vector-icons/fontawesome';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { IconProp } from '@fortawesome/fontawesome-svg-core'
+import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setSourceMapsEnabled } from 'process';
 
-const BASE_URL = 'http://192.168.0.6:8000';
+const BASE_URL = 'http://192.168.0.177:8000';
 
 type menuOptionProp = {
-    title: string,
-    textStyle: TextStyle,
-    icon: IconProp,
-    selected: boolean,
-    onPress: () => void
-}
+    title: string;
+    textStyle: TextStyle;
+    icon: IconProp;
+    selected: boolean;
+    onPress: () => void;
+};
 
 interface Article {
     id: string;
@@ -76,7 +102,7 @@ async function articleAPI(genreSelection: string | undefined, category: string |
             },
             body: JSON.stringify({
                 genre: { genre },
-                category: { cat }
+                category: { cat },
             }),
         });
         if (!response.ok) {
@@ -142,11 +168,13 @@ async function articleAPI(genreSelection: string | undefined, category: string |
 export async function getArticleByID(id: string) {
     const db = await SQLite.openDatabaseAsync('newsapp');
     try {
-        const article = await db.getFirstAsync('SELECT * FROM articles WHERE id = ?', [id]) as Article;
+        const article = (await db.getFirstAsync('SELECT * FROM articles WHERE id = ?', [
+            id,
+        ])) as Article;
         if (!article) {
             throw new Error(`Article with ID ${id} not found`);
         }
-        return article
+        return article;
     } catch (error) {
         console.error(`Error ocurred: ${error}`);
     }
@@ -168,21 +196,23 @@ async function getArticles(genreSelection: string | undefined, category: string 
             }),
         );
         return (await results).flat();
-
     } else if (category !== undefined && genreSelection === undefined) {
-        return await db.getAllAsync('SELECT * FROM articles WHERE category = ?', [category])
+        return await db.getAllAsync('SELECT * FROM articles WHERE category = ?', [category]);
     }
 }
 
-export async function loadArticles(genreSelection: string | undefined, category: string | undefined) {
+export async function loadArticles(
+    genreSelection: string | undefined,
+    category: string | undefined,
+) {
     // get articles by genre selection
     var results = null;
     if (genreSelection !== undefined) {
-        await AsyncStorage.setItem('genreSelection', genreSelection) // save user preferences for later
+        await AsyncStorage.setItem('genreSelection', genreSelection); // save user preferences for later
         await articleAPI(genreSelection, undefined);
         results = await getArticles(genreSelection, undefined);
-    
-    // get articles by category
+
+        // get articles by category
     } else {
         // there are no user preferences to save
         results = await getArticles(undefined, category);
@@ -194,45 +224,83 @@ export async function loadArticles(genreSelection: string | undefined, category:
     return results;
 }
 
-const MenuOption = ({title, textStyle, selected, icon, onPress}: menuOptionProp) => {
+const MenuOption = ({ title, textStyle, selected, icon, onPress }: menuOptionProp) => {
     return (
         // whatever option is selected, should automatically be highlighted for the user.
         <TouchableHighlight onPress={onPress}>
-            <View style={{ flexDirection: 'row', flex: 1, alignItems: 'center', backgroundColor: selected ? '#2a2a2a' :'#141414' }}>
-                <View style={{ width: 20, height: 20, justifyContent: 'center', alignItems: 'center', margin: 8}}>
-                    <FontAwesomeIcon icon={icon} style={{color: 'white', opacity: 0.8 }} />
+            <View
+                style={{
+                    flexDirection: 'row',
+                    flex: 1,
+                    alignItems: 'center',
+                    backgroundColor: selected ? '#2a2a2a' : '#141414',
+                }}
+            >
+                <View
+                    style={{
+                        width: 20,
+                        height: 20,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        margin: 8,
+                    }}
+                >
+                    <FontAwesomeIcon icon={icon} style={{ color: 'white', opacity: 0.8 }} />
                 </View>
-                <View style={{ marginTop: 8, marginBottom: 8}}>
+                <View style={{ marginTop: 8, marginBottom: 8 }}>
                     <Text style={textStyle}>{title}</Text>
                 </View>
             </View>
         </TouchableHighlight>
-    )
-}
+    );
+};
 
-const FilterMenu = ({setFilter, home, top, recent}: menuFilterProp) => {
+const FilterMenu = ({ setFilter, home, top, recent }: menuFilterProp) => {
     const filterByHome = () => {
-        setFilter('Home')
+        setFilter('Home');
     };
     const filterByTop = () => {
-        setFilter('Top')
+        setFilter('Top');
     };
-    const filterByRecent = () => {;
-        setFilter('Recent')
+    const filterByRecent = () => {
+        setFilter('Recent');
     };
 
     const menuOptionArray: ReactNode[] = [
-        <MenuOption key={0} title='Home' textStyle={menuStyling.text_style} icon={faHouse} selected={home} onPress={()=>{ filterByHome() }} />,
-        <MenuOption key={1} title='Recent' textStyle={menuStyling.text_style} icon={faClock} selected={recent} onPress={()=>{ filterByRecent() }} />,
-        <MenuOption key={2} title='Top' textStyle={menuStyling.text_style} icon={faBolt} selected={top} onPress={()=>{ filterByTop() }} />,
-    ]
+        <MenuOption
+            key={0}
+            title="Home"
+            textStyle={menuStyling.text_style}
+            icon={faHouse}
+            selected={home}
+            onPress={() => {
+                filterByHome();
+            }}
+        />,
+        <MenuOption
+            key={1}
+            title="Recent"
+            textStyle={menuStyling.text_style}
+            icon={faClock}
+            selected={recent}
+            onPress={() => {
+                filterByRecent();
+            }}
+        />,
+        <MenuOption
+            key={2}
+            title="Top"
+            textStyle={menuStyling.text_style}
+            icon={faBolt}
+            selected={top}
+            onPress={() => {
+                filterByTop();
+            }}
+        />,
+    ];
 
-    return (
-        <>
-            {menuOptionArray}
-        </>
-    )
-}
+    return <>{menuOptionArray}</>;
+};
 
 export function HomePage() {
     // params passed in from welcome page
@@ -263,30 +331,32 @@ export function HomePage() {
     const handleEllipsisPress = (id: string) => {
         const fetchArticle = async () => {
             const db = await SQLite.openDatabaseAsync('newsapp');
-            const article = await db.getFirstAsync('SELECT * FROM articles WHERE id = ?', [id]) as Article;
+            const article = (await db.getFirstAsync('SELECT * FROM articles WHERE id = ?', [
+                id,
+            ])) as Article;
             if (article) {
                 setModalArticle(article);
             } else {
                 throw new Error(`Article with ID ${id} not found in database`);
             }
-        }
+        };
         fetchArticle();
-    }
+    };
 
     useEffect(() => {
         if (modalArticle) {
             setShowModal(true);
         }
-    }, [modalArticle])
-    
+    }, [modalArticle]);
+
     // animation for content to load
     const fadeIn = () => {
         Animated.timing(fadeAnimArticles, {
             toValue: 1,
             duration: 500,
-            useNativeDriver: true
-        }).start()
-    }
+            useNativeDriver: true,
+        }).start();
+    };
 
     // animation logic for filter modal open
     const modalOpenAnim = () => {
@@ -298,7 +368,7 @@ export function HomePage() {
                 duration: 140,
                 useNativeDriver: true,
             }).start();
-        })
+        });
     };
 
     // animation logic for filter modal close
@@ -308,7 +378,7 @@ export function HomePage() {
             duration: 140,
             useNativeDriver: true,
         }).start(() => {
-            setRender(false)
+            setRender(false);
         });
     };
 
@@ -316,7 +386,7 @@ export function HomePage() {
     useEffect(() => {
         fadeAnimArticles.setValue(0);
         fadeIn();
-    }, [filter])
+    }, [filter]);
 
     // control opening filter menu
     useEffect(() => {
@@ -341,11 +411,14 @@ export function HomePage() {
             try {
                 var articles: Article[] = [];
                 if (genreSelection !== undefined) {
-                    articles = await loadArticles(genreSelection, undefined) as Article[];
+                    articles = (await loadArticles(genreSelection, undefined)) as Article[];
                 } else {
                     const existingPreferences = await AsyncStorage.getItem('genreSelection');
                     if (existingPreferences !== null) {
-                        articles = await loadArticles(existingPreferences, undefined) as Article[];
+                        articles = (await loadArticles(
+                            existingPreferences,
+                            undefined,
+                        )) as Article[];
                     }
                 }
 
@@ -367,31 +440,31 @@ export function HomePage() {
             try {
                 let articles: Article[] = [];
                 if (filter === 'Top') {
-                    articles = await loadArticles(undefined, 'Technology') as Article[];
+                    articles = (await loadArticles(undefined, 'Technology')) as Article[];
                     setTop(true);
                     setHome(false);
                     setRecent(false);
-
                 } else if (filter === 'Home') {
                     const existingPreferences = await AsyncStorage.getItem('genreSelection');
                     if (existingPreferences) {
-                        articles = await getArticles(existingPreferences, undefined) as Article[];
+                        articles = (await getArticles(existingPreferences, undefined)) as Article[];
                     } else {
-                        articles = await loadArticles(undefined, 'Technology') as Article[];
+                        articles = (await loadArticles(undefined, 'Technology')) as Article[];
                     }
                     setHome(true);
                     setRecent(false);
                     setTop(false);
-
                 } else if (filter === 'Recent') {
                     const existingPreferences = await AsyncStorage.getItem('genreSelection');
                     if (existingPreferences) {
-                        articles = await getArticles(existingPreferences, undefined) as Article[];
-                        articles = [...articles].sort((a, b) =>
-                            new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
+                        articles = (await getArticles(existingPreferences, undefined)) as Article[];
+                        articles = [...articles].sort(
+                            (a, b) =>
+                                new Date(b.published_at).getTime() -
+                                new Date(a.published_at).getTime(),
                         );
                     } else {
-                        articles = await getArticles(undefined, 'Technology') as Article[];
+                        articles = (await getArticles(undefined, 'Technology')) as Article[];
                     }
                     setRecent(true);
                     setHome(false);
@@ -449,7 +522,13 @@ export function HomePage() {
                                 <FontAwesomeIcon
                                     icon={visible ? faAngleUp : faAngleDown}
                                     size={14}
-                                    style={{ color: 'white', opacity: 0.5, marginLeft: 8, marginRight: 8, marginBottom: 2 }}
+                                    style={{
+                                        color: 'white',
+                                        opacity: 0.5,
+                                        marginLeft: 8,
+                                        marginRight: 8,
+                                        marginBottom: 2,
+                                    }}
                                 />
                             </TouchableOpacity>
                             {render && (
@@ -469,25 +548,23 @@ export function HomePage() {
                                         zIndex: 10,
                                         width: 100,
                                         transformOrigin: 'top',
-                                        transform: [{scaleY: heightAnim}],
+                                        transform: [{ scaleY: heightAnim }],
                                         overflow: 'hidden',
                                         justifyContent: 'center',
                                     }}
                                 >
-                                    <FilterMenu setFilter={setFilter} home={home} recent={recent} top={top}/>
+                                    <FilterMenu
+                                        setFilter={setFilter}
+                                        home={home}
+                                        recent={recent}
+                                        top={top}
+                                    />
                                 </Animated.View>
                             )}
                         </View>
                     </View>
 
-                    <ScrollView
-                        showsVerticalScrollIndicator={false}
-                        contentContainerStyle={{
-                            flexDirection: 'column',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                        }}
-                    >
+                    <ScrollView showsVerticalScrollIndicator={false}>
                         {!loading ? (
                             <Animated.View style={{ opacity: fadeAnimArticles }}>
                                 {articles.map((item, index) => {
@@ -506,35 +583,39 @@ export function HomePage() {
                                     );
                                 })}
                             </Animated.View>
-                            ) : (
-                                <ActivityIndicator size="small" color="#fff" style={{ opacity: 0.8 }} />
-                            )
-                        }   
-
+                        ) : (
+                            <ActivityIndicator size="small" color="#fff" style={{ opacity: 0.8 }} />
+                        )}
                     </ScrollView>
                     <BottomNavigation />
                     <Modal
-                        animationType='slide'
+                        animationType="slide"
                         transparent={true}
                         visible={showModal}
                         onRequestClose={() => setShowModal(false)}
-                    >   
-                        <TouchableWithoutFeedback onPress={() => {setShowModal(false)}}>
-                            <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0)' }}/>
+                    >
+                        <TouchableWithoutFeedback
+                            onPress={() => {
+                                setShowModal(false);
+                            }}
+                        >
+                            <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0)' }} />
                         </TouchableWithoutFeedback>
-                        <View style={{
-                            position: 'absolute',
-                            backgroundColor: '#141414',
-                            justifyContent: 'center',
-                            alignContent: 'center',
-                            top: height - 225,
-                            height: 225,
-                            borderRadius: 20,
-                            padding: 20,
-                            width: '100%',
-                            borderTopLeftRadius: 20,
-                            borderTopRightRadius: 20,
-                         }}>
+                        <View
+                            style={{
+                                position: 'absolute',
+                                backgroundColor: '#141414',
+                                justifyContent: 'center',
+                                alignContent: 'center',
+                                top: height - 225,
+                                height: 225,
+                                borderRadius: 20,
+                                padding: 20,
+                                width: '100%',
+                                borderTopLeftRadius: 20,
+                                borderTopRightRadius: 20,
+                            }}
+                        >
                             <ModalOptions setShowModal={setShowModal} article={modalArticle} />
                         </View>
                     </Modal>
@@ -546,8 +627,8 @@ export function HomePage() {
 
 type ModalProps = {
     setShowModal: React.Dispatch<React.SetStateAction<boolean>>;
-    article: Article | undefined
-}
+    article: Article | undefined;
+};
 
 const ModalOptions = ({ setShowModal, article }: ModalProps) => {
     const [saved, setSaved] = useState(false);
@@ -570,7 +651,6 @@ const ModalOptions = ({ setShowModal, article }: ModalProps) => {
                 article.saved = 1;
                 console.log('Setting article to saved');
                 await db.runAsync('UPDATE articles SET saved = 1 WHERE id = ?', article.id);
-
             } else {
                 // handle unsave option
                 console.log('Setting article to unsaved');
@@ -583,97 +663,169 @@ const ModalOptions = ({ setShowModal, article }: ModalProps) => {
     useEffect(() => {
         const checkArticleSaved = () => {
             if (article) {
-                console.log(`Article ID: ${article?.id} saved: ${article?.saved}`)
+                console.log(`Article ID: ${article?.id} saved: ${article?.saved}`);
                 if (article.saved === 1) {
                     setSaved(true);
                 } else {
                     setSaved(false);
                 }
             }
-        }
+        };
         checkArticleSaved();
-    }, [])
+    }, []);
 
     return (
         <>
-            <View style={{
-                top: 15,
-                right: 15,
-                position: 'absolute',
-                flexDirection: 'row',
-                justifyContent: 'flex-end',
-            }}>
-                <TouchableOpacity onPress={() => {setShowModal((state) => !state)}} hitSlop={10}>
-                    <FontAwesomeIcon icon={faCircleXmark} color='white' size={20} style={{ opacity: 0.8 }}/>
+            <View
+                style={{
+                    top: 15,
+                    right: 15,
+                    position: 'absolute',
+                    flexDirection: 'row',
+                    justifyContent: 'flex-end',
+                }}
+            >
+                <TouchableOpacity
+                    onPress={() => {
+                        setShowModal((state) => !state);
+                    }}
+                    hitSlop={10}
+                >
+                    <FontAwesomeIcon
+                        icon={faCircleXmark}
+                        color="white"
+                        size={20}
+                        style={{ opacity: 0.8 }}
+                    />
                 </TouchableOpacity>
             </View>
 
-            <View style={{
-                justifyContent: 'flex-start',
-                flexDirection: 'column',
-                width: '100%',
-                paddingHorizontal: 20,
-                }}>
-
-                    {!saved ? (
-                        <TouchableOpacity style={modalStyling.modal_option} onPress={handleSave}>
-                            <IconFontAwesome name='bookmark-o' color='white' size={18} style={{ opacity: 0.8, marginRight: 10 }}/>
-                            <Text style={{ fontFamily: 'WorkSans-Regular', fontSize: 18 ,color: 'white', opacity: 0.8 }}>
-                                Save
-                            </Text>
-                        </TouchableOpacity>
-                    ) : (
-                        <TouchableOpacity style={modalStyling.modal_option} onPress={handleSave}>
-                            <IconFontAwesome name='bookmark' color='white' size={18} style={{ opacity: 0.8, marginRight: 10 }} />
-                            <Text style={{ fontFamily: 'WorkSans-Regular', fontSize: 18 ,color: 'white', opacity: 0.8 }}>
-                                Unsave
-                            </Text>
-                        </TouchableOpacity>
-                    )}
+            <View
+                style={{
+                    justifyContent: 'flex-start',
+                    flexDirection: 'column',
+                    width: '100%',
+                    paddingHorizontal: 20,
+                }}
+            >
+                {!saved ? (
+                    <TouchableOpacity style={modalStyling.modal_option} onPress={handleSave}>
+                        <IconFontAwesome
+                            name="bookmark-o"
+                            color="white"
+                            size={18}
+                            style={{ opacity: 0.8, marginRight: 10 }}
+                        />
+                        <Text
+                            style={{
+                                fontFamily: 'WorkSans-Regular',
+                                fontSize: 18,
+                                color: 'white',
+                                opacity: 0.8,
+                            }}
+                        >
+                            Save
+                        </Text>
+                    </TouchableOpacity>
+                ) : (
+                    <TouchableOpacity style={modalStyling.modal_option} onPress={handleSave}>
+                        <IconFontAwesome
+                            name="bookmark"
+                            color="white"
+                            size={18}
+                            style={{ opacity: 0.8, marginRight: 10 }}
+                        />
+                        <Text
+                            style={{
+                                fontFamily: 'WorkSans-Regular',
+                                fontSize: 18,
+                                color: 'white',
+                                opacity: 0.8,
+                            }}
+                        >
+                            Unsave
+                        </Text>
+                    </TouchableOpacity>
+                )}
 
                 <TouchableOpacity style={modalStyling.modal_option} onPress={handleOpenInBrowser}>
-                    <FontAwesomeIcon icon={faUpRightFromSquare} color='white' size={18} style={{ opacity: 0.8, marginRight: 10 }}/>
-                    <Text style={{ fontFamily: 'WorkSans-Regular', fontSize: 18 ,color: 'white', opacity: 0.8 }}>
+                    <FontAwesomeIcon
+                        icon={faUpRightFromSquare}
+                        color="white"
+                        size={18}
+                        style={{ opacity: 0.8, marginRight: 10 }}
+                    />
+                    <Text
+                        style={{
+                            fontFamily: 'WorkSans-Regular',
+                            fontSize: 18,
+                            color: 'white',
+                            opacity: 0.8,
+                        }}
+                    >
                         Open in browser
                     </Text>
                 </TouchableOpacity>
 
-
                 <TouchableOpacity style={modalStyling.modal_option}>
-                    <FontAwesomeIcon icon={faBan} color='white' size={18} style={{ opacity: 0.8, marginRight: 10 }}/>
-                    <Text style={{ fontFamily: 'WorkSans-Regular', fontSize: 18 ,color: 'white', opacity: 0.8 }}>
+                    <FontAwesomeIcon
+                        icon={faBan}
+                        color="white"
+                        size={18}
+                        style={{ opacity: 0.8, marginRight: 10 }}
+                    />
+                    <Text
+                        style={{
+                            fontFamily: 'WorkSans-Regular',
+                            fontSize: 18,
+                            color: 'white',
+                            opacity: 0.8,
+                        }}
+                    >
                         Not Interested
                     </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity style={modalStyling.modal_option}>
-                    <FontAwesomeIcon icon={faFlag} color='#FF6B6B' size={18} style={{ opacity: 0.8, marginRight: 10 }}/>
-                    <Text style={{ fontFamily: 'WorkSans-Regular', fontSize: 18 ,color: '#FF6B6B', opacity: 0.8 }}>
+                    <FontAwesomeIcon
+                        icon={faFlag}
+                        color="#FF6B6B"
+                        size={18}
+                        style={{ opacity: 0.8, marginRight: 10 }}
+                    />
+                    <Text
+                        style={{
+                            fontFamily: 'WorkSans-Regular',
+                            fontSize: 18,
+                            color: '#FF6B6B',
+                            opacity: 0.8,
+                        }}
+                    >
                         Report
                     </Text>
                 </TouchableOpacity>
             </View>
         </>
-    )
-}
+    );
+};
 
 const modalStyling = StyleSheet.create({
     modal_option: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'flex-start',
-        marginVertical: 8
-    }
-})
+        marginVertical: 8,
+    },
+});
 
 const menuStyling = StyleSheet.create({
     text_style: {
-      opacity: 0.8,
-      fontFamily: 'WorkSans-Light',
-      fontSize: 16,
-      color: 'white',
-    }
-})
+        opacity: 0.8,
+        fontFamily: 'WorkSans-Light',
+        fontSize: 16,
+        color: 'white',
+    },
+});
 
 export const BaseTemplate = StyleSheet.create({
     theme: {
