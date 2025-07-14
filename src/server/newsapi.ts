@@ -110,7 +110,9 @@ async function fetchArticles(genre?: string | undefined, category?: string | und
                     return t.batch(queries);
                 });
 
-                console.log(`Inserted ${insertion_count} for ${genre ?? category}. ${totalResults - totalProcesssed} left to process`);
+                console.log(
+                    `Inserted ${insertion_count} for ${genre ?? category}. ${totalResults - totalProcesssed} left to process`,
+                );
                 page += 1;
             } catch (error) {
                 console.log(`Error inserting articles into DB: ${error}`);

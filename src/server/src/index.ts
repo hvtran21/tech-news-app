@@ -20,8 +20,8 @@ async function retrieveData() {
         await fetchArticles(val);
     }
 
-    for(const val of Object.values(categories)) {
-        await fetchArticles(undefined, val)
+    for (const val of Object.values(categories)) {
+        await fetchArticles(undefined, val);
     }
 }
 
@@ -62,26 +62,26 @@ const serverStart = () => {
                     });
                     return t.batch(queries);
                 })
-                .then((data) => {
-                    results = data;
-                    const articles = results.flat();
-                    console.log('Sending data...');
-                    res.json({ articles });
-                })
-                .catch((error) => {
-                    console.error(`Error ocurred retrieving user preference articles: ${error}`);
-                });
+                    .then((data) => {
+                        results = data;
+                        const articles = results.flat();
+                        console.log('Sending data...');
+                        res.json({ articles });
+                    })
+                    .catch((error) => {
+                        console.error(
+                            `Error ocurred retrieving user preference articles: ${error}`,
+                        );
+                    });
             } else if (category !== '') {
                 console.log(`Recieved query for category: ${category}`);
-                db.any('SELECT * FROM ARTICLES WHERE category = $1', category)
-                .then(data => {
+                db.any('SELECT * FROM ARTICLES WHERE category = $1', category).then((data) => {
                     results = data;
                     const articles = results.flat();
                     console.log('Sending data...');
                     res.json({ articles });
-                })
+                });
             }
-
         } catch (error) {
             console.error(`Error occurred: ${error}`);
         }
