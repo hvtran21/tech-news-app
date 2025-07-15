@@ -37,7 +37,6 @@ import IconFontAwesome from '@react-native-vector-icons/fontawesome';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { setSourceMapsEnabled } from 'process';
 
 const BASE_URL = 'http://192.168.0.177:8000';
 
@@ -577,6 +576,7 @@ export function HomePage() {
                                                 genre={item.genre ?? ''}
                                                 id={item.id}
                                                 handleEllipsisPress={handleEllipsisPress}
+
                                             />
                                             <HorizonalLine />
                                         </View>
