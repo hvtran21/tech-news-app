@@ -62,6 +62,16 @@ function formatDate(date: Date): string {
     return `${month} ${day}${getOrdinalSuffix(day)}`;
 }
 
+interface CardFrontProps {
+    title: string;
+    url_to_image: string;
+    published_at: string;
+    genre: string;
+    id: string;
+    handleEllipsisPress: (id: string) => void;
+    isFlipped: SharedValue<boolean>;
+}
+
 export const NewsCardFront = ({
     title,
     url_to_image,
@@ -69,19 +79,25 @@ export const NewsCardFront = ({
     genre,
     id,
     handleEllipsisPress,
-}: card) => {
+    isFlipped,
+}: CardFrontProps) => {
     const [imageLoaded, setImageLoaded] = useState(false);
     const [imageError, setImageError] = useState(false);
     const [badLoad, setBadLoad] = useState(false);
+
     const date = formatDate(new Date(published_at));
     const fallBackImage = require('../../assets/images/computer_2.jpg');
     const uri_image = url_to_image ? { uri: url_to_image } : { uri: fallBackImage };
     const label = genre === '' ? 'Top' : genre;
 
+    const handleCardFlip = () => {
+        isFlipped.value = !isFlipped.value;
+    }
+
     return (
-        <View style={card_style_front.main_card}>
+        <Animated.View style={card_style_front.main_card}>
             <TouchableOpacity
-                style={{ position: 'absolute', top: 0, right: 14 }}
+                style={{ position: 'absolute', top: 0, right: 7 }}
                 onPress={() => {
                     handleEllipsisPress(id);
                 }}
@@ -99,14 +115,16 @@ export const NewsCardFront = ({
                     alignItems: 'center',
                 }}
             >
-                <View style={{ width: '60%', flexDirection: 'column', height: 'auto' }}>
-                    <Text style={card_style_front.date}>
-                        {date} | {label}
-                    </Text>
-                    <View style={{ width: '95%' }}>
-                        <Text style={card_style_front.card_title}>{title}</Text>
+                <TouchableHighlight style={{ width: '60%' }} onPress={handleCardFlip} hitSlop={{ top: 30, bottom: 30, right: 80 }}>
+                    <View style={{ flexDirection: 'column', height: 'auto' }}>
+                        <Text style={card_style_front.date}>
+                            {date} | {label}
+                        </Text>
+                        <View style={{ width: '95%' }}>
+                            <Text style={card_style_front.card_title}>{title}</Text>
+                        </View>
                     </View>
-                </View>
+                </TouchableHighlight>
 
                 <View style={card_style_front.thumbnail_frame}>
                     {badLoad && !imageLoaded && (
@@ -129,7 +147,7 @@ export const NewsCardFront = ({
                     )}
                 </View>
             </View>
-        </View>
+        </Animated.View>
     );
 };
 
@@ -174,11 +192,13 @@ const FlipCard = ({
         <View>
             <Animated.View
                 style={[flipCardStyles.regularCard, cardStyle, regularCardAnimatedStyle]}
+                pointerEvents='box-none'
             >
                 {RegularContent}
             </Animated.View>
             <Animated.View
                 style={[flipCardStyles.flippedCard, cardStyle, flippedCardAnimatedStyle]}
+                pointerEvents='box-none'
             >
                 {FlippedContent}
             </Animated.View>
@@ -192,7 +212,7 @@ type cardBackProps = {
 
 export const NewsCardBack = ({ id }: cardBackProps) => {
     return (
-        <View style={card_style_back.main_card}>
+        <View style={card_style_back.main_card} pointerEvents='box-none'>
             <Text style={{ color: 'white' }}>This is the back</Text>
         </View>
     );
@@ -207,17 +227,13 @@ export const NewsCard = ({
     handleEllipsisPress,
 }: card) => {
     const isFlipped = useSharedValue(false);
-    const handlePress = () => {
-        isFlipped.value = !isFlipped.value;
-    };
-    const screenWidth = Dimensions.get('window').width;
 
     return (
-        <TouchableHighlight onPress={handlePress} style={{ width: screenWidth }}>
+        <View>
             <FlipCard
                 isFlipped={isFlipped}
                 cardStyle={flipCardStyles.flipCard}
-                direction="x"
+                direction='x'
                 duration={300}
                 FlippedContent={<NewsCardBack id={id} />}
                 RegularContent={
@@ -228,10 +244,11 @@ export const NewsCard = ({
                         genre={genre}
                         id={id}
                         handleEllipsisPress={handleEllipsisPress}
+                        isFlipped={isFlipped}
                     />
                 }
             />
-        </TouchableHighlight>
+        </View>
     );
 };
 
@@ -247,6 +264,8 @@ const flipCardStyles = StyleSheet.create({
 
     flipCard: {
         backfaceVisibility: 'hidden',
+        width: Dimensions.get('window').width,
+        paddingHorizontal: 5
     },
 });
 
@@ -284,7 +303,6 @@ export const card_style_front = StyleSheet.create({
     },
 
     thumbnail_image: {
-        width: '95%',
         height: '95%',
         borderRadius: 15,
     },
