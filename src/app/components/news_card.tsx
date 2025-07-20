@@ -19,6 +19,8 @@ import Animated, {
     SharedValue,
     useSharedValue,
 } from 'react-native-reanimated';
+import { Article } from '@/server/newsapi';
+import * as SQLite from 'expo-sqlite';
 
 function formatDate(date: Date): string {
     if (!(date instanceof Date) || isNaN(date.getTime())) {
@@ -211,9 +213,34 @@ type cardBackProps = {
 };
 
 export const NewsCardBack = ({ id }: cardBackProps) => {
+    const [article, setArticle] = useState<Article>()
+    useEffect(() => {
+        const getArticle = async () => {
+            const db = await SQLite.openDatabaseAsync('newsapp')
+            const article = await db.getFirstAsync('SELECT * FROM articles WHERE id = ?', [id]) as Article;
+
+            if (article) {
+                setArticle(article);
+            } else {
+                throw new Error(`Retrieved 0 articles with id: ${id}`);
+            }
+
+        }
+
+        if (id) {
+            getArticle();
+        } else {
+            throw new Error(`ID parameter is required, got: ${id}`)
+        }
+    }, [])
+    
     return (
         <View style={card_style_back.main_card} pointerEvents='box-none'>
-            <Text style={{ color: 'white' }}>This is the back</Text>
+            <View>
+                <Text style={card_style_back.description_text_style}>
+                    {article?.description}
+                </Text>
+            </View>
         </View>
     );
 };
@@ -275,6 +302,13 @@ const card_style_back = StyleSheet.create({
         justifyContent: 'center',
         height: 150,
     },
+
+    description_text_style: {
+        fontFamily: 'WorkSans-Light',
+        fontSize: 14,
+        color: 'white',
+        opacity: 0.8,
+    }
 });
 
 export const card_style_front = StyleSheet.create({
