@@ -305,7 +305,7 @@ const card_style_back = StyleSheet.create({
 
     description_text_style: {
         fontFamily: 'WorkSans-Light',
-        fontSize: 14,
+        fontSize: 16,
         color: 'white',
         opacity: 0.8,
     }
