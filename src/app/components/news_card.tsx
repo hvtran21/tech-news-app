@@ -224,7 +224,6 @@ export const NewsCardBack = ({ id }: cardBackProps) => {
             } else {
                 throw new Error(`Retrieved 0 articles with id: ${id}`);
             }
-
         }
 
         if (id) {
@@ -236,9 +235,14 @@ export const NewsCardBack = ({ id }: cardBackProps) => {
     
     return (
         <View style={card_style_back.main_card} pointerEvents='box-none'>
-            <View>
+            <View style={card_style_back.container}>
+                <View style={card_style_back.header_container}>
+                    <Text style={card_style_back.header_text}>
+                        Description
+                    </Text>
+                </View>
                 <Text style={card_style_back.description_text_style}>
-                    {article?.description}
+                    { article?.description }
                 </Text>
             </View>
         </View>
@@ -292,15 +296,24 @@ const flipCardStyles = StyleSheet.create({
     flipCard: {
         backfaceVisibility: 'hidden',
         width: Dimensions.get('window').width,
-        paddingHorizontal: 5
+        paddingHorizontal: 5,
+        justifyContent: 'center',
+        alignItems: 'center'
     },
 });
 
 const card_style_back = StyleSheet.create({
     main_card: {
-        alignContent: 'center',
+        alignItems:  'center',
         justifyContent: 'center',
         height: 150,
+        // borderColor: 'white',
+        // borderWidth: 1,
+    },
+
+    container: {
+        justifyContent: 'flex-start',
+        paddingLeft: 15
     },
 
     description_text_style: {
@@ -308,6 +321,18 @@ const card_style_back = StyleSheet.create({
         fontSize: 16,
         color: 'white',
         opacity: 0.8,
+    },
+
+    header_container: {
+        paddingBottom: 8
+        
+    },
+
+    header_text: {
+        color: 'white',
+        opacity: 0.8,
+        fontFamily: 'WorkSans-ExtraLight',
+        fontSize: 14
     }
 });
 
