@@ -38,7 +38,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const BASE_URL = 'http://192.168.0.177:8000';
+// this is for local dev, would be stored somewhere else not in source code.
+const BASE_URL = 'http://192.168.0.233:8000';
 
 type menuOptionProp = {
     title: string;
@@ -576,7 +577,6 @@ export function HomePage() {
                                                 genre={item.genre ?? ''}
                                                 id={item.id}
                                                 handleEllipsisPress={handleEllipsisPress}
-
                                             />
                                             <HorizonalLine />
                                         </View>

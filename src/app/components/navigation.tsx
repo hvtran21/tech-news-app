@@ -1,18 +1,24 @@
 import { View, StyleSheet } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faUser, faMagnifyingGlass, faBookmark } from '@fortawesome/free-solid-svg-icons';
+import { faHome, faMagnifyingGlass, faBookmark } from '@fortawesome/free-solid-svg-icons';
 
 export function BottomNavigation() {
     return (
         <View style={BottomNavBar.nav_bar_container}>
             <View style={BottomNavBar.nav_icon_config}>
-                <FontAwesomeIcon icon={faUser} style={{ color: 'white', opacity: 0.9 }} />
-                <FontAwesomeIcon
-                    icon={faMagnifyingGlass}
-                    style={{ color: 'white', opacity: 0.9 }}
-                />
-                <FontAwesomeIcon icon={faBookmark} style={{ color: 'white', opacity: 0.9 }} />
+                <View style={BottomNavBar.nav_container}>
+                    <FontAwesomeIcon
+                        icon={faMagnifyingGlass}
+                        style={{ color: 'white', opacity: 0.9, zIndex: 9999 }}
+                    />
+                </View>
+                <View style={BottomNavBar.nav_container}>
+                    <FontAwesomeIcon icon={faHome} style={{ color: 'white', opacity: 0.9 }} />
+                </View>
+                <View style={BottomNavBar.nav_container}>
+                    <FontAwesomeIcon icon={faBookmark} style={{ color: 'white', opacity: 0.9 }} />
+                </View>
             </View>
         </View>
     );
@@ -36,6 +42,25 @@ const BottomNavBar = StyleSheet.create({
         alignItems: 'center',
         width: '100%',
         paddingTop: 15,
+    },
+
+    nav_container: {
+        width: 100,
+        height: 40,
+        borderRadius: 100,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+
+    nav_container_selected: {
+        width: 100,
+        height: 40,
+        borderRadius: 100,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(106,163,255,0.25)',
+        borderWidth: 2,
+        borderColor: '#6AA3FF',
     },
 });
 
