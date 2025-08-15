@@ -1,16 +1,60 @@
-# Tech news app
-Read your preferred news, no flooded emails, going to external pages, here I present a mobile application where you can conviently read up on all of the new technological innovations across the world.
+# Tech News App
 
-## Why?
-I want to be able to read about tech news without having to opt into my browser. The tldr_newsletter seemed really nice, but only through emails. For me it was overflowing my inbox and I was not a fan, it made finding everything else harder that I conisdered important. I'm also a curious and motiviated in mobile development, and want to get my own hands in application development, and potentially utilizing AI later. In addition to this, I prefer the modern format of reading articles, not having to go into an external browser espically when most articles are not mobile format friendly.
+A cross-platform React Native app for browsing, saving, and filtering the latest technology news. No sign ups, or emails required.
 
-## Solution
-Make a mobile application that can display all of the information in a comfortable format, that doesn't overflow inboxes. Most the time we'll read it from our phone, or others at the computer; both can be used. It's just that on the phone, its just easier and more convient. No more flooded inboxes, we already recieve enough emails.
+## Features
 
-### Features
-&rarr; Have an associated account (optional) that marks a reading list and saves preferences \
-&rarr; Easy, intuitive format, and good format for reading that is comfortable for the reader \
-&rarr; Save potential bookmarks for a user to keep on reading at another time \
-&rarr; Add AI features, where a user can select an option to summarize the article? Not too sure on the feasibility with this. \
-&rarr; Send notifications of the arrival of new articles \
-&rarr; Add a widget that shows a new hot article to read, preference defined by the user
+- **Browse Tech News:** View curated articles from multiple sources.
+- **Save Articles:** Bookmark articles for later reading.
+- **Animated UI:** Smooth transitions and modals for enhanced user experience.
+- **Offline Support:** Articles are cached locally using SQLite.
+- **Custom Navigation:** Bottom navigation bar for quick access.
+
+## Technologies
+
+- **React + React Native**
+- **SQLite**
+- **Animated & Reanimated**
+- **TypeScript**
+- **PostgreSQL**
+- **Node**
+- **Express**
+
+## Getting Started
+
+1. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+2. **Start the Expo server:**
+   ```bash
+   npx expo start
+   ```
+3. **Run on device or emulator:**
+   - Scan the QR code with Expo Go, or
+   - Press `i` for iOS simulator, `a` for Android emulator.
+
+## Project Structure
+
+```
+src/
+  app/
+    components/
+      news_card.tsx      # News card UI & logic
+      navigation.tsx     # Bottom navigation bar
+      styling.tsx        # Gradient text, horizontal line
+    homepage.tsx         # Main screen logic
+
+  server/
+    newsapi.ts           # Article types
+    src/
+      index.ts           # Backend server, nodejs + express
+    db.ts                # contains the db context definition
+    models.ts            # contains db schema models
+    newsapi.ts           # the main API for fetching initial articles
+
+```
+
+## Server
+
+The backend is written uing TypeScript in conjunction with Node.js and Express, writing my APIs using REST. In addition, I make use of the library `pg-promise`, so thanks to those developers for creating truly simple but yet still interactive.
