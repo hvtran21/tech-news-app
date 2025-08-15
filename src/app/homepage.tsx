@@ -14,6 +14,7 @@ import {
     Dimensions,
     TouchableWithoutFeedback,
     Linking,
+    FlatList,
 } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { NewsCard } from './components/news_card';
@@ -564,29 +565,26 @@ export function HomePage() {
                         </View>
                     </View>
 
-                    <ScrollView showsVerticalScrollIndicator={false}>
-                        {!loading ? (
-                            <Animated.View style={{ opacity: fadeAnimArticles }}>
-                                {articles.map((item, index) => {
-                                    return (
-                                        <View key={index} style={{ flexDirection: 'column' }}>
-                                            <NewsCard
-                                                title={item.title}
-                                                url_to_image={item.url_to_image}
-                                                published_at={item.published_at}
-                                                genre={item.genre ?? ''}
-                                                id={item.id}
-                                                handleEllipsisPress={handleEllipsisPress}
-                                            />
-                                            <HorizonalLine />
-                                        </View>
-                                    );
-                                })}
-                            </Animated.View>
-                        ) : (
-                            <ActivityIndicator size="small" color="#fff" style={{ opacity: 0.8 }} />
-                        )}
-                    </ScrollView>
+                    <FlatList
+                        showsVerticalScrollIndicator={false}
+                        data={articles}
+                        renderItem={({ item }) => {
+                            return (
+                                <View style={{ flexDirection: 'column' }}>
+                                    <NewsCard
+                                        title={item.title}
+                                        url_to_image={item.url_to_image}
+                                        published_at={item.published_at}
+                                        genre={item.genre ?? ''}
+                                        id={item.id}
+                                        handleEllipsisPress={handleEllipsisPress}
+                                    />
+                                    <HorizonalLine />
+                                </View>
+                            );
+                        }}
+                        keyExtractor={(item) => item.id}
+                    />
                     <BottomNavigation />
                     <Modal
                         animationType="slide"
