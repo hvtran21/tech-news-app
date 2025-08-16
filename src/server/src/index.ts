@@ -107,6 +107,7 @@ const serverStart = () => {
                     ok: false,
                     message: 'Fetching articles failed, internal server error.',
                 });
+                return;
             }
 
             res.status(200).json({
