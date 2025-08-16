@@ -24,7 +24,6 @@ async function fetchArticles(genre?: string | undefined, category?: string | und
     // Parameters: None
     // Return: None
     // Fetches a news article from News API, and adds it to database
-    const result = 0;
     const apiKey = process.env.NEWS_API_KEY;
     const country = 'us'; // should be based off of user preferences later
     var page = 1;
