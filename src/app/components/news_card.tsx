@@ -309,13 +309,14 @@ const card_style_back = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         height: 150,
-        // borderColor: 'white',
-        // borderWidth: 1,
     },
 
     container: {
         justifyContent: 'flex-start',
-        paddingLeft: 15,
+        alignItems: 'flex-start',
+        paddingLeft: 10,
+        maxWidth: '90%',
+        minWidth: '90%',
     },
 
     description_text_style: {
@@ -331,7 +332,7 @@ const card_style_back = StyleSheet.create({
 
     header_text: {
         color: 'white',
-        opacity: 0.8,
+        opacity: 0.9,
         fontFamily: 'WorkSans-ExtraLight',
         fontSize: 14,
     },
