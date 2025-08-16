@@ -24,7 +24,6 @@ async function fetchArticles(genre?: string | undefined, category?: string | und
     // Parameters: None
     // Return: None
     // Fetches a news article from News API, and adds it to database
-
     const apiKey = process.env.NEWS_API_KEY;
     const country = 'us'; // should be based off of user preferences later
     var page = 1;
@@ -115,7 +114,7 @@ async function fetchArticles(genre?: string | undefined, category?: string | und
                 );
                 page += 1;
             } catch (error) {
-                console.log(`Error inserting articles into DB: ${error}`);
+                console.error(`Error inserting articles into DB: ${error}`);
             }
         } catch (error) {
             console.error(`Error ocurred: ${error}`);

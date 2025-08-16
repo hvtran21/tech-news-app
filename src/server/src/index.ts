@@ -3,7 +3,7 @@ import { articleTableDefinition } from '../models';
 import fetchArticles from '../newsapi';
 import techGenres, { categories } from '../constants';
 import db from '../db';
-import { error } from 'console';
+import { ok } from 'assert';
 
 async function initDatabase() {
     try {
@@ -23,6 +23,8 @@ async function retrieveData() {
     for (const val of Object.values(categories)) {
         await fetchArticles(undefined, val);
     }
+
+    return 0;
 }
 
 function getEnumKey(val: string) {
@@ -31,16 +33,91 @@ function getEnumKey(val: string) {
     });
 }
 
+const toStandardDateFormat = (d: Date): string => {
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+};
+
+async function removeOldArticles(days?: number): Promise<number> {
+    var maxDays: number = 7;
+
+    if (days) {
+        maxDays = days;
+    }
+
+    try {
+        const currentDate = new Date();
+        const cutOffDate = toStandardDateFormat(
+            new Date(currentDate.getTime() - maxDays * 24 * 60 * 60 * 1000),
+        );
+
+        await db
+            .result('DELETE FROM articles WHERE published_at <= $1', cutOffDate)
+            .then((result) => {
+                console.log(`Removed ${result.rowCount} articles.`);
+            })
+            .catch((error) => {
+                console.error(`Error removing articles: ${error}`);
+                return 1;
+            });
+    } catch (error) {
+        console.error(error);
+        return 1;
+    }
+
+    return 0;
+}
+
 const serverStart = () => {
     const server = express();
     server.use(express.json());
     const port = process.env.PORT;
 
-    server.get('/fetch', (req, res) => {
-        retrieveData();
+    // endpoint to delete articles - shouldn't really be an endpoint, but that's fine.
+    server.post('/api/RemoveOldArticles', (req, res) => {
+        const days = req.body?.days as number;
+        const execute = async (days: number) => {
+            const result = await removeOldArticles(days);
+
+            // catch internal server error
+            if (result != 0) {
+                res.status(500).json({
+                    ok: false,
+                    message: 'Error ocurred while removing articles.',
+                });
+            } else {
+                res.status(200).json({
+                    ok: true,
+                    message: 'Removing articles successful.',
+                });
+            }
+        };
+        execute(days);
     });
 
-    server.post('/api/articles', (req, res) => {
+    server.get('/api/FetchArticles', (req, res) => {
+        const execute = async () => {
+            const result = await retrieveData();
+
+            // catch internal server error
+            if (result != 1) {
+                res.status(500).json({
+                    ok: false,
+                    message: 'Fetching articles failed, internal server error.',
+                });
+            }
+
+            res.status(200).json({
+                ok: true,
+                message: 'Fetching articles successful.',
+            });
+        };
+        execute();
+    });
+
+    server.post('/api/Articles', (req, res) => {
         // parse POST request
         var genres = req.body.genre?.genre as string;
         var category = req.body.category?.cat as string;
