@@ -23,6 +23,8 @@ async function retrieveData() {
     for (const val of Object.values(categories)) {
         await fetchArticles(undefined, val);
     }
+
+    return 0;
 }
 
 function getEnumKey(val: string) {
@@ -78,20 +80,41 @@ const serverStart = () => {
         const days = req.body?.days as number;
         const execute = async (days: number) => {
             const result = await removeOldArticles(days);
+
+            // catch internal server error
             if (result != 0) {
                 res.status(500).json({
                     ok: false,
                     message: 'Error ocurred while removing articles.',
                 });
             } else {
-                res.status(200).json({ ok: true, message: 'Removing articles successful.' });
+                res.status(200).json({
+                    ok: true,
+                    message: 'Removing articles successful.',
+                });
             }
         };
         execute(days);
     });
 
     server.get('/api/FetchArticles', (req, res) => {
-        retrieveData();
+        const execute = async () => {
+            const result = await retrieveData();
+
+            // catch internal server error
+            if (result != 1) {
+                res.status(500).json({
+                    ok: false,
+                    message: 'Fetching articles failed, internal server error.',
+                });
+            }
+
+            res.status(200).json({
+                ok: true,
+                message: 'Fetching articles successful.',
+            });
+        };
+        execute();
     });
 
     server.post('/api/Articles', (req, res) => {
