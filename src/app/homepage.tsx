@@ -587,7 +587,6 @@ export function HomePage() {
                             keyExtractor={(item) => item.id}
                         />
                     </Animated.View>
-                    <BottomNavigation />
                     <Modal
                         animationType="slide"
                         transparent={true}

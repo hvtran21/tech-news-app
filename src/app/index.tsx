@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useFonts } from 'expo-font';
-import { Link, router } from 'expo-router';
+import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const checkFirstLaunch = async () => {
