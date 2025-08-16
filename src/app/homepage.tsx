@@ -565,26 +565,28 @@ export function HomePage() {
                         </View>
                     </View>
 
-                    <FlatList
-                        showsVerticalScrollIndicator={false}
-                        data={articles}
-                        renderItem={({ item }) => {
-                            return (
-                                <View style={{ flexDirection: 'column' }}>
-                                    <NewsCard
-                                        title={item.title}
-                                        url_to_image={item.url_to_image}
-                                        published_at={item.published_at}
-                                        genre={item.genre ?? ''}
-                                        id={item.id}
-                                        handleEllipsisPress={handleEllipsisPress}
-                                    />
-                                    <HorizonalLine />
-                                </View>
-                            );
-                        }}
-                        keyExtractor={(item) => item.id}
-                    />
+                    <Animated.View style={{ opacity: fadeAnimArticles }}>
+                        <FlatList
+                            showsVerticalScrollIndicator={false}
+                            data={articles}
+                            renderItem={({ item }) => {
+                                return (
+                                    <View style={{ flexDirection: 'column' }}>
+                                        <NewsCard
+                                            title={item.title}
+                                            url_to_image={item.url_to_image}
+                                            published_at={item.published_at}
+                                            genre={item.genre ?? ''}
+                                            id={item.id}
+                                            handleEllipsisPress={handleEllipsisPress}
+                                        />
+                                        <HorizonalLine />
+                                    </View>
+                                );
+                            }}
+                            keyExtractor={(item) => item.id}
+                        />
+                    </Animated.View>
                     <BottomNavigation />
                     <Modal
                         animationType="slide"
