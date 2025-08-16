@@ -3,7 +3,6 @@ import { articleTableDefinition } from '../models';
 import fetchArticles from '../newsapi';
 import techGenres, { categories } from '../constants';
 import db from '../db';
-import { ok } from 'assert';
 
 async function initDatabase() {
     try {
