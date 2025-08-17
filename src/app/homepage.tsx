@@ -82,6 +82,9 @@ interface card {
     handleEllipsisPress: (id: string) => void;
 }
 
+async function DeleteArticles() {}
+
+// fetches articles the endpoint /api/articles, optionally can give either genre or category
 async function articleAPI(genreSelection: string | undefined, category: string | undefined) {
     var genre = '';
     var cat = '';
@@ -182,6 +185,7 @@ export async function getArticleByID(id: string) {
     }
 }
 
+// fetches articles from SQLite DB
 async function getArticles(genreSelection: string | undefined, category: string | undefined) {
     const db = await SQLite.openDatabaseAsync('newsapp');
     var results = null;
@@ -203,6 +207,7 @@ async function getArticles(genreSelection: string | undefined, category: string 
     }
 }
 
+// Fetches articles from articleAPI endpoint
 export async function loadArticles(
     genreSelection: string | undefined,
     category: string | undefined,
@@ -226,6 +231,7 @@ export async function loadArticles(
     return results;
 }
 
+// single component for the filter menu option
 const MenuOption = ({ title, textStyle, selected, icon, onPress }: menuOptionProp) => {
     return (
         // whatever option is selected, should automatically be highlighted for the user.
@@ -257,6 +263,7 @@ const MenuOption = ({ title, textStyle, selected, icon, onPress }: menuOptionPro
     );
 };
 
+// constructs the filter menu using MenuOption components
 const FilterMenu = ({ setFilter, home, top, recent }: menuFilterProp) => {
     const filterByHome = () => {
         setFilter('Home');
@@ -654,6 +661,7 @@ type ModalProps = {
     article: Article | undefined;
 };
 
+// handles the ellipsis press for a respective newscard
 const ModalOptions = ({ setShowModal, article }: ModalProps) => {
     const [saved, setSaved] = useState(false);
 
