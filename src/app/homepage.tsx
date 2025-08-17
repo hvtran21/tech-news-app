@@ -15,6 +15,7 @@ import {
     TouchableWithoutFeedback,
     Linking,
     FlatList,
+    RefreshControl,
 } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { NewsCard } from './components/news_card';
@@ -329,6 +330,18 @@ export function HomePage() {
     const [modalArticle, setModalArticle] = useState<Article>();
     const { height } = Dimensions.get('window');
 
+    // states for controlling refresh
+    const [refreshing, setRefreshing] = useState(false);
+
+    const onRefresh = () => {
+        setRefreshing(true);
+
+        // testing
+        setTimeout(() => {
+            setRefreshing(false);
+        }, 2000);
+    };
+
     const handleEllipsisPress = (id: string) => {
         const fetchArticle = async () => {
             const db = await SQLite.openDatabaseAsync('newsapp');
@@ -344,6 +357,7 @@ export function HomePage() {
         fetchArticle();
     };
 
+    // ensure to only show modal (ellipsis) with correct data
     useEffect(() => {
         if (modalArticle) {
             setShowModal(true);
@@ -569,6 +583,10 @@ export function HomePage() {
                         <FlatList
                             showsVerticalScrollIndicator={false}
                             data={articles}
+                            contentContainerStyle={{ flexGrow: 1 }}
+                            bounces={true}
+                            alwaysBounceVertical={true}
+                            progressViewOffset={56}
                             renderItem={({ item }) => {
                                 return (
                                     <View style={{ flexDirection: 'column' }}>
@@ -585,6 +603,13 @@ export function HomePage() {
                                 );
                             }}
                             keyExtractor={(item) => item.id}
+                            refreshControl={
+                                <RefreshControl
+                                    refreshing={refreshing}
+                                    onRefresh={onRefresh}
+                                    tintColor="#adadadff"
+                                />
+                            }
                         />
                     </Animated.View>
                     <Modal
