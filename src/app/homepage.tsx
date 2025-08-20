@@ -82,7 +82,19 @@ interface card {
     handleEllipsisPress: (id: string) => void;
 }
 
-async function DeleteArticles() {}
+// delete articles by parameter: days -> how old articles can be from at the time the function called.
+async function DeleteArticlesByAge(days?: number): Promise<number> {
+    var cutOffAge = 7;
+    if (days) {
+        cutOffAge = days;
+    }
+
+    const db = await SQLite.openDatabaseAsync('newsapp');
+    const today = new Date();
+    today.setDate(today.getDate() - cutOffAge);
+
+    return 0;
+}
 
 // fetches articles the endpoint /api/articles, optionally can give either genre or category
 async function articleAPI(genreSelection: string | undefined, category: string | undefined) {
