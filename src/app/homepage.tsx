@@ -36,6 +36,7 @@ import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Article from './components/constants';
 import getArticles, { loadArticles } from './components/services';
+import { DeleteArticlesByAge } from './components/utilities';
 
 export type menuOptionProp = {
     title: string;
@@ -169,9 +170,9 @@ export function HomePage() {
 
     // states for controlling refresh
     const [refreshing, setRefreshing] = useState(false);
-
     const onRefresh = () => {
         setRefreshing(true);
+        const result = DeleteArticlesByAge();
 
         // testing
         setTimeout(() => {
