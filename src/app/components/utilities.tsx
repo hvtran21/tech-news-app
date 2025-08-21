@@ -3,6 +3,7 @@ import Article from './constants';
 
 // delete articles by parameter: days -> how old articles can be from at the time the function called.
 export async function DeleteArticlesByAge(days?: number): Promise<number> {
+    var articlesDeleted;
     var cutOFfDays = 7;
     if (days) {
         cutOFfDays = days;
@@ -21,12 +22,13 @@ export async function DeleteArticlesByAge(days?: number): Promise<number> {
             },
         );
         console.log(`${result.changes} articles were removed.`);
+        articlesDeleted = result.changes;
     } catch (error) {
         console.error(error);
         return -1;
     }
 
-    return 0;
+    return articlesDeleted;
 }
 
 export async function deleteArticlesById(id: string) {
