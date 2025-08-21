@@ -15,6 +15,7 @@ import {
     TouchableWithoutFeedback,
     Linking,
     FlatList,
+    RefreshControl,
 } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { NewsCard } from './components/news_card';
@@ -81,6 +82,21 @@ interface card {
     handleEllipsisPress: (id: string) => void;
 }
 
+// delete articles by parameter: days -> how old articles can be from at the time the function called.
+async function DeleteArticlesByAge(days?: number): Promise<number> {
+    var cutOffAge = 7;
+    if (days) {
+        cutOffAge = days;
+    }
+
+    const db = await SQLite.openDatabaseAsync('newsapp');
+    const today = new Date();
+    today.setDate(today.getDate() - cutOffAge);
+
+    return 0;
+}
+
+// fetches articles the endpoint /api/articles, optionally can give either genre or category
 async function articleAPI(genreSelection: string | undefined, category: string | undefined) {
     var genre = '';
     var cat = '';
@@ -181,6 +197,7 @@ export async function getArticleByID(id: string) {
     }
 }
 
+// fetches articles from SQLite DB
 async function getArticles(genreSelection: string | undefined, category: string | undefined) {
     const db = await SQLite.openDatabaseAsync('newsapp');
     var results = null;
@@ -202,6 +219,7 @@ async function getArticles(genreSelection: string | undefined, category: string 
     }
 }
 
+// Fetches articles from articleAPI endpoint
 export async function loadArticles(
     genreSelection: string | undefined,
     category: string | undefined,
@@ -225,6 +243,7 @@ export async function loadArticles(
     return results;
 }
 
+// single component for the filter menu option
 const MenuOption = ({ title, textStyle, selected, icon, onPress }: menuOptionProp) => {
     return (
         // whatever option is selected, should automatically be highlighted for the user.
@@ -256,6 +275,7 @@ const MenuOption = ({ title, textStyle, selected, icon, onPress }: menuOptionPro
     );
 };
 
+// constructs the filter menu using MenuOption components
 const FilterMenu = ({ setFilter, home, top, recent }: menuFilterProp) => {
     const filterByHome = () => {
         setFilter('Home');
@@ -329,6 +349,18 @@ export function HomePage() {
     const [modalArticle, setModalArticle] = useState<Article>();
     const { height } = Dimensions.get('window');
 
+    // states for controlling refresh
+    const [refreshing, setRefreshing] = useState(false);
+
+    const onRefresh = () => {
+        setRefreshing(true);
+
+        // testing
+        setTimeout(() => {
+            setRefreshing(false);
+        }, 2000);
+    };
+
     const handleEllipsisPress = (id: string) => {
         const fetchArticle = async () => {
             const db = await SQLite.openDatabaseAsync('newsapp');
@@ -344,6 +376,7 @@ export function HomePage() {
         fetchArticle();
     };
 
+    // ensure to only show modal (ellipsis) with correct data
     useEffect(() => {
         if (modalArticle) {
             setShowModal(true);
@@ -565,27 +598,39 @@ export function HomePage() {
                         </View>
                     </View>
 
-                    <FlatList
-                        showsVerticalScrollIndicator={false}
-                        data={articles}
-                        renderItem={({ item }) => {
-                            return (
-                                <View style={{ flexDirection: 'column' }}>
-                                    <NewsCard
-                                        title={item.title}
-                                        url_to_image={item.url_to_image}
-                                        published_at={item.published_at}
-                                        genre={item.genre ?? ''}
-                                        id={item.id}
-                                        handleEllipsisPress={handleEllipsisPress}
-                                    />
-                                    <HorizonalLine />
-                                </View>
-                            );
-                        }}
-                        keyExtractor={(item) => item.id}
-                    />
-                    <BottomNavigation />
+                    <Animated.View style={{ opacity: fadeAnimArticles }}>
+                        <FlatList
+                            showsVerticalScrollIndicator={false}
+                            data={articles}
+                            contentContainerStyle={{ flexGrow: 1 }}
+                            bounces={true}
+                            alwaysBounceVertical={true}
+                            progressViewOffset={56}
+                            renderItem={({ item }) => {
+                                return (
+                                    <View style={{ flexDirection: 'column' }}>
+                                        <NewsCard
+                                            title={item.title}
+                                            url_to_image={item.url_to_image}
+                                            published_at={item.published_at}
+                                            genre={item.genre ?? ''}
+                                            id={item.id}
+                                            handleEllipsisPress={handleEllipsisPress}
+                                        />
+                                        <HorizonalLine />
+                                    </View>
+                                );
+                            }}
+                            keyExtractor={(item) => item.id}
+                            refreshControl={
+                                <RefreshControl
+                                    refreshing={refreshing}
+                                    onRefresh={onRefresh}
+                                    tintColor="#adadadff"
+                                />
+                            }
+                        />
+                    </Animated.View>
                     <Modal
                         animationType="slide"
                         transparent={true}
@@ -628,6 +673,7 @@ type ModalProps = {
     article: Article | undefined;
 };
 
+// handles the ellipsis press for a respective newscard
 const ModalOptions = ({ setShowModal, article }: ModalProps) => {
     const [saved, setSaved] = useState(false);
 

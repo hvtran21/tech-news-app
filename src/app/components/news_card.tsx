@@ -94,7 +94,7 @@ export const NewsCardFront = ({
 
     const handleCardFlip = () => {
         isFlipped.value = !isFlipped.value;
-    }
+    };
 
     return (
         <Animated.View style={card_style_front.main_card}>
@@ -117,7 +117,11 @@ export const NewsCardFront = ({
                     alignItems: 'center',
                 }}
             >
-                <TouchableHighlight style={{ width: '60%' }} onPress={handleCardFlip} hitSlop={{ top: 30, bottom: 30, right: 80 }}>
+                <TouchableHighlight
+                    style={{ width: '60%' }}
+                    onPress={handleCardFlip}
+                    hitSlop={{ top: 30, bottom: 30, right: 80 }}
+                >
                     <View style={{ flexDirection: 'column', height: 'auto' }}>
                         <Text style={card_style_front.date}>
                             {date} | {label}
@@ -194,13 +198,13 @@ const FlipCard = ({
         <View>
             <Animated.View
                 style={[flipCardStyles.regularCard, cardStyle, regularCardAnimatedStyle]}
-                pointerEvents='box-none'
+                pointerEvents="box-none"
             >
                 {RegularContent}
             </Animated.View>
             <Animated.View
                 style={[flipCardStyles.flippedCard, cardStyle, flippedCardAnimatedStyle]}
-                pointerEvents='box-none'
+                pointerEvents="box-none"
             >
                 {FlippedContent}
             </Animated.View>
@@ -213,37 +217,35 @@ type cardBackProps = {
 };
 
 export const NewsCardBack = ({ id }: cardBackProps) => {
-    const [article, setArticle] = useState<Article>()
+    const [article, setArticle] = useState<Article>();
     useEffect(() => {
         const getArticle = async () => {
-            const db = await SQLite.openDatabaseAsync('newsapp')
-            const article = await db.getFirstAsync('SELECT * FROM articles WHERE id = ?', [id]) as Article;
+            const db = await SQLite.openDatabaseAsync('newsapp');
+            const article = (await db.getFirstAsync('SELECT * FROM articles WHERE id = ?', [
+                id,
+            ])) as Article;
 
             if (article) {
                 setArticle(article);
             } else {
                 throw new Error(`Retrieved 0 articles with id: ${id}`);
             }
-        }
+        };
 
         if (id) {
             getArticle();
         } else {
-            throw new Error(`ID parameter is required, got: ${id}`)
+            throw new Error(`ID parameter is required, got: ${id}`);
         }
-    }, [])
-    
+    }, []);
+
     return (
-        <View style={card_style_back.main_card} pointerEvents='box-none'>
+        <View style={card_style_back.main_card} pointerEvents="box-none">
             <View style={card_style_back.container}>
                 <View style={card_style_back.header_container}>
-                    <Text style={card_style_back.header_text}>
-                        Description
-                    </Text>
+                    <Text style={card_style_back.header_text}>Description</Text>
                 </View>
-                <Text style={card_style_back.description_text_style}>
-                    { article?.description }
-                </Text>
+                <Text style={card_style_back.description_text_style}>{article?.description}</Text>
             </View>
         </View>
     );
@@ -264,7 +266,7 @@ export const NewsCard = ({
             <FlipCard
                 isFlipped={isFlipped}
                 cardStyle={flipCardStyles.flipCard}
-                direction='x'
+                direction="x"
                 duration={300}
                 FlippedContent={<NewsCardBack id={id} />}
                 RegularContent={
@@ -298,22 +300,23 @@ const flipCardStyles = StyleSheet.create({
         width: Dimensions.get('window').width,
         paddingHorizontal: 5,
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
     },
 });
 
 const card_style_back = StyleSheet.create({
     main_card: {
-        alignItems:  'center',
+        alignItems: 'center',
         justifyContent: 'center',
         height: 150,
-        // borderColor: 'white',
-        // borderWidth: 1,
     },
 
     container: {
         justifyContent: 'flex-start',
-        paddingLeft: 15
+        alignItems: 'flex-start',
+        paddingLeft: 10,
+        maxWidth: '90%',
+        minWidth: '90%',
     },
 
     description_text_style: {
@@ -324,16 +327,15 @@ const card_style_back = StyleSheet.create({
     },
 
     header_container: {
-        paddingBottom: 8
-        
+        paddingBottom: 8,
     },
 
     header_text: {
         color: 'white',
-        opacity: 0.8,
+        opacity: 0.9,
         fontFamily: 'WorkSans-ExtraLight',
-        fontSize: 14
-    }
+        fontSize: 14,
+    },
 });
 
 export const card_style_front = StyleSheet.create({
