@@ -62,3 +62,10 @@ export default async function getArticleById(id: string) {
         console.error(`Error ocurred: ${error}`);
     }
 }
+
+export function sortArticlesByDate(articles: Article[]): Article[] {
+    const result = [...articles].sort(
+        (a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime(),
+    );
+    return result;
+}
