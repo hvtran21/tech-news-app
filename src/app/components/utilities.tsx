@@ -1,5 +1,5 @@
 import * as SQLite from 'expo-sqlite';
-import { Article } from './constants';
+import Article from './constants';
 
 // delete articles by parameter: days -> how old articles can be from at the time the function called.
 async function DeleteArticlesByAge(days?: number): Promise<number> {
@@ -15,7 +15,7 @@ async function DeleteArticlesByAge(days?: number): Promise<number> {
     return 0;
 }
 
-export async function getArticleByID(id: string) {
+export default async function getArticleByID(id: string) {
     const db = await SQLite.openDatabaseAsync('newsapp');
     try {
         const article = (await db.getFirstAsync('SELECT * FROM articles WHERE id = ?', [

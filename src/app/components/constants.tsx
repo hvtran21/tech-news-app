@@ -1,4 +1,4 @@
-export interface Article {
+export default interface Article {
     id: string;
     genre: string | null;
     category: string | null;

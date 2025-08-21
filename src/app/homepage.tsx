@@ -34,8 +34,8 @@ import IconFontAwesome from '@react-native-vector-icons/fontawesome';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Article } from './components/constants';
-import { loadArticles, getArticles } from './components/services';
+import Article from './components/constants';
+import getArticles, { loadArticles } from './components/services';
 
 export type menuOptionProp = {
     title: string;

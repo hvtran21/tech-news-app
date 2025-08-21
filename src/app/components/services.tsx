@@ -1,6 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Article } from './constants';
+import Article from './constants';
 
 const BASE_URL = 'http://192.168.0.233:8000';
 
@@ -29,7 +29,7 @@ export async function loadArticles(
 }
 
 // fetches articles from SQLite DB
-export async function getArticles(
+export default async function getArticles(
     genreSelection: string | undefined,
     category: string | undefined,
 ) {
