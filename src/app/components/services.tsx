@@ -3,16 +3,34 @@ import Article from './constants';
 
 const BASE_URL = 'http://192.168.0.233:8000';
 
-export async function fetchAndSaveArticles(genreSelection?: string, category?: string) {
+export async function downloadAndGetArticles(genreSelection?: string, category?: string) {
     // get articles by genre selection
-    var results = null;
-    if (genreSelection) {
-        await articleAPI(genreSelection, undefined);
-        results = await getArticles(genreSelection, undefined);
-    } else if (category) {
-        await articleAPI(undefined, category);
-        results = await getArticles(undefined, category);
+    try {
+        var results = null;
+        if (genreSelection) {
+            const result = await articleAPI(genreSelection, undefined);
+
+            if (result === undefined || result === null) {
+                console.error('Error in articleAPI');
+                return;
+            }
+            console.log(`${result} articles downloaded.`);
+            results = await getArticles(genreSelection, undefined);
+        } else if (category) {
+            const result = await articleAPI(undefined, category);
+
+            if (result === undefined || result === null) {
+                console.error('Error in articleAPI');
+                return;
+            }
+
+            console.log(`${result} articles downloaded.`);
+            results = await getArticles(undefined, category);
+        }
+    } catch (error) {
+        console.error(error);
     }
+
     return results;
 }
 
@@ -71,6 +89,7 @@ export async function articleAPI(genreSelection?: string, category?: string) {
         if (!response.ok) {
             throw new Error(`Error ocurred, response status: ${response.status}`);
         }
+        var articleCount = 0;
         var data = await response.json();
         const articles = data.articles as Article[];
         const results = articles.map((article) => ({
@@ -87,6 +106,7 @@ export async function articleAPI(genreSelection?: string, category?: string) {
             content: article.content,
             saved: 0,
         }));
+        articleCount += results.length;
 
         // add results to database
         try {
@@ -100,6 +120,7 @@ export async function articleAPI(genreSelection?: string, category?: string) {
                     );
                     if (existing_article) {
                         console.log(`Article with ID ${article.id} exists in DB. Skipping.`);
+                        articleCount -= 1;
                         return;
                     }
                     const statement = await db.prepareAsync(
@@ -122,7 +143,7 @@ export async function articleAPI(genreSelection?: string, category?: string) {
                     await statement.finalizeAsync();
                 }),
             );
-            return results.length;
+            return articleCount;
         } catch (error) {
             console.error(`Error ocurred inserting data into local DB: ${error}`);
         }
