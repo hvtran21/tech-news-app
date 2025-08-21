@@ -31,32 +31,46 @@ export async function downloadAndGetArticles(genreSelection?: string, category?:
         console.error(error);
     }
 
-    return results;
+    return results as Article[];
 }
 
 // fetches articles from SQLite DB
 export default async function getArticles(
-    genreSelection: string | undefined,
-    category: string | undefined,
-) {
+    genreSelection?: string,
+    category?: string,
+    numberOfArticles?: number,
+): Promise<Article[] | undefined> {
     const db = await SQLite.openDatabaseAsync('newsapp');
     var results = null;
+    var articleRetrievalLimit = 100;
+    if (numberOfArticles) {
+        articleRetrievalLimit = numberOfArticles;
+    }
 
     // genreSelection can be comma seperated genres
     if (genreSelection !== undefined && category === undefined) {
         const genreArr = genreSelection.split(',');
-        results = Promise.all(
+        results = await Promise.all(
             genreArr.map(async (genre) => {
                 const query_results = await db.getAllAsync(
-                    'SELECT * FROM articles WHERE genre = ? LIMIT 5',
+                    `SELECT * FROM articles WHERE genre = ? LIMIT ${articleRetrievalLimit}`,
                     [genre],
                 );
                 return query_results;
             }),
         );
-        return (await results).flat();
+        if (results) {
+            return results.flat() as Article[];
+        } else {
+            console.error('Error retrieving articles.');
+        }
     } else if (category !== undefined && genreSelection === undefined) {
-        return await db.getAllAsync('SELECT * FROM articles WHERE category = ?', [category]);
+        results = await db.getAllAsync('SELECT * FROM articles WHERE category = ?', [category]);
+        if (results) {
+            return results.flat() as Article[];
+        } else {
+            console.error('Error retrieving articles.');
+        }
     }
 }
 
