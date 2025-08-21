@@ -36,7 +36,7 @@ import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Article from './components/constants';
 import getArticles, { loadArticles } from './components/services';
-import { DeleteArticlesByAge } from './components/utilities';
+import { DeleteArticlesByAge, sortArticlesByDate } from './components/utilities';
 
 export type menuOptionProp = {
     title: string;
@@ -291,40 +291,33 @@ export function HomePage() {
         const getArticlesByFilter = async () => {
             setLoading(true);
             try {
-                let articles: Article[] = [];
+                let filterArticles: Article[] = [];
                 if (filter === 'Top') {
-                    articles = (await loadArticles(undefined, 'Technology')) as Article[];
+                    filterArticles = (await getArticles(undefined, 'Technology')) as Article[];
                     setTop(true);
                     setHome(false);
                     setRecent(false);
                 } else if (filter === 'Home') {
                     const existingPreferences = await AsyncStorage.getItem('genreSelection');
                     if (existingPreferences) {
-                        articles = (await getArticles(existingPreferences, undefined)) as Article[];
+                        filterArticles = (await getArticles(
+                            existingPreferences,
+                            undefined,
+                        )) as Article[];
                     } else {
-                        articles = (await loadArticles(undefined, 'Technology')) as Article[];
+                        filterArticles = (await getArticles(undefined, 'Technology')) as Article[];
                     }
                     setHome(true);
                     setRecent(false);
                     setTop(false);
                 } else if (filter === 'Recent') {
-                    const existingPreferences = await AsyncStorage.getItem('genreSelection');
-                    if (existingPreferences) {
-                        articles = (await getArticles(existingPreferences, undefined)) as Article[];
-                        articles = [...articles].sort(
-                            (a, b) =>
-                                new Date(b.published_at).getTime() -
-                                new Date(a.published_at).getTime(),
-                        );
-                    } else {
-                        articles = (await getArticles(undefined, 'Technology')) as Article[];
-                    }
+                    filterArticles = sortArticlesByDate(articles);
                     setRecent(true);
                     setHome(false);
                     setTop(false);
                 }
 
-                setArticles(articles);
+                setArticles(filterArticles);
             } catch (error) {
                 console.error(`Error occurred: ${error}`);
             } finally {
