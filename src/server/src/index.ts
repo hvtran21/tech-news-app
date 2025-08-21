@@ -101,7 +101,7 @@ const serverStart = () => {
             const result = await retrieveData();
 
             // catch internal server error
-            if (result != 1) {
+            if (result != 0) {
                 res.status(500).json({
                     ok: false,
                     message: 'Fetching articles failed, internal server error.',
