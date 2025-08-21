@@ -59,11 +59,11 @@ async function removeOldArticles(days?: number): Promise<number> {
             })
             .catch((error) => {
                 console.error(`Error removing articles: ${error}`);
-                return 1;
+                return -1;
             });
     } catch (error) {
         console.error(error);
-        return 1;
+        return -1;
     }
 
     return 0;
