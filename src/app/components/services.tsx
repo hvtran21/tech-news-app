@@ -1,45 +1,17 @@
 import * as SQLite from 'expo-sqlite';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import Article from './constants';
-import Config from 'react-native-config';
 
-const BASE_URL = Config.BASE_URL;
+const BASE_URL = 'http://192.168.0.233:8000';
 
-/*
-    performs two functions:
-        -> fetches data the NewsAPI and adds it to database
-        -> returns articles with the same parameter given
-            - i.e., if category = Technology, new articles fetched with that category 
-                    and ALL articles with that category is returned
-
-
-        TODO: There needs to be seperate endpoints for fetching for
-            - genres
-            - categories
-
-            Additionally, loadArticles has too many responsibilities and to be honest,
-            it's not being used in a good way. This function and its use cases need to be rethought.
-
-*/
-export async function loadArticles(
-    genreSelection: string | undefined,
-    category: string | undefined,
-) {
+export async function fetchAndSaveArticles(genreSelection?: string, category?: string) {
     // get articles by genre selection
     var results = null;
-    if (genreSelection !== undefined) {
-        await AsyncStorage.setItem('genreSelection', genreSelection); // save user preferences for later
+    if (genreSelection) {
         await articleAPI(genreSelection, undefined);
         results = await getArticles(genreSelection, undefined);
-
-        // get articles by category
-    } else {
-        // there are no user preferences to save
+    } else if (category) {
+        await articleAPI(undefined, category);
         results = await getArticles(undefined, category);
-        if (!results || results.length === 0) {
-            await articleAPI(undefined, category);
-            results = await getArticles(undefined, category);
-        }
     }
     return results;
 }
@@ -71,20 +43,20 @@ export default async function getArticles(
 }
 
 // fetches articles the endpoint /api/articles, optionally can give either genre or category
-async function articleAPI(genreSelection: string | undefined, category: string | undefined) {
+export async function articleAPI(genreSelection?: string, category?: string) {
     var genre = '';
     var cat = '';
 
-    if (genreSelection !== undefined) {
+    if (genreSelection) {
         genre = genreSelection;
     }
 
-    if (category !== undefined) {
+    if (category) {
         cat = category;
     }
 
     try {
-        var response = await fetch(`${BASE_URL}/api/articles`, {
+        var response = await fetch(`${BASE_URL}/api/GetArticles`, {
             // TODO: Add authorization somewhere. Maybe here, maybe not.
             method: 'POST',
             headers: {
@@ -150,6 +122,7 @@ async function articleAPI(genreSelection: string | undefined, category: string |
                     await statement.finalizeAsync();
                 }),
             );
+            return results.length;
         } catch (error) {
             console.error(`Error ocurred inserting data into local DB: ${error}`);
         }
