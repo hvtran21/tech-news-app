@@ -14,7 +14,7 @@ export async function DeleteArticlesByAge(days?: number): Promise<number> {
     const cutOffDate = today.toISOString().split('T')[0];
 
     try {
-        await db.runAsync('DELETE FROM articles WHERE published_at <= $date', {
+        await db.runAsync('DELETE FROM articles WHERE published_at <= $date AND saved = 0', {
             $date: cutOffDate,
         });
     } catch (error) {
