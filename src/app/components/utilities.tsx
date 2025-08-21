@@ -2,19 +2,30 @@ import * as SQLite from 'expo-sqlite';
 import Article from './constants';
 
 // delete articles by parameter: days -> how old articles can be from at the time the function called.
-async function DeleteArticlesByAge(days?: number): Promise<number> {
-    var cutOffAge = 7;
+export async function DeleteArticlesByAge(days?: number): Promise<number> {
+    var cutOFfDays = 7;
     if (days) {
-        cutOffAge = days;
+        cutOFfDays = days;
     }
 
     const db = await SQLite.openDatabaseAsync('newsapp');
     const today = new Date();
-    today.setDate(today.getDate() - cutOffAge);
+    today.setDate(today.getDate() - cutOFfDays);
+    const cutOffDate = today.toISOString().split('T')[0];
+
+    try {
+        await db.runAsync('DELETE FROM articles WHERE published_at <= $date', {
+            $date: cutOffDate,
+        });
+    } catch (error) {
+        console.error(error);
+        return -1;
+    }
 
     return 0;
 }
 
+// Gets and returns articles using the as an Article object
 export default async function getArticleByID(id: string) {
     const db = await SQLite.openDatabaseAsync('newsapp');
     try {
