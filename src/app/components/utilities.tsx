@@ -14,9 +14,13 @@ export async function DeleteArticlesByAge(days?: number): Promise<number> {
     const cutOffDate = today.toISOString().split('T')[0];
 
     try {
-        await db.runAsync('DELETE FROM articles WHERE published_at <= $date AND saved = 0', {
-            $date: cutOffDate,
-        });
+        const result = await db.runAsync(
+            'DELETE FROM articles WHERE published_at <= $date AND saved = 0',
+            {
+                $date: cutOffDate,
+            },
+        );
+        console.log(`${result.changes} articles were removed.`);
     } catch (error) {
         console.error(error);
         return -1;
@@ -25,8 +29,26 @@ export async function DeleteArticlesByAge(days?: number): Promise<number> {
     return 0;
 }
 
+export async function deleteArticlesById(id: string) {
+    const db = await SQLite.openDatabaseAsync('newsapp');
+    try {
+        const result = await db.runAsync('DELETE FROM articles WHERE id = $id', {
+            $id: id,
+        });
+
+        if (result.changes === 1) {
+            console.log(`Successfully removed article ${id}`);
+            return;
+        } else {
+            console.error(`Deleteing article ${id} failed, it may not exist, or ID is wrong.`);
+        }
+    } catch (error) {
+        console.error(`Error ocurred: ${error}`);
+    }
+}
+
 // Gets and returns articles using the as an Article object
-export default async function getArticleByID(id: string) {
+export default async function getArticleById(id: string) {
     const db = await SQLite.openDatabaseAsync('newsapp');
     try {
         const article = (await db.getFirstAsync('SELECT * FROM articles WHERE id = ?', [
