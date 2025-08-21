@@ -31,7 +31,6 @@ export default function main() {
     });
     useEffect(() => {
         const init = async () => {
-            // await setFirstLaunch();
             const firstLaunch = await checkFirstLaunch();
             if (firstLaunch === true) {
                 router.push('/welcome');
