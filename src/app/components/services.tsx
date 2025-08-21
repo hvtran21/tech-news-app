@@ -37,6 +37,7 @@ export default async function getArticles(
     const db = await SQLite.openDatabaseAsync('newsapp');
     var results = null;
 
+    // genreSelection can be comma seperated genres
     if (genreSelection !== undefined && category === undefined) {
         const genreArr = genreSelection.split(',');
         results = Promise.all(
@@ -53,6 +54,7 @@ export default async function getArticles(
         return await db.getAllAsync('SELECT * FROM articles WHERE category = ?', [category]);
     }
 }
+
 // fetches articles the endpoint /api/articles, optionally can give either genre or category
 async function articleAPI(genreSelection: string | undefined, category: string | undefined) {
     var genre = '';
@@ -96,6 +98,7 @@ async function articleAPI(genreSelection: string | undefined, category: string |
             url_to_image: article.url_to_image,
             published_at: article.published_at,
             content: article.content,
+            saved: 0,
         }));
 
         // add results to database
@@ -113,7 +116,7 @@ async function articleAPI(genreSelection: string | undefined, category: string |
                         return;
                     }
                     const statement = await db.prepareAsync(
-                        'INSERT OR IGNORE INTO articles(id, genre, category, source, author, title, description, url, url_to_image, published_at, content) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                        'INSERT OR IGNORE INTO articles(id, genre, category, source, author, title, description, url, url_to_image, published_at, content, saved) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                     );
                     await statement.executeAsync([
                         article.id,
@@ -127,6 +130,7 @@ async function articleAPI(genreSelection: string | undefined, category: string |
                         article.url_to_image?.toString() ?? null,
                         article.published_at ?? null,
                         article.content ?? null,
+                        article.saved ?? 0,
                     ]);
                     await statement.finalizeAsync();
                 }),
