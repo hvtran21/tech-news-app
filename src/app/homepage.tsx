@@ -35,7 +35,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Article from './components/constants';
-import getArticles, { loadArticles } from './components/services';
+import getArticles, { articleAPI, downloadAndGetArticles } from './components/services';
 import { DeleteArticlesByAge, sortArticlesByDate } from './components/utilities';
 
 export type menuOptionProp = {
@@ -168,16 +168,33 @@ export function HomePage() {
     const [modalArticle, setModalArticle] = useState<Article>();
     const { height } = Dimensions.get('window');
 
+    // define user preferences
+    if (genreSelection !== '') {
+        AsyncStorage.setItem('genreSelection', genreSelection);
+    }
+
     // states for controlling refresh
     const [refreshing, setRefreshing] = useState(false);
-    const onRefresh = () => {
+    const onRefresh = async () => {
         setRefreshing(true);
-        const result = DeleteArticlesByAge();
 
-        // testing
-        setTimeout(() => {
-            setRefreshing(false);
-        }, 2000);
+        // delete old articles
+        DeleteArticlesByAge();
+
+        // fetch new articles
+        const userPreferences = await AsyncStorage.getItem('genreSelection');
+        var newArticles = null;
+        if (userPreferences) {
+            newArticles = await downloadAndGetArticles(userPreferences, undefined);
+        } else {
+            const category = 'Technology';
+            newArticles = await downloadAndGetArticles(undefined, category);
+        }
+        if (newArticles) {
+            setArticles(newArticles);
+        }
+
+        setRefreshing(false);
     };
 
     const handleEllipsisPress = (id: string) => {
@@ -264,11 +281,14 @@ export function HomePage() {
             try {
                 var articles: Article[] = [];
                 if (genreSelection !== undefined) {
-                    articles = (await loadArticles(genreSelection, undefined)) as Article[];
+                    articles = (await downloadAndGetArticles(
+                        genreSelection,
+                        undefined,
+                    )) as Article[];
                 } else {
                     const existingPreferences = await AsyncStorage.getItem('genreSelection');
                     if (existingPreferences !== null) {
-                        articles = (await loadArticles(
+                        articles = (await downloadAndGetArticles(
                             existingPreferences,
                             undefined,
                         )) as Article[];
@@ -519,7 +539,6 @@ const ModalOptions = ({ setShowModal, article }: ModalProps) => {
     useEffect(() => {
         const checkArticleSaved = () => {
             if (article) {
-                console.log(`Article ID: ${article?.id} saved: ${article?.saved}`);
                 if (article.saved === 1) {
                     setSaved(true);
                 } else {
