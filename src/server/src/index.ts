@@ -117,8 +117,7 @@ const serverStart = () => {
         execute();
     });
 
-    server.post('/api/Articles', (req, res) => {
-        // parse POST request
+    server.post('/api/GetArticles', (req, res) => {
         var genres = req.body.genre?.genre as string;
         var category = req.body.category?.cat as string;
         var results: any[] = [];
