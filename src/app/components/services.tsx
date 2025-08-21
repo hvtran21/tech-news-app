@@ -1,8 +1,9 @@
 import * as SQLite from 'expo-sqlite';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Article from './constants';
+import Config from 'react-native-config';
 
-const BASE_URL = 'http://192.168.0.233:8000';
+const BASE_URL = Config.BASE_URL;
 
 // Fetches articles from articleAPI endpoint
 export async function loadArticles(
