@@ -5,7 +5,22 @@ import Config from 'react-native-config';
 
 const BASE_URL = Config.BASE_URL;
 
-// Fetches articles from articleAPI endpoint
+/*
+    performs two functions:
+        -> fetches data the NewsAPI and adds it to database
+        -> returns articles with the same parameter given
+            - i.e., if category = Technology, new articles fetched with that category 
+                    and ALL articles with that category is returned
+
+
+        TODO: There needs to be seperate endpoints for fetching for
+            - genres
+            - categories
+
+            Additionally, loadArticles has too many responsibilities and to be honest,
+            it's not being used in a good way. This function and its use cases need to be rethought.
+
+*/
 export async function loadArticles(
     genreSelection: string | undefined,
     category: string | undefined,
