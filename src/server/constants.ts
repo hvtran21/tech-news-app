@@ -12,7 +12,6 @@ enum techGenres {
 
 enum categories {
     TECHNOLOGY = 'Technology',
-    SCIENCE = 'Science',
 }
 
 export default techGenres;
