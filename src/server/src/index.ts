@@ -16,7 +16,7 @@ async function initDatabase() {
 
 async function retrieveData() {
     for (const val of Object.values(techGenres)) {
-        await fetchArticles(val);
+        await fetchArticles(val, undefined);
     }
 
     for (const val of Object.values(categories)) {
