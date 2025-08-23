@@ -2,6 +2,9 @@ import db from './db';
 import dotenv from 'dotenv';
 import techGenres from './constants';
 import { v4 as uuidv4 } from 'uuid';
+import https from 'node:https';
+import { DAYS_IN_SECONDS } from './constants';
+const agent = new https.Agent({ maxVersion: 'TLSv1.2' });
 
 dotenv.config();
 
@@ -30,7 +33,7 @@ async function fetchArticles(genre?: string | undefined, category?: string | und
     const country = 'us'; // should be based off of user preferences later
     const language = 'en';
     const toDate = new Date();
-    const fromDate = new Date(toDate.getDate() - 1);
+    const fromDate = new Date(toDate.getTime() - 1.5 * DAYS_IN_SECONDS);
     var totalProcesssed = 0;
     var totalResults = Infinity;
     const apiKey = process.env.NEWS_API_KEY;
@@ -46,7 +49,9 @@ async function fetchArticles(genre?: string | undefined, category?: string | und
         [techGenres.NINTENDO, 'Nintendo'],
     ]);
     const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-    while (totalProcesssed < totalResults) {
+    const articleAdditionLimit = 100;
+
+    while (totalProcesssed < totalResults && totalProcesssed <= articleAdditionLimit) {
         // fetch data from News API
         try {
             if (genre !== undefined && category === undefined) {
@@ -57,9 +62,12 @@ async function fetchArticles(genre?: string | undefined, category?: string | und
                 url = `https://newsapi.org/v2/top-headlines?country=${country}&category=${cat}&apiKey=${apiKey}&page=${page}`;
             }
 
-            console.log(`URL: ${url}`);
             const encoded_url = encodeURI(url);
             const response = await fetch(encoded_url);
+
+            if (response.status == 426) {
+                console.error('Upgrade required.', Object.fromEntries(response.headers));
+            }
 
             if (response.status === 429) {
                 // rate limit hit
@@ -124,13 +132,15 @@ async function fetchArticles(genre?: string | undefined, category?: string | und
                     return t.batch(queries);
                 });
 
-                console.log(`${totalResults - totalProcesssed} left to process...`);
+                console.log(
+                    `${totalResults - totalProcesssed} left to process for ${genre ?? category}`,
+                );
                 page += 1;
             } catch (error) {
                 console.error(`Error inserting articles into DB: ${error}`);
             }
         } catch (error) {
-            console.error(`Error ocurred: ${error}`);
+            console.error(error);
         }
         await delay(2000);
     }
