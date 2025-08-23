@@ -120,6 +120,8 @@ const serverStart = () => {
     server.post('/api/GetArticles', (req, res) => {
         var genres = req.body.genre?.genre as string;
         var category = req.body.category?.cat as string;
+        const limit = req.body.articleRetrievalLimit?.limit as number;
+
         var results: any[] = [];
 
         // send JSON response back
@@ -134,7 +136,10 @@ const serverStart = () => {
                         if (!enum_check) {
                             throw new Error(`Error: Genre not in ENUM, got: $`);
                         }
-                        return t.any('SELECT * FROM articles WHERE genre = $1', genre);
+                        return t.any('SELECT * FROM articles WHERE genre = $1 LIMIT $2', [
+                            genre,
+                            limit,
+                        ]);
                     });
                     return t.batch(queries);
                 })

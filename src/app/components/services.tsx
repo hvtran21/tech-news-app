@@ -75,7 +75,7 @@ export default async function getArticles(
 }
 
 // fetches articles the endpoint /api/articles, optionally can give either genre or category
-export async function articleAPI(genreSelection?: string, category?: string) {
+export async function articleAPI(genreSelection?: string, category?: string, limit: number = 100) {
     var genre = '';
     var cat = '';
 
@@ -98,6 +98,7 @@ export async function articleAPI(genreSelection?: string, category?: string) {
             body: JSON.stringify({
                 genre: { genre },
                 category: { cat },
+                articleRetrievalLimit: { limit },
             }),
         });
         if (!response.ok) {
