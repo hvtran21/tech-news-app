@@ -33,7 +33,7 @@ async function fetchArticles(genre?: string | undefined, category?: string | und
     const country = 'us'; // should be based off of user preferences later
     const language = 'en';
     const toDate = new Date();
-    const fromDate = new Date(toDate.getTime() - 1.5 * DAYS_IN_SECONDS);
+    const fromDate = new Date(toDate.getTime() - 1.5 * DAYS_IN_SECONDS); // get relevant articles a day and a half ago
     var totalProcesssed = 0;
     var totalResults = Infinity;
     const apiKey = process.env.NEWS_API_KEY;
