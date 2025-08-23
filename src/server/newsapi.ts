@@ -55,7 +55,6 @@ async function fetchArticles(genre?: string | undefined, category?: string | und
         // fetch data from News API
         try {
             if (genre !== undefined && category === undefined) {
-                // url = `https://newsapi.org/v2/top-headlines?q=${genre}&country=${country}&apiKey=${apiKey}&page=${page}`;
                 url = `https://newsapi.org/v2/everything?q=${betterSearchMap.get(genre.trim())}&from=${fromDate.toISOString()}&to=${toDate.toISOString()}&sortBy=popularity&language=${language}&apiKey=${apiKey}&page=${page}`;
             } else if (category !== undefined && genre === undefined) {
                 const cat = category.toLowerCase();
