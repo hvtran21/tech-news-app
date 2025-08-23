@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useRef, ReactNode, useCallback } from 'react';
 import * as SQLite from 'expo-sqlite';
 import {
-    ScrollView,
     View,
     Text,
     StyleSheet,
     TouchableOpacity,
     Animated,
-    ActivityIndicator,
     TextStyle,
     TouchableHighlight,
     Modal,
@@ -19,8 +17,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { NewsCard } from './components/news_card';
-import { GradientText, HorizonalLine } from './components/styling';
-import { BottomNavigation } from './components/navigation';
+import { GradientText, HorizonalLine } from './components/styles';
 import { useLocalSearchParams } from 'expo-router';
 import {
     faHouse,
@@ -28,8 +25,6 @@ import {
     faAngleUp,
     faBolt,
     faClock,
-    faBookmark,
-    faCircleInfo,
     faCircleXmark,
     faFlag,
     faBan,
@@ -39,11 +34,11 @@ import IconFontAwesome from '@react-native-vector-icons/fontawesome';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Article from './components/constants';
+import getArticles, { articleAPI, downloadAndGetArticles } from './components/services';
+import { DeleteArticlesByAge, sortArticlesByDate } from './components/utilities';
 
-// this is for local dev, would be stored somewhere else not in source code.
-const BASE_URL = 'http://192.168.0.233:8000';
-
-type menuOptionProp = {
+export type menuOptionProp = {
     title: string;
     textStyle: TextStyle;
     icon: IconProp;
@@ -51,22 +46,7 @@ type menuOptionProp = {
     onPress: () => void;
 };
 
-interface Article {
-    id: string;
-    genre: string | null;
-    category: string | null;
-    source: string;
-    author: string | null;
-    title: string;
-    description: string;
-    url: string;
-    url_to_image: string;
-    published_at: string;
-    content?: string;
-    saved: number;
-}
-
-interface menuFilterProp {
+export interface menuFilterProp {
     setFilter: (filterType: string) => void;
     home: boolean;
     recent: boolean;
@@ -80,167 +60,6 @@ interface card {
     genre: string;
     id: string;
     handleEllipsisPress: (id: string) => void;
-}
-
-// delete articles by parameter: days -> how old articles can be from at the time the function called.
-async function DeleteArticlesByAge(days?: number): Promise<number> {
-    var cutOffAge = 7;
-    if (days) {
-        cutOffAge = days;
-    }
-
-    const db = await SQLite.openDatabaseAsync('newsapp');
-    const today = new Date();
-    today.setDate(today.getDate() - cutOffAge);
-
-    return 0;
-}
-
-// fetches articles the endpoint /api/articles, optionally can give either genre or category
-async function articleAPI(genreSelection: string | undefined, category: string | undefined) {
-    var genre = '';
-    var cat = '';
-
-    if (genreSelection !== undefined) {
-        genre = genreSelection;
-    }
-
-    if (category !== undefined) {
-        cat = category;
-    }
-
-    try {
-        var response = await fetch(`${BASE_URL}/api/articles`, {
-            // TODO: Add authorization somewhere. Maybe here, maybe not.
-            method: 'POST',
-            headers: {
-                Accept: 'application/json',
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                genre: { genre },
-                category: { cat },
-            }),
-        });
-        if (!response.ok) {
-            throw new Error(`Error ocurred, response status: ${response.status}`);
-        }
-        var data = await response.json();
-        const articles = data.articles as Article[];
-        const results = articles.map((article) => ({
-            id: article.id,
-            genre: article.genre,
-            category: article.category,
-            source: article.source,
-            author: article.author,
-            title: article.title,
-            description: article.description,
-            url: article.url,
-            url_to_image: article.url_to_image,
-            published_at: article.published_at,
-            content: article.content,
-        }));
-
-        // add results to database
-        try {
-            await Promise.all(
-                results.map(async (article) => {
-                    console.log(`Inserting article: ${article.id}`);
-                    const db = await SQLite.openDatabaseAsync('newsapp');
-                    const existing_article = await db.getFirstAsync(
-                        'SELECT id FROM articles WHERE id = ?',
-                        [article.id],
-                    );
-                    if (existing_article) {
-                        console.log(`Article with ID ${article.id} exists in DB. Skipping.`);
-                        return;
-                    }
-                    const statement = await db.prepareAsync(
-                        'INSERT OR IGNORE INTO articles(id, genre, category, source, author, title, description, url, url_to_image, published_at, content) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                    );
-                    await statement.executeAsync([
-                        article.id,
-                        article.genre ?? null,
-                        article.category ?? null,
-                        article.source ?? null,
-                        article.author ?? null,
-                        article.title ?? null,
-                        article.description ?? null,
-                        article.url?.toString() ?? null,
-                        article.url_to_image?.toString() ?? null,
-                        article.published_at ?? null,
-                        article.content ?? null,
-                    ]);
-                    await statement.finalizeAsync();
-                }),
-            );
-        } catch (error) {
-            console.error(`Error ocurred inserting data into local DB: ${error}`);
-        }
-    } catch (error) {
-        console.error(`Error ocurred: ${error}`);
-    }
-}
-
-export async function getArticleByID(id: string) {
-    const db = await SQLite.openDatabaseAsync('newsapp');
-    try {
-        const article = (await db.getFirstAsync('SELECT * FROM articles WHERE id = ?', [
-            id,
-        ])) as Article;
-        if (!article) {
-            throw new Error(`Article with ID ${id} not found`);
-        }
-        return article;
-    } catch (error) {
-        console.error(`Error ocurred: ${error}`);
-    }
-}
-
-// fetches articles from SQLite DB
-async function getArticles(genreSelection: string | undefined, category: string | undefined) {
-    const db = await SQLite.openDatabaseAsync('newsapp');
-    var results = null;
-
-    if (genreSelection !== undefined && category === undefined) {
-        const genreArr = genreSelection.split(',');
-        results = Promise.all(
-            genreArr.map(async (genre) => {
-                const query_results = await db.getAllAsync(
-                    'SELECT * FROM articles WHERE genre = ? LIMIT 5',
-                    [genre],
-                );
-                return query_results;
-            }),
-        );
-        return (await results).flat();
-    } else if (category !== undefined && genreSelection === undefined) {
-        return await db.getAllAsync('SELECT * FROM articles WHERE category = ?', [category]);
-    }
-}
-
-// Fetches articles from articleAPI endpoint
-export async function loadArticles(
-    genreSelection: string | undefined,
-    category: string | undefined,
-) {
-    // get articles by genre selection
-    var results = null;
-    if (genreSelection !== undefined) {
-        await AsyncStorage.setItem('genreSelection', genreSelection); // save user preferences for later
-        await articleAPI(genreSelection, undefined);
-        results = await getArticles(genreSelection, undefined);
-
-        // get articles by category
-    } else {
-        // there are no user preferences to save
-        results = await getArticles(undefined, category);
-        if (!results || results.length === 0) {
-            await articleAPI(undefined, category);
-            results = await getArticles(undefined, category);
-        }
-    }
-    return results;
 }
 
 // single component for the filter menu option
@@ -349,16 +168,33 @@ export function HomePage() {
     const [modalArticle, setModalArticle] = useState<Article>();
     const { height } = Dimensions.get('window');
 
+    // define user preferences
+    if (genreSelection !== '') {
+        AsyncStorage.setItem('genreSelection', genreSelection);
+    }
+
     // states for controlling refresh
     const [refreshing, setRefreshing] = useState(false);
-
-    const onRefresh = () => {
+    const onRefresh = async () => {
         setRefreshing(true);
 
-        // testing
-        setTimeout(() => {
-            setRefreshing(false);
-        }, 2000);
+        // delete old articles
+        DeleteArticlesByAge();
+
+        // fetch new articles
+        const userPreferences = await AsyncStorage.getItem('genreSelection');
+        var newArticles = null;
+        if (userPreferences) {
+            newArticles = await downloadAndGetArticles(userPreferences, undefined);
+        } else {
+            const category = 'Technology';
+            newArticles = await downloadAndGetArticles(undefined, category);
+        }
+        if (newArticles) {
+            setArticles(newArticles);
+        }
+
+        setRefreshing(false);
     };
 
     const handleEllipsisPress = (id: string) => {
@@ -445,11 +281,14 @@ export function HomePage() {
             try {
                 var articles: Article[] = [];
                 if (genreSelection !== undefined) {
-                    articles = (await loadArticles(genreSelection, undefined)) as Article[];
+                    articles = (await downloadAndGetArticles(
+                        genreSelection,
+                        undefined,
+                    )) as Article[];
                 } else {
                     const existingPreferences = await AsyncStorage.getItem('genreSelection');
                     if (existingPreferences !== null) {
-                        articles = (await loadArticles(
+                        articles = (await downloadAndGetArticles(
                             existingPreferences,
                             undefined,
                         )) as Article[];
@@ -472,40 +311,33 @@ export function HomePage() {
         const getArticlesByFilter = async () => {
             setLoading(true);
             try {
-                let articles: Article[] = [];
+                let filterArticles: Article[] = [];
                 if (filter === 'Top') {
-                    articles = (await loadArticles(undefined, 'Technology')) as Article[];
+                    filterArticles = (await getArticles(undefined, 'Technology')) as Article[];
                     setTop(true);
                     setHome(false);
                     setRecent(false);
                 } else if (filter === 'Home') {
                     const existingPreferences = await AsyncStorage.getItem('genreSelection');
                     if (existingPreferences) {
-                        articles = (await getArticles(existingPreferences, undefined)) as Article[];
+                        filterArticles = (await getArticles(
+                            existingPreferences,
+                            undefined,
+                        )) as Article[];
                     } else {
-                        articles = (await loadArticles(undefined, 'Technology')) as Article[];
+                        filterArticles = (await getArticles(undefined, 'Technology')) as Article[];
                     }
                     setHome(true);
                     setRecent(false);
                     setTop(false);
                 } else if (filter === 'Recent') {
-                    const existingPreferences = await AsyncStorage.getItem('genreSelection');
-                    if (existingPreferences) {
-                        articles = (await getArticles(existingPreferences, undefined)) as Article[];
-                        articles = [...articles].sort(
-                            (a, b) =>
-                                new Date(b.published_at).getTime() -
-                                new Date(a.published_at).getTime(),
-                        );
-                    } else {
-                        articles = (await getArticles(undefined, 'Technology')) as Article[];
-                    }
+                    filterArticles = sortArticlesByDate(articles);
                     setRecent(true);
                     setHome(false);
                     setTop(false);
                 }
 
-                setArticles(articles);
+                setArticles(filterArticles);
             } catch (error) {
                 console.error(`Error occurred: ${error}`);
             } finally {
@@ -707,7 +539,6 @@ const ModalOptions = ({ setShowModal, article }: ModalProps) => {
     useEffect(() => {
         const checkArticleSaved = () => {
             if (article) {
-                console.log(`Article ID: ${article?.id} saved: ${article?.saved}`);
                 if (article.saved === 1) {
                     setSaved(true);
                 } else {
@@ -862,7 +693,7 @@ const modalStyling = StyleSheet.create({
     },
 });
 
-const menuStyling = StyleSheet.create({
+export const menuStyling = StyleSheet.create({
     text_style: {
         opacity: 0.8,
         fontFamily: 'WorkSans-Light',

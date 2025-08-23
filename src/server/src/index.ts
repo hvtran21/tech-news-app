@@ -16,7 +16,7 @@ async function initDatabase() {
 
 async function retrieveData() {
     for (const val of Object.values(techGenres)) {
-        await fetchArticles(val);
+        await fetchArticles(val, undefined);
     }
 
     for (const val of Object.values(categories)) {
@@ -59,11 +59,11 @@ async function removeOldArticles(days?: number): Promise<number> {
             })
             .catch((error) => {
                 console.error(`Error removing articles: ${error}`);
-                return 1;
+                return -1;
             });
     } catch (error) {
         console.error(error);
-        return 1;
+        return -1;
     }
 
     return 0;
@@ -101,7 +101,7 @@ const serverStart = () => {
             const result = await retrieveData();
 
             // catch internal server error
-            if (result != 1) {
+            if (result != 0) {
                 res.status(500).json({
                     ok: false,
                     message: 'Fetching articles failed, internal server error.',
@@ -117,10 +117,11 @@ const serverStart = () => {
         execute();
     });
 
-    server.post('/api/Articles', (req, res) => {
-        // parse POST request
+    server.post('/api/GetArticles', (req, res) => {
         var genres = req.body.genre?.genre as string;
         var category = req.body.category?.cat as string;
+        const limit = req.body.articleRetrievalLimit?.limit as number;
+
         var results: any[] = [];
 
         // send JSON response back
@@ -135,7 +136,10 @@ const serverStart = () => {
                         if (!enum_check) {
                             throw new Error(`Error: Genre not in ENUM, got: $`);
                         }
-                        return t.any('SELECT * FROM articles WHERE genre = $1', genre);
+                        return t.any('SELECT * FROM articles WHERE genre = $1 LIMIT $2', [
+                            genre,
+                            limit,
+                        ]);
                     });
                     return t.batch(queries);
                 })

@@ -1,6 +1,10 @@
 import db from './db';
 import dotenv from 'dotenv';
+import techGenres from './constants';
 import { v4 as uuidv4 } from 'uuid';
+import https from 'node:https';
+import { DAYS_IN_SECONDS } from './constants';
+const agent = new https.Agent({ maxVersion: 'TLSv1.2' });
 
 dotenv.config();
 
@@ -24,18 +28,34 @@ async function fetchArticles(genre?: string | undefined, category?: string | und
     // Parameters: None
     // Return: None
     // Fetches a news article from News API, and adds it to database
-    const apiKey = process.env.NEWS_API_KEY;
-    const country = 'us'; // should be based off of user preferences later
+    var url = '';
     var page = 1;
-    const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+    const country = 'us'; // should be based off of user preferences later
+    const language = 'en';
+    const toDate = new Date();
+    const fromDate = new Date(toDate.getTime() - 1.5 * DAYS_IN_SECONDS); // get relevant articles a day and a half ago
     var totalProcesssed = 0;
     var totalResults = Infinity;
-    var url = '';
-    while (totalProcesssed < totalResults) {
+    const apiKey = process.env.NEWS_API_KEY;
+    let betterSearchMap = new Map<string, string>([
+        [techGenres.AI, '"artificial intelligence" OR "AI"'],
+        [techGenres.ML, '"machine learning" OR "ML"'],
+        [techGenres.MICROSOFT, 'Microsoft'],
+        [techGenres.CYBERSECURITY, 'cybersecurity OR "cyber security"'],
+        [techGenres.GAME_DEVELOPMENT, '"game development" OR gamedev OR "games industry"'],
+        [techGenres.GAMING, 'gaming OR videogames OR "video games"'],
+        [techGenres.APPLE, 'Apple'],
+        [techGenres.AMAZON, 'Amazon'],
+        [techGenres.NINTENDO, 'Nintendo'],
+    ]);
+    const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+    const articleAdditionLimit = 100;
+
+    while (totalProcesssed < totalResults && totalProcesssed <= articleAdditionLimit) {
         // fetch data from News API
         try {
             if (genre !== undefined && category === undefined) {
-                url = `https://newsapi.org/v2/top-headlines?q=${genre}&country=${country}&apiKey=${apiKey}&page=${page}`;
+                url = `https://newsapi.org/v2/everything?q=${betterSearchMap.get(genre.trim())}&from=${fromDate.toISOString()}&to=${toDate.toISOString()}&sortBy=popularity&language=${language}&apiKey=${apiKey}&page=${page}`;
             } else if (category !== undefined && genre === undefined) {
                 const cat = category.toLowerCase();
                 url = `https://newsapi.org/v2/top-headlines?country=${country}&category=${cat}&apiKey=${apiKey}&page=${page}`;
@@ -43,6 +63,10 @@ async function fetchArticles(genre?: string | undefined, category?: string | und
 
             const encoded_url = encodeURI(url);
             const response = await fetch(encoded_url);
+
+            if (response.status == 426) {
+                console.error('Upgrade required.', Object.fromEntries(response.headers));
+            }
 
             if (response.status === 429) {
                 // rate limit hit
@@ -61,7 +85,7 @@ async function fetchArticles(genre?: string | undefined, category?: string | und
             // set up data to be inserted into db
             const articles: Article[] = data.articles;
             if (articles.length === 0) {
-                console.log('0 articles to process. Exiting.');
+                console.log(`0 articles to process for ${genre ?? category}`);
                 break;
             }
 
@@ -82,7 +106,6 @@ async function fetchArticles(genre?: string | undefined, category?: string | und
             }));
 
             // add fetched articles to the database as a batch of inserts
-            var insertion_count = 0;
             try {
                 await db.tx((t) => {
                     const queries = lst.map((article) => {
@@ -105,19 +128,18 @@ async function fetchArticles(genre?: string | undefined, category?: string | und
                             ],
                         );
                     });
-                    insertion_count = queries.length;
                     return t.batch(queries);
                 });
 
                 console.log(
-                    `Inserted ${insertion_count} for ${genre ?? category}. ${totalResults - totalProcesssed} left to process`,
+                    `${totalResults - totalProcesssed} left to process for ${genre ?? category}`,
                 );
                 page += 1;
             } catch (error) {
                 console.error(`Error inserting articles into DB: ${error}`);
             }
         } catch (error) {
-            console.error(`Error ocurred: ${error}`);
+            console.error(error);
         }
         await delay(2000);
     }
