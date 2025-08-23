@@ -1,5 +1,6 @@
 import db from './db';
 import dotenv from 'dotenv';
+import techGenres from './constants';
 import { v4 as uuidv4 } from 'uuid';
 
 dotenv.config();
@@ -24,23 +25,39 @@ async function fetchArticles(genre?: string | undefined, category?: string | und
     // Parameters: None
     // Return: None
     // Fetches a news article from News API, and adds it to database
-    const apiKey = process.env.NEWS_API_KEY;
-    const country = 'us'; // should be based off of user preferences later
+    var url = '';
     var page = 1;
-    const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+    const country = 'us'; // should be based off of user preferences later
+    const language = 'en';
+    const toDate = new Date();
+    const fromDate = new Date(toDate.getDate() - 1);
     var totalProcesssed = 0;
     var totalResults = Infinity;
-    var url = '';
+    const apiKey = process.env.NEWS_API_KEY;
+    let betterSearchMap = new Map<string, string>([
+        [techGenres.AI, '"artificial intelligence" OR "AI"'],
+        [techGenres.ML, '"machine learning" OR "ML"'],
+        [techGenres.MICROSOFT, 'Microsoft'],
+        [techGenres.CYBERSECURITY, 'cybersecurity OR "cyber security"'],
+        [techGenres.GAME_DEVELOPMENT, '"game development" OR gamedev OR "games industry"'],
+        [techGenres.GAMING, 'gaming OR videogames OR "video games"'],
+        [techGenres.APPLE, 'Apple'],
+        [techGenres.AMAZON, 'Amazon'],
+        [techGenres.NINTENDO, 'Nintendo'],
+    ]);
+    const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
     while (totalProcesssed < totalResults) {
         // fetch data from News API
         try {
             if (genre !== undefined && category === undefined) {
-                url = `https://newsapi.org/v2/top-headlines?q=${genre}&country=${country}&apiKey=${apiKey}&page=${page}`;
+                // url = `https://newsapi.org/v2/top-headlines?q=${genre}&country=${country}&apiKey=${apiKey}&page=${page}`;
+                url = `https://newsapi.org/v2/everything?q=${betterSearchMap.get(genre.trim())}&from=${fromDate.toISOString()}&to=${toDate.toISOString()}&sortBy=popularity&language=${language}&apiKey=${apiKey}&page=${page}`;
             } else if (category !== undefined && genre === undefined) {
                 const cat = category.toLowerCase();
                 url = `https://newsapi.org/v2/top-headlines?country=${country}&category=${cat}&apiKey=${apiKey}&page=${page}`;
             }
 
+            console.log(`URL: ${url}`);
             const encoded_url = encodeURI(url);
             const response = await fetch(encoded_url);
 
