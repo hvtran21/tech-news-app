@@ -35,8 +35,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Article from './components/constants';
-import getArticles, { articleAPI, downloadAndGetArticles } from './components/services';
+import getArticles, { downloadAndGetArticles } from './components/services';
 import { DeleteArticlesByAge, sortArticlesByDate } from './components/utilities';
+import { canRefreshArticles } from './components/utilities';
 
 export type menuOptionProp = {
     title: string;
@@ -277,6 +278,13 @@ export function HomePage() {
     // initialization of loading articles
     useEffect(() => {
         const getArticles = async () => {
+            const canRefresh = await canRefreshArticles();
+
+            if (!canRefresh) {
+                console.log('Refresh cooling down...');
+                return;
+            }
+
             setLoading(true);
             try {
                 var articles: Article[] = [];
