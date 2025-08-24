@@ -1,6 +1,10 @@
 import * as SQLite from 'expo-sqlite';
 import Article from './constants';
 
+type metadataSchema = {
+    latest_article_query: string | null;
+};
+
 // delete articles by parameter: days -> how old articles can be from at the time the function called.
 export async function DeleteArticlesByAge(days?: number): Promise<number> {
     var articlesDeleted;
@@ -70,4 +74,51 @@ export function sortArticlesByDate(articles: Article[]): Article[] {
         (a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime(),
     );
     return result;
+}
+
+export async function updateArticleQueryTime() {
+    const currentDate = new Date().toISOString();
+    const db = await SQLite.openDatabaseAsync('newsapp');
+    try {
+        await db.runAsync('UPDATE metadata SET latest_article_query = $date', {
+            $date: currentDate,
+        });
+        console.log(`Updated article query date: ${currentDate}`);
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+// don't constantly overwhelm the server, not very good.
+export async function canRefreshArticles() {
+    const refreshLimitInMin = 2;
+    const db = await SQLite.openDatabaseAsync('newsapp');
+
+    try {
+        const query = (await db.getFirstAsync('SELECT * FROM metadata')) as metadataSchema;
+
+        // empty query indicates first user sign on
+        if (!query) {
+            console.log('User first launch');
+            return true;
+        }
+
+        const latestQueryTime = new Date(query.latest_article_query);
+        const currentTime = new Date();
+
+        console.log(
+            `Current time: ${currentTime.toISOString()}, query time: ${latestQueryTime.toISOString()}`,
+        );
+
+        const differenceInMS = Math.abs(currentTime.getTime() - latestQueryTime.getTime());
+        const differenceInMin = differenceInMS / (1000 * 60);
+
+        if (differenceInMin < refreshLimitInMin) {
+            return false;
+        }
+    } catch (error) {
+        console.error(error);
+    }
+
+    return true;
 }
