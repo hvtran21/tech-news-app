@@ -42,7 +42,7 @@ export default async function getArticles(
 ): Promise<Article[] | undefined> {
     const db = await SQLite.openDatabaseAsync('newsapp');
     var results = null;
-    var articleRetrievalLimit = 100;
+    var articleRetrievalLimit = 20;
     if (numberOfArticles) {
         articleRetrievalLimit = numberOfArticles;
     }
