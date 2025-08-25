@@ -98,12 +98,13 @@ export async function canRefreshArticles() {
         const query = (await db.getFirstAsync('SELECT * FROM metadata')) as metadataSchema;
 
         // empty query indicates first user sign on
-        if (!query) {
+        if (query === null || query === undefined) {
             console.log('User first launch');
             return true;
         }
 
-        const latestQueryTime = new Date(query.latest_article_query);
+        const latestQueryTimeString: string = (query?.latest_article_query as string) ?? '';
+        const latestQueryTime = new Date(latestQueryTimeString);
         const currentTime = new Date();
 
         console.log(
