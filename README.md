@@ -1,6 +1,6 @@
 # Tech News App
 
-A cross-platform React Native app for browsing, saving, and filtering the latest technology news. No sign ups, or emails required.
+A cross-platform React Native app for browsing, saving, and filtering the latest technology news. None of your personal info required.
 
 ---
 
