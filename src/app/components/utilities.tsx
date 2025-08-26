@@ -99,7 +99,7 @@ export async function updateArticleQueryTime() {
 
 // don't constantly overwhelm the server, not very good.
 export async function canRefreshArticles() {
-    const refreshLimitInMin = 2;
+    const refreshLimitInMin = 0.5;
     const db = await SQLite.openDatabaseAsync('newsapp');
 
     try {
