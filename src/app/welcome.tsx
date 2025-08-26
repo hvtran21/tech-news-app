@@ -41,6 +41,7 @@ async function initializeDatabase() {
     );`);
 
     // init metadata table
+    await db.execAsync('DROP TABLE IF EXISTS metadata;');
     await db.execAsync(`
         PRAGMA journal_mode = WAL;
         CREATE TABLE IF NOT EXISTS metadata (
