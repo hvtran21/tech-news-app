@@ -127,14 +127,14 @@ export async function articleAPI(genreSelection?: string, category?: string, lim
         try {
             await Promise.all(
                 results.map(async (article) => {
-                    console.log(`Inserting article: ${article.id}`);
+                    // console.log(`Inserting arrticle: ${article.id}`);
                     const db = await SQLite.openDatabaseAsync('newsapp');
                     const existing_article = await db.getFirstAsync(
                         'SELECT id FROM articles WHERE id = ?',
                         [article.id],
                     );
                     if (existing_article) {
-                        console.log(`Article with ID ${article.id} exists in DB. Skipping.`);
+                        // console.log(`Article with ID ${article.id} exists in DB. Skipping.`);
                         articleCount -= 1;
                         return;
                     }
