@@ -80,9 +80,17 @@ export async function updateArticleQueryTime() {
     const currentDate = new Date().toISOString();
     const db = await SQLite.openDatabaseAsync('newsapp');
     try {
-        await db.runAsync('UPDATE metadata SET latest_article_query = $date', {
+        const result = await db.runAsync('UPDATE metadata SET latest_article_query = $date', {
             $date: currentDate,
         });
+
+        // first user launch
+        if (result.changes === 0) {
+            await db.runAsync('INSERT INTO metadata (latest_article_query) VALUES ($date)', {
+                $date: currentDate,
+            });
+        }
+
         console.log(`Updated article query date: ${currentDate}`);
     } catch (error) {
         console.error(error);
@@ -99,12 +107,16 @@ export async function canRefreshArticles() {
 
         // empty query indicates first user sign on
         if (query === null || query === undefined) {
-            console.log('User first launch');
             return true;
         }
 
-        const latestQueryTimeString: string = (query?.latest_article_query as string) ?? '';
-        const latestQueryTime = new Date(latestQueryTimeString);
+        const queryResult = query.latest_article_query ?? '';
+
+        if (!queryResult) {
+            throw new Error('latest_article_query is empty. This should not have happened..');
+        }
+
+        const latestQueryTime = new Date(queryResult);
         const currentTime = new Date();
 
         console.log(
@@ -115,11 +127,13 @@ export async function canRefreshArticles() {
         const differenceInMin = differenceInMS / (1000 * 60);
 
         if (differenceInMin < refreshLimitInMin) {
+            console.log('Refresh cooldown in effect.');
             return false;
         }
     } catch (error) {
         console.error(error);
     }
 
+    console.log('Refresh approved!');
     return true;
 }
