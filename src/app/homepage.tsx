@@ -38,6 +38,7 @@ import Article from './components/constants';
 import getArticles, { downloadAndGetArticles } from './components/services';
 import { DeleteArticlesByAge, sortArticlesByDate } from './components/utilities';
 import { canRefreshArticles } from './components/utilities';
+import { updateArticleQueryTime } from './components/utilities';
 
 export type menuOptionProp = {
     title: string;
@@ -177,26 +178,39 @@ export function HomePage() {
     // states for controlling refresh
     const [refreshing, setRefreshing] = useState(false);
     const onRefresh = async () => {
-        setRefreshing(true);
-
         // delete old articles
         DeleteArticlesByAge();
+
+        const canRefresh = await canRefreshArticles();
+
+        if (!canRefresh) {
+            setRefreshing(false);
+            return;
+        }
+
+        setRefreshing(true);
 
         // fetch new articles
         const userPreferences = await AsyncStorage.getItem('genreSelection');
         var newArticles = null;
+
         if (userPreferences) {
             newArticles = await downloadAndGetArticles(userPreferences, undefined);
         } else {
             const category = 'Technology';
             newArticles = await downloadAndGetArticles(undefined, category);
         }
+
         if (newArticles) {
             setArticles(newArticles);
         }
 
         setRefreshing(false);
     };
+
+    useEffect(() => {
+        updateArticleQueryTime();
+    }, []);
 
     const handleEllipsisPress = (id: string) => {
         const fetchArticle = async () => {
@@ -278,13 +292,6 @@ export function HomePage() {
     // initialization of loading articles
     useEffect(() => {
         const getArticles = async () => {
-            const canRefresh = await canRefreshArticles();
-
-            if (!canRefresh) {
-                console.log('Refresh cooling down...');
-                return;
-            }
-
             setLoading(true);
             try {
                 var articles: Article[] = [];
