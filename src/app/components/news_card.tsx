@@ -1,10 +1,8 @@
 import { Text, View, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faEllipsisV, faEllipsisH } from '@fortawesome/free-solid-svg-icons';
-import { useEffect, useState } from 'react';
-import Animated, { SharedValue, useSharedValue } from 'react-native-reanimated';
-import { Article } from '@/server/newsapi';
-import * as SQLite from 'expo-sqlite';
+import { faEllipsisH } from '@fortawesome/free-solid-svg-icons';
+import { useState } from 'react';
+import Animated from 'react-native-reanimated';
 
 function formatDate(date: Date): string {
     if (!(date instanceof Date) || isNaN(date.getTime())) {
