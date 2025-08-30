@@ -184,7 +184,6 @@ export function HomePage() {
         const canRefresh = await canRefreshArticles();
 
         if (!canRefresh) {
-            setRefreshing(false);
             return;
         }
 
