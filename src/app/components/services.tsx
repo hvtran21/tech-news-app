@@ -121,7 +121,6 @@ export async function articleAPI(genreSelection?: string, category?: string, lim
             content: article.content,
             saved: 0,
         }));
-        articleCount += results.length;
 
         // add results to database
         try {
@@ -132,28 +131,28 @@ export async function articleAPI(genreSelection?: string, category?: string, lim
                         'SELECT id FROM articles WHERE id = ?',
                         [article.id],
                     );
-                    if (existing_article) {
-                        articleCount -= 1;
-                        return;
+
+                    if (!existing_article) {
+                        const statement = await db.prepareAsync(
+                            'INSERT OR IGNORE INTO articles(id, genre, category, source, author, title, description, url, url_to_image, published_at, content, saved) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                        );
+                        await statement.executeAsync([
+                            article.id,
+                            article.genre ?? null,
+                            article.category ?? null,
+                            article.source ?? null,
+                            article.author ?? null,
+                            article.title ?? null,
+                            article.description ?? null,
+                            article.url?.toString() ?? null,
+                            article.url_to_image?.toString() ?? null,
+                            article.published_at ?? null,
+                            article.content ?? null,
+                            article.saved ?? 0,
+                        ]);
+                        await statement.finalizeAsync();
+                        articleCount = +1;
                     }
-                    const statement = await db.prepareAsync(
-                        'INSERT OR IGNORE INTO articles(id, genre, category, source, author, title, description, url, url_to_image, published_at, content, saved) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                    );
-                    await statement.executeAsync([
-                        article.id,
-                        article.genre ?? null,
-                        article.category ?? null,
-                        article.source ?? null,
-                        article.author ?? null,
-                        article.title ?? null,
-                        article.description ?? null,
-                        article.url?.toString() ?? null,
-                        article.url_to_image?.toString() ?? null,
-                        article.published_at ?? null,
-                        article.content ?? null,
-                        article.saved ?? 0,
-                    ]);
-                    await statement.finalizeAsync();
                 }),
             );
             return articleCount;
