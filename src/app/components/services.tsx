@@ -1,5 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 import Article from './constants';
+import { updateArticleQueryTime } from './utilities';
 
 const BASE_URL = 'http://192.168.0.52:8000';
 
@@ -30,7 +31,7 @@ export async function downloadAndGetArticles(genreSelection?: string, category?:
     } catch (error) {
         console.error(error);
     }
-
+    updateArticleQueryTime();
     return results as Article[];
 }
 
@@ -151,7 +152,7 @@ export async function articleAPI(genreSelection?: string, category?: string, lim
                             article.saved ?? 0,
                         ]);
                         await statement.finalizeAsync();
-                        articleCount = +1;
+                        articleCount += 1;
                     }
                 }),
             );
