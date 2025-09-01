@@ -118,11 +118,6 @@ export async function canRefreshArticles() {
 
         const latestQueryTime = new Date(queryResult);
         const currentTime = new Date();
-
-        console.log(
-            `Current time: ${currentTime.toISOString()}, query time: ${latestQueryTime.toISOString()}`,
-        );
-
         const differenceInMS = Math.abs(currentTime.getTime() - latestQueryTime.getTime());
         const differenceInMin = differenceInMS / (1000 * 60);
 
