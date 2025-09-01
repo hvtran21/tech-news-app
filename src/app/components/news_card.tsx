@@ -1,7 +1,8 @@
-import { Text, View, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { Text, View, StyleSheet, TouchableOpacity } from 'react-native';
+import { Image } from 'expo-image';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faEllipsisH } from '@fortawesome/free-solid-svg-icons';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Animated from 'react-native-reanimated';
 
 function formatDate(date: Date): string {
@@ -71,6 +72,13 @@ export const NewsCard = ({
     const fallBackImage = require('../../assets/images/computer_2.jpg');
     const uri_image = url_to_image ? { uri: url_to_image } : { uri: fallBackImage };
     const label = genre === '' ? 'Top' : genre;
+
+    useEffect(() => {
+        const result = Image.prefetch(url_to_image, 'disk');
+        if (!result) {
+            console.log(`Failed to prefetch url: ${url_to_image}`);
+        }
+    }, []);
 
     return (
         <Animated.View style={card_style.main_card}>
