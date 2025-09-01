@@ -1,7 +1,7 @@
 import * as SQLite from 'expo-sqlite';
 import Article from './constants';
 
-const BASE_URL = 'http://192.168.0.233:8000';
+const BASE_URL = 'http://192.168.0.52:8000';
 
 export async function downloadAndGetArticles(genreSelection?: string, category?: string) {
     // get articles by genre selection
@@ -127,14 +127,12 @@ export async function articleAPI(genreSelection?: string, category?: string, lim
         try {
             await Promise.all(
                 results.map(async (article) => {
-                    // console.log(`Inserting arrticle: ${article.id}`);
                     const db = await SQLite.openDatabaseAsync('newsapp');
                     const existing_article = await db.getFirstAsync(
                         'SELECT id FROM articles WHERE id = ?',
                         [article.id],
                     );
                     if (existing_article) {
-                        // console.log(`Article with ID ${article.id} exists in DB. Skipping.`);
                         articleCount -= 1;
                         return;
                     }
