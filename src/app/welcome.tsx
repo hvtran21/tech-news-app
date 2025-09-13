@@ -18,6 +18,37 @@ enum options {
     NINTENDO = 'Nintendo',
 }
 
+async function initializeDatabase() {
+    const db = await openDatabaseAsync('newsapp');
+
+    // init articles table
+    await db.execAsync('DROP TABLE IF EXISTS articles;');
+    await db.execAsync(`
+        PRAGMA journal_mode = WAL;
+        CREATE TABLE IF NOT EXISTS articles (
+        id TEXT PRIMARY KEY,
+        genre TEXT,
+        category TEXT,
+        source TEXT,
+        author TEXT,
+        title TEXT,
+        description TEXT,
+        url TEXT,
+        url_to_image TEXT,
+        published_at TEXT,
+        content TEXT,
+        saved INTEGER CHECK (saved IN (0, 1)) DEFAULT 0
+    );`);
+
+    // init metadata table
+    await db.execAsync('DROP TABLE IF EXISTS metadata;');
+    await db.execAsync(`
+        PRAGMA journal_mode = WAL;
+        CREATE TABLE IF NOT EXISTS metadata (
+        latest_article_query TEXT
+        );`);
+}
+
 export const welcomePage = () => {
     const [genre, setGenres] = useState('');
     const [submit, setSubmit] = useState(0);
@@ -34,27 +65,7 @@ export const welcomePage = () => {
     }, [genre]);
 
     useEffect(() => {
-        const initializeDatabase = async () => {
-            const db = await openDatabaseAsync('newsapp');
-            await db.execAsync('DROP TABLE IF EXISTS articles;');
-            await db.execAsync(`
-                PRAGMA journal_mode = WAL;
-                CREATE TABLE IF NOT EXISTS articles (
-                id TEXT PRIMARY KEY,
-                genre TEXT,
-                category TEXT,
-                source TEXT,
-                author TEXT,
-                title TEXT,
-                description TEXT,
-                url TEXT,
-                url_to_image TEXT,
-                published_at TEXT,
-                content TEXT,
-                saved INTEGER CHECK (saved IN (0, 1)) DEFAULT 0
-                );`);
-        };
-        initializeDatabase().catch(console.error);
+        initializeDatabase();
     }, []);
 
     return (

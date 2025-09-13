@@ -35,8 +35,10 @@ import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Article from './components/constants';
-import getArticles, { articleAPI, downloadAndGetArticles } from './components/services';
+import getArticles, { downloadAndGetArticles } from './components/services';
 import { DeleteArticlesByAge, sortArticlesByDate } from './components/utilities';
+import { canRefreshArticles } from './components/utilities';
+import { updateArticleQueryTime } from './components/utilities';
 
 export type menuOptionProp = {
     title: string;
@@ -176,26 +178,38 @@ export function HomePage() {
     // states for controlling refresh
     const [refreshing, setRefreshing] = useState(false);
     const onRefresh = async () => {
-        setRefreshing(true);
-
         // delete old articles
         DeleteArticlesByAge();
+
+        const canRefresh = await canRefreshArticles();
+
+        if (!canRefresh) {
+            return;
+        }
+
+        setRefreshing(true);
 
         // fetch new articles
         const userPreferences = await AsyncStorage.getItem('genreSelection');
         var newArticles = null;
+
         if (userPreferences) {
             newArticles = await downloadAndGetArticles(userPreferences, undefined);
         } else {
             const category = 'Technology';
             newArticles = await downloadAndGetArticles(undefined, category);
         }
+
         if (newArticles) {
             setArticles(newArticles);
         }
 
         setRefreshing(false);
     };
+
+    useEffect(() => {
+        updateArticleQueryTime();
+    }, []);
 
     const handleEllipsisPress = (id: string) => {
         const fetchArticle = async () => {

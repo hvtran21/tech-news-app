@@ -1,7 +1,8 @@
 import * as SQLite from 'expo-sqlite';
 import Article from './constants';
+import { updateArticleQueryTime } from './utilities';
 
-const BASE_URL = 'http://192.168.0.233:8000';
+const BASE_URL = 'http://192.168.0.52:8000';
 
 export async function downloadAndGetArticles(genreSelection?: string, category?: string) {
     // get articles by genre selection
@@ -30,7 +31,7 @@ export async function downloadAndGetArticles(genreSelection?: string, category?:
     } catch (error) {
         console.error(error);
     }
-
+    updateArticleQueryTime();
     return results as Article[];
 }
 
@@ -42,7 +43,7 @@ export default async function getArticles(
 ): Promise<Article[] | undefined> {
     const db = await SQLite.openDatabaseAsync('newsapp');
     var results = null;
-    var articleRetrievalLimit = 100;
+    var articleRetrievalLimit = 20;
     if (numberOfArticles) {
         articleRetrievalLimit = numberOfArticles;
     }
@@ -121,41 +122,38 @@ export async function articleAPI(genreSelection?: string, category?: string, lim
             content: article.content,
             saved: 0,
         }));
-        articleCount += results.length;
 
         // add results to database
         try {
             await Promise.all(
                 results.map(async (article) => {
-                    console.log(`Inserting article: ${article.id}`);
                     const db = await SQLite.openDatabaseAsync('newsapp');
                     const existing_article = await db.getFirstAsync(
                         'SELECT id FROM articles WHERE id = ?',
                         [article.id],
                     );
-                    if (existing_article) {
-                        console.log(`Article with ID ${article.id} exists in DB. Skipping.`);
-                        articleCount -= 1;
-                        return;
+
+                    if (!existing_article) {
+                        const statement = await db.prepareAsync(
+                            'INSERT OR IGNORE INTO articles(id, genre, category, source, author, title, description, url, url_to_image, published_at, content, saved) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                        );
+                        await statement.executeAsync([
+                            article.id,
+                            article.genre ?? null,
+                            article.category ?? null,
+                            article.source ?? null,
+                            article.author ?? null,
+                            article.title ?? null,
+                            article.description ?? null,
+                            article.url?.toString() ?? null,
+                            article.url_to_image?.toString() ?? null,
+                            article.published_at ?? null,
+                            article.content ?? null,
+                            article.saved ?? 0,
+                        ]);
+                        await statement.finalizeAsync();
+                        articleCount += 1;
                     }
-                    const statement = await db.prepareAsync(
-                        'INSERT OR IGNORE INTO articles(id, genre, category, source, author, title, description, url, url_to_image, published_at, content, saved) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                    );
-                    await statement.executeAsync([
-                        article.id,
-                        article.genre ?? null,
-                        article.category ?? null,
-                        article.source ?? null,
-                        article.author ?? null,
-                        article.title ?? null,
-                        article.description ?? null,
-                        article.url?.toString() ?? null,
-                        article.url_to_image?.toString() ?? null,
-                        article.published_at ?? null,
-                        article.content ?? null,
-                        article.saved ?? 0,
-                    ]);
-                    await statement.finalizeAsync();
                 }),
             );
             return articleCount;
