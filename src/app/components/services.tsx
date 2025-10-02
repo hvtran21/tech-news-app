@@ -2,7 +2,7 @@ import * as SQLite from 'expo-sqlite';
 import Article from './constants';
 import { updateArticleQueryTime } from './utilities';
 
-const BASE_URL = 'http://192.168.0.52:8000';
+const BASE_URL = 'http://192.168.0.248:8081';
 
 export async function downloadAndGetArticles(genreSelection?: string, category?: string) {
     // get articles by genre selection
@@ -12,7 +12,7 @@ export async function downloadAndGetArticles(genreSelection?: string, category?:
             const result = await articleAPI(genreSelection, undefined);
 
             if (result === undefined || result === null) {
-                console.error('Error in articleAPI');
+                console.error(`Error: Recieved ${result} from the API. Try again.`);
                 return;
             }
             console.log(`${result} articles downloaded.`);
@@ -21,7 +21,7 @@ export async function downloadAndGetArticles(genreSelection?: string, category?:
             const result = await articleAPI(undefined, category);
 
             if (result === undefined || result === null) {
-                console.error('Error in articleAPI');
+                console.error(`Error: Recieved ${result} from the API. Try again.`);
                 return;
             }
 
@@ -102,9 +102,17 @@ export async function articleAPI(genreSelection?: string, category?: string, lim
                 articleRetrievalLimit: { limit },
             }),
         });
-        if (!response.ok) {
-            throw new Error(`Error ocurred, response status: ${response.status}`);
+
+        if (response.status == 500) {
+            console.error('Server is down... start the server?');
+            return;
         }
+
+        if (!response.ok) {
+            console.error(`Error ocurred, response status: ${response.status}`);
+            return;
+        }
+
         var articleCount = 0;
         var data = await response.json();
         const articles = data.articles as Article[];
