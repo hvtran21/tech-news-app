@@ -309,7 +309,9 @@ export function HomePage() {
                     }
                 }
 
-                setArticles(articles);
+                if (articles) {
+                    setArticles(articles);
+                }
             } catch (error) {
                 console.error(`Error ocurred: ${error}`);
             } finally {
