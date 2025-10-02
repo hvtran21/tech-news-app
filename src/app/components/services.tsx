@@ -102,9 +102,17 @@ export async function articleAPI(genreSelection?: string, category?: string, lim
                 articleRetrievalLimit: { limit },
             }),
         });
-        if (!response.ok) {
-            throw new Error(`Error ocurred, response status: ${response.status}`);
+
+        if (response.status == 500) {
+            console.error('Server is down... start the server?');
+            return;
         }
+
+        if (!response.ok) {
+            console.error(`Error ocurred, response status: ${response.status}`);
+            return;
+        }
+
         var articleCount = 0;
         var data = await response.json();
         const articles = data.articles as Article[];
