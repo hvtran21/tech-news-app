@@ -2,7 +2,7 @@ import * as SQLite from 'expo-sqlite';
 import Article from './constants';
 import { updateArticleQueryTime } from './utilities';
 
-const BASE_URL = 'http://192.168.0.248:8000';
+const BASE_URL = 'http://192.168.0.248:8081';
 
 export async function downloadAndGetArticles(genreSelection?: string, category?: string) {
     // get articles by genre selection
@@ -12,7 +12,7 @@ export async function downloadAndGetArticles(genreSelection?: string, category?:
             const result = await articleAPI(genreSelection, undefined);
 
             if (result === undefined || result === null) {
-                console.error(`Error: Recieved ${result} from articleAPI`);
+                console.error(`Error: Recieved ${result} from the API. Try again.`);
                 return;
             }
             console.log(`${result} articles downloaded.`);
@@ -21,7 +21,7 @@ export async function downloadAndGetArticles(genreSelection?: string, category?:
             const result = await articleAPI(undefined, category);
 
             if (result === undefined || result === null) {
-                console.error(`Error: Recieved ${result} from articleAPI`);
+                console.error(`Error: Recieved ${result} from the API. Try again.`);
                 return;
             }
 
