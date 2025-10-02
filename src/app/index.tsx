@@ -30,9 +30,13 @@ export default function main() {
         'WorkSans-LightItalic': require('../assets/fonts/WorkSans/WorkSans-LightItalic.ttf'),
         'WorkSans-ExtraLight': require('../assets/fonts/WorkSans/WorkSans-ExtraLight.ttf'),
     });
+
     useEffect(() => {
         const init = async () => {
+            if (!fontsLoaded) return;
+
             const firstLaunch = await checkFirstLaunch();
+            // const firstLaunch = true;
             if (firstLaunch === true) {
                 router.push('/welcome');
             } else {
@@ -40,5 +44,5 @@ export default function main() {
             }
         };
         init();
-    }, []);
+    }, [fontsLoaded]);
 }
