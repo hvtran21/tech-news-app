@@ -109,4 +109,8 @@ The backend is written using TypeScript, Node.js, and Express, exposing REST API
 
 ---
 
+  ## Screen shots
+  <img width="508" height="1103" alt="image" src="https://github.com/user-attachments/assets/19ce9490-b7fc-4561-94e9-298e8f73d568" />
+  <img width="512" height="1115" alt="image" src="https://github.com/user-attachments/assets/4788c5d9-a6fb-4be6-b438-6c780ffb5498" />
+
 Feel free to further expand sections as the project grows!
