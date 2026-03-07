@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faHome, faMagnifyingGlass, faBookmark } from '@fortawesome/free-solid-svg-icons';
+import { faHome, faBookmark, faUser } from '@fortawesome/free-solid-svg-icons';
 import { StyleSheet } from 'react-native';
 
 export default function TabLayout() {
@@ -24,20 +24,20 @@ export default function TabLayout() {
                 }}
             />
             <Tabs.Screen
-                name="search"
-                options={{
-                    title: 'Search',
-                    tabBarIcon: ({ color }) => (
-                        <FontAwesomeIcon icon={faMagnifyingGlass} size={18} color={color} />
-                    ),
-                }}
-            />
-            <Tabs.Screen
                 name="saved"
                 options={{
                     title: 'Saved',
                     tabBarIcon: ({ color }) => (
                         <FontAwesomeIcon icon={faBookmark} size={18} color={color} />
+                    ),
+                }}
+            />
+            <Tabs.Screen
+                name="profile"
+                options={{
+                    title: 'Profile',
+                    tabBarIcon: ({ color }) => (
+                        <FontAwesomeIcon icon={faUser} size={18} color={color} />
                     ),
                 }}
             />

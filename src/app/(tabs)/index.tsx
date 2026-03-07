@@ -15,10 +15,13 @@ import {
     FlatList,
     RefreshControl,
     ActivityIndicator,
+    TextInput,
+    Keyboard,
 } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
+import { useFocusEffect } from 'expo-router';
 import { NewsCard } from '../components/news_card';
-import { GradientText, HorizonalLine } from '../components/styles';
+import { TabHeader, HorizonalLine } from '../components/styles';
 import {
     faHouse,
     faAngleDown,
@@ -29,16 +32,16 @@ import {
     faFlag,
     faBan,
     faUpRightFromSquare,
+    faMagnifyingGlass,
 } from '@fortawesome/free-solid-svg-icons';
 import IconFontAwesome from '@react-native-vector-icons/fontawesome';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Article from '../components/constants';
-import getArticles, { downloadAndGetArticles } from '../components/services';
-import { deleteArticlesByAge, sortArticlesByDate } from '../components/utilities';
-import { canRefreshArticles, updateArticleQueryTime } from '../components/utilities';
-import ReAnimated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import getArticles, { downloadAndGetArticles, getAllArticles, searchArticles } from '../components/services';
+import { deleteArticlesByAge, canRefreshArticles } from '../components/utilities';
+import ReAnimated, { FadeIn } from 'react-native-reanimated';
 
 type MenuOptionProp = {
     title: string;
@@ -109,40 +112,56 @@ export default function HomeFeed() {
     const [top, setTop] = useState(false);
 
     const [visible, setVisible] = useState(false);
-    const [render, setRender] = useState(false);
     const heightAnim = useRef(new Animated.Value(0)).current;
     const fadeAnimArticles = useRef(new Animated.Value(0)).current;
+    const slideAnimArticles = useRef(new Animated.Value(12)).current;
 
     const [showModal, setShowModal] = useState(false);
     const [modalArticle, setModalArticle] = useState<Article>();
     const { height } = Dimensions.get('window');
 
     const [refreshing, setRefreshing] = useState(false);
+    const initialLoadDone = useRef(false);
+
+    // Search state
+    const [searchOpen, setSearchOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const searchAnim = useRef(new Animated.Value(0)).current;
+    const searchInputRef = useRef<TextInput>(null);
+    const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const preSearchArticles = useRef<Article[]>([]);
+
+    const loadByFilter = useCallback(async (activeFilter: string): Promise<Article[]> => {
+        const userPreferences = await AsyncStorage.getItem('genreSelection');
+        if (activeFilter === 'Recent') {
+            return await getAllArticles();
+        } else if (activeFilter === 'Top') {
+            return (await getArticles(undefined, 'Technology')) ?? [];
+        }
+        // Home
+        if (userPreferences) {
+            return (await getArticles(userPreferences, undefined)) ?? [];
+        }
+        return (await getArticles(undefined, 'Technology')) ?? [];
+    }, []);
 
     const onRefresh = useCallback(async () => {
-     deleteArticlesByAge();
         const canRefresh = await canRefreshArticles();
         if (!canRefresh) return;
 
         setRefreshing(true);
+        await deleteArticlesByAge();
+
         const userPreferences = await AsyncStorage.getItem('genreSelection');
-        let newArticles = null;
-
         if (userPreferences) {
-            newArticles = await downloadAndGetArticles(userPreferences, undefined);
-        } else {
-            newArticles = await downloadAndGetArticles(undefined, 'Technology');
+            await downloadAndGetArticles(userPreferences, undefined);
         }
+        await downloadAndGetArticles(undefined, 'Technology');
 
-        if (newArticles) {
-            setArticles(newArticles);
-        }
+        const newArticles = await loadByFilter(filter);
+        setArticles(newArticles);
         setRefreshing(false);
-    }, []);
-
-    useEffect(() => {
-        updateArticleQueryTime();
-    }, []);
+    }, [filter, loadByFilter]);
 
     const handleEllipsisPress = useCallback((id: string) => {
         const fetchArticle = async () => {
@@ -163,125 +182,173 @@ export default function HomeFeed() {
         }
     }, [modalArticle]);
 
-    const fadeIn = useCallback(() => {
-        Animated.timing(fadeAnimArticles, {
-            toValue: 1,
-            duration: 500,
+    const animateContent = useCallback(() => {
+        Animated.parallel([
+            Animated.timing(fadeAnimArticles, {
+                toValue: 1,
+                duration: 350,
+                useNativeDriver: true,
+            }),
+            Animated.timing(slideAnimArticles, {
+                toValue: 0,
+                duration: 350,
+                useNativeDriver: true,
+            }),
+        ]).start();
+    }, [fadeAnimArticles, slideAnimArticles]);
+
+    const resetContentAnim = useCallback(() => {
+        fadeAnimArticles.setValue(0);
+        slideAnimArticles.setValue(12);
+    }, [fadeAnimArticles, slideAnimArticles]);
+
+    const toggleMenu = useCallback(() => {
+        const opening = !visible;
+        setVisible(opening);
+        Animated.timing(heightAnim, {
+            toValue: opening ? 1 : 0,
+            duration: 120,
             useNativeDriver: true,
         }).start();
-    }, [fadeAnimArticles]);
+    }, [visible, heightAnim]);
 
-    const modalOpenAnim = useCallback(() => {
-        heightAnim.setValue(0);
-        setRender(true);
-        requestAnimationFrame(() => {
-            Animated.timing(heightAnim, {
-                toValue: 1,
-                duration: 140,
-                useNativeDriver: true,
-            }).start();
-        });
-    }, [heightAnim]);
-
-    const modalCloseAnim = useCallback(() => {
-        Animated.timing(heightAnim, {
-            toValue: 0,
-            duration: 140,
-            useNativeDriver: true,
+    // Search toggle
+    const toggleSearch = useCallback(() => {
+        const opening = !searchOpen;
+        setSearchOpen(opening);
+        Animated.timing(searchAnim, {
+            toValue: opening ? 1 : 0,
+            duration: 200,
+            useNativeDriver: false,
         }).start(() => {
-            setRender(false);
+            if (opening) {
+                searchInputRef.current?.focus();
+            } else {
+                // Closing search — restore articles
+                setSearchQuery('');
+                if (preSearchArticles.current.length > 0) {
+                    setArticles(preSearchArticles.current);
+                    preSearchArticles.current = [];
+                }
+                Keyboard.dismiss();
+            }
         });
-    }, [heightAnim]);
+    }, [searchOpen, searchAnim]);
+
+    const handleSearchChange = useCallback((text: string) => {
+        setSearchQuery(text);
+        if (debounceTimer.current) {
+            clearTimeout(debounceTimer.current);
+        }
+        debounceTimer.current = setTimeout(async () => {
+            if (text.trim().length === 0) {
+                if (preSearchArticles.current.length > 0) {
+                    setArticles(preSearchArticles.current);
+                }
+                return;
+            }
+            const results = await searchArticles(text.trim());
+            setArticles(results);
+        }, 300);
+    }, []);
+
+    const handleSearchOpen = useCallback(() => {
+        // Save current articles before searching
+        preSearchArticles.current = articles;
+        toggleSearch();
+    }, [articles, toggleSearch]);
+
+    const handleSearchClear = useCallback(() => {
+        setSearchQuery('');
+        searchInputRef.current?.clear();
+        if (preSearchArticles.current.length > 0) {
+            setArticles(preSearchArticles.current);
+        }
+    }, []);
 
     useEffect(() => {
-        fadeAnimArticles.setValue(0);
-        fadeIn();
+        resetContentAnim();
+        animateContent();
     }, [filter]);
 
-    useEffect(() => {
-        if (visible) {
-            modalOpenAnim();
-        } else {
-            modalCloseAnim();
-        }
-    }, [visible]);
+    useFocusEffect(
+        useCallback(() => {
+            if (initialLoadDone.current) {
+                resetContentAnim();
+                animateContent();
+            }
+        }, [resetContentAnim, animateContent]),
+    );
 
-    // initial article load
+    // initial article load — download from backend, then display
     useEffect(() => {
         const loadArticles = async () => {
             setLoading(true);
             try {
                 const existingPreferences = await AsyncStorage.getItem('genreSelection');
-                let loadedArticles: Article[] = [];
 
+                // download user's genres
                 if (existingPreferences) {
-                    loadedArticles =
-                        (await downloadAndGetArticles(existingPreferences, undefined)) ?? [];
-                } else {
-                    loadedArticles =
-                        (await downloadAndGetArticles(undefined, 'Technology')) ?? [];
+                    await downloadAndGetArticles(existingPreferences, undefined);
                 }
+                // always download Technology category so Top filter has data
+                await downloadAndGetArticles(undefined, 'Technology');
 
-                if (loadedArticles) {
-                    setArticles(loadedArticles);
-                }
+                const loadedArticles = await loadByFilter('Home');
+                setArticles(loadedArticles);
             } catch (error) {
                 console.error(`Error occurred: ${error}`);
             } finally {
                 setLoading(false);
-                fadeIn();
+                animateContent();
+                initialLoadDone.current = true;
             }
         };
         loadArticles();
     }, []);
 
-    // filter changes
+    // filter changes — skip initial render (handled by initial load above)
     useEffect(() => {
-        const getArticlesByFilter = async () => {
+        if (!initialLoadDone.current) return;
+
+        const applyFilter = async () => {
             setLoading(true);
             try {
-                let filterArticles: Article[] = [];
                 if (filter === 'Top') {
-                    filterArticles = (await getArticles(undefined, 'Technology')) as Article[] ?? [];
-                    setTop(true);
-                    setHome(false);
-                    setRecent(false);
+                    setTop(true); setHome(false); setRecent(false);
                 } else if (filter === 'Home') {
-                    const existingPreferences = await AsyncStorage.getItem('genreSelection');
-                    if (existingPreferences) {
-                        filterArticles =
-                            (await getArticles(existingPreferences, undefined)) as Article[] ?? [];
-                    } else {
-                        filterArticles =
-                            (await getArticles(undefined, 'Technology')) as Article[] ?? [];
-                    }
-                    setHome(true);
-                    setRecent(false);
-                    setTop(false);
+                    setHome(true); setRecent(false); setTop(false);
                 } else if (filter === 'Recent') {
-                    filterArticles = sortArticlesByDate(articles);
-                    setRecent(true);
-                    setHome(false);
-                    setTop(false);
+                    setRecent(true); setHome(false); setTop(false);
                 }
 
-                setArticles(filterArticles);
+                const filtered = await loadByFilter(filter);
+                setArticles(filtered);
             } catch (error) {
                 console.error(`Error occurred: ${error}`);
             } finally {
                 setLoading(false);
-                fadeIn();
+                animateContent();
             }
         };
 
-        getArticlesByFilter();
-    }, [filter]);
+        applyFilter();
+    }, [filter, loadByFilter]);
+
+    const searchBarHeight = searchAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [0, 52],
+    });
 
     const EmptyState = () => (
         <ReAnimated.View entering={FadeIn.duration(500)} style={empty_styles.container}>
-            <Text style={empty_styles.title}>No articles yet</Text>
+            <Text style={empty_styles.title}>
+                {searchOpen && searchQuery.length > 0 ? 'No results found' : 'No articles yet'}
+            </Text>
             <Text style={empty_styles.subtitle}>
-                Pull down to refresh, or check your server connection.
+                {searchOpen && searchQuery.length > 0
+                    ? 'Try different keywords or check your spelling.'
+                    : 'Pull down to refresh, or check your server connection.'}
             </Text>
         </ReAnimated.View>
     );
@@ -290,29 +357,37 @@ export default function HomeFeed() {
         <SafeAreaProvider>
             <SafeAreaView style={base_template.theme} edges={['top', 'left', 'right']}>
                 <View style={base_template.config}>
-                    <View style={base_template.header}>
-                        <ReAnimated.View entering={FadeInDown.duration(400)}>
-                            <GradientText
-                                colors={['#8B5CF6', '#EC4899']}
-                                text="Your Tech News"
-                                style={base_template.title}
-                            />
-                        </ReAnimated.View>
-                        <View style={base_template.filter_area}>
-                            <TouchableOpacity
-                                onPress={() => setVisible((state) => !state)}
-                                style={menu_styles.trigger}
-                                activeOpacity={0.7}
-                            >
-                                <Text style={menu_styles.trigger_text}>{filter}</Text>
-                                <FontAwesomeIcon
-                                    icon={visible ? faAngleUp : faAngleDown}
-                                    size={12}
-                                    style={{ color: 'white', opacity: 0.5 }}
-                                />
-                            </TouchableOpacity>
-                            {render && (
+                    <TabHeader
+                        title="Feed"
+                        rightAccessory={
+                            <View style={base_template.filter_area}>
+                                <TouchableOpacity
+                                    onPress={searchOpen ? toggleSearch : handleSearchOpen}
+                                    style={search_styles.icon_btn}
+                                    activeOpacity={0.7}
+                                    hitSlop={8}
+                                >
+                                    <FontAwesomeIcon
+                                        icon={searchOpen ? faCircleXmark : faMagnifyingGlass}
+                                        size={16}
+                                        color="white"
+                                        style={{ opacity: searchOpen ? 0.6 : 0.4 }}
+                                    />
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    onPress={toggleMenu}
+                                    style={menu_styles.trigger}
+                                    activeOpacity={0.7}
+                                >
+                                    <Text style={menu_styles.trigger_text}>{filter}</Text>
+                                    <FontAwesomeIcon
+                                        icon={visible ? faAngleUp : faAngleDown}
+                                        size={12}
+                                        style={{ color: 'white', opacity: 0.5 }}
+                                    />
+                                </TouchableOpacity>
                                 <Animated.View
+                                    pointerEvents={visible ? 'auto' : 'none'}
                                     style={[
                                         menu_styles.dropdown,
                                         {
@@ -324,6 +399,11 @@ export default function HomeFeed() {
                                     <FilterMenu
                                         setFilter={(f) => {
                                             setFilter(f);
+                                            Animated.timing(heightAnim, {
+                                                toValue: 0,
+                                                duration: 100,
+                                                useNativeDriver: true,
+                                            }).start();
                                             setVisible(false);
                                         }}
                                         home={home}
@@ -331,12 +411,46 @@ export default function HomeFeed() {
                                         top={top}
                                     />
                                 </Animated.View>
+                            </View>
+                        }
+                    />
+
+                    {/* Inline search bar */}
+                    <Animated.View style={[search_styles.bar_wrapper, { height: searchBarHeight, opacity: searchAnim }]}>
+                        <View style={search_styles.bar}>
+                            <FontAwesomeIcon
+                                icon={faMagnifyingGlass}
+                                size={14}
+                                color="white"
+                                style={{ opacity: 0.3, marginRight: 10 }}
+                            />
+                            <TextInput
+                                ref={searchInputRef}
+                                style={search_styles.input}
+                                placeholder="Search articles..."
+                                placeholderTextColor="rgba(255, 255, 255, 0.25)"
+                                value={searchQuery}
+                                onChangeText={handleSearchChange}
+                                returnKeyType="search"
+                                autoCapitalize="none"
+                                autoCorrect={false}
+                                onSubmitEditing={() => Keyboard.dismiss()}
+                            />
+                            {searchQuery.length > 0 && (
+                                <TouchableOpacity onPress={handleSearchClear} hitSlop={10}>
+                                    <FontAwesomeIcon
+                                        icon={faCircleXmark}
+                                        size={14}
+                                        color="white"
+                                        style={{ opacity: 0.3 }}
+                                    />
+                                </TouchableOpacity>
                             )}
                         </View>
-                    </View>
+                    </Animated.View>
 
                     {visible && (
-                        <TouchableWithoutFeedback onPress={() => setVisible(false)}>
+                        <TouchableWithoutFeedback onPress={toggleMenu}>
                             <View style={menu_styles.backdrop} />
                         </TouchableWithoutFeedback>
                     )}
@@ -349,10 +463,11 @@ export default function HomeFeed() {
                             </Text>
                         </View>
                     ) : (
-                        <Animated.View style={{ opacity: fadeAnimArticles, flex: 1 }}>
+                        <Animated.View style={{ opacity: fadeAnimArticles, transform: [{ translateY: slideAnimArticles }], flex: 1 }}>
                             <FlatList
                                 showsVerticalScrollIndicator={false}
                                 data={articles}
+                                keyboardShouldPersistTaps="handled"
                                 contentContainerStyle={
                                     articles.length === 0
                                         ? { flexGrow: 1, justifyContent: 'center' }
@@ -393,7 +508,7 @@ export default function HomeFeed() {
                         onRequestClose={() => setShowModal(false)}
                     >
                         <TouchableWithoutFeedback onPress={() => setShowModal(false)}>
-                            <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.4)' }} />
+                            <View style={{ flex: 1 }} />
                         </TouchableWithoutFeedback>
                         <View style={[modal_styles.sheet, { top: height - 250 }]}>
                             <ModalOptions setShowModal={setShowModal} article={modalArticle} />
@@ -524,6 +639,33 @@ const empty_styles = StyleSheet.create({
     },
 });
 
+const search_styles = StyleSheet.create({
+    icon_btn: {
+        padding: 8,
+        marginRight: 8,
+    },
+    bar_wrapper: {
+        overflow: 'hidden',
+        paddingHorizontal: 16,
+    },
+    bar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#141414',
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        marginBottom: 8,
+    },
+    input: {
+        flex: 1,
+        fontFamily: 'WorkSans-Regular',
+        fontSize: 15,
+        color: 'white',
+        padding: 0,
+    },
+});
+
 const menu_styles = StyleSheet.create({
     trigger: {
         flexDirection: 'row',
@@ -643,27 +785,11 @@ const base_template = StyleSheet.create({
         width: '100%',
         flexDirection: 'column',
     },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        width: '100%',
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderBottomColor: '#141414',
-        borderBottomWidth: StyleSheet.hairlineWidth,
-        zIndex: 10,
-    },
     filter_area: {
         flexDirection: 'row',
+        alignItems: 'center',
         justifyContent: 'flex-start',
         overflow: 'visible',
         zIndex: 10,
-    },
-    title: {
-        justifyContent: 'center',
-        alignContent: 'center',
-        fontFamily: 'WorkSans-Bold',
-        fontSize: 24,
     },
 });
