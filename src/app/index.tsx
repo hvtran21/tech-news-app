@@ -1,18 +1,15 @@
 import { useEffect } from 'react';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { useFonts } from 'expo-font';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as AppleAuthentication from 'expo-apple-authentication';
 
 const checkFirstLaunch = async () => {
     try {
-        console.log('Checking first launch..');
         const val = await AsyncStorage.getItem('firstLaunch');
         if (val !== null) {
-            console.log('Not first launch');
             return false;
         } else {
-            console.log('First launch');
             await AsyncStorage.setItem('firstLaunch', 'false');
             return true;
         }
@@ -21,7 +18,7 @@ const checkFirstLaunch = async () => {
     }
 };
 
-export default function main() {
+export default function Main() {
     const [fontsLoaded] = useFonts({
         'WorkSans-Regular': require('../assets/fonts/WorkSans/WorkSans-Regular.ttf'),
         'WorkSans-Bold': require('../assets/fonts/WorkSans/WorkSans-Bold.ttf'),
@@ -36,13 +33,27 @@ export default function main() {
             if (!fontsLoaded) return;
 
             const firstLaunch = await checkFirstLaunch();
-            // const firstLaunch = true;
-            if (firstLaunch === true) {
-                router.push('/welcome');
+            if (true) {
+                router.replace('/welcome');
             } else {
-                router.push('/homepage');
+                router.replace('/(tabs)');
             }
         };
         init();
     }, [fontsLoaded]);
+
+    return (
+        <View style={styles.container}>
+            <ActivityIndicator size="small" color="#8B5CF6" />
+        </View>
+    );
 }
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#000000',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+});
