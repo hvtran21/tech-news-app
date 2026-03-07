@@ -1,4 +1,6 @@
 import express from 'express';
+import swaggerUi from 'swagger-ui-express';
+import swaggerSpec from '../swagger';
 import { articleTableDefinition } from '../models';
 import fetchArticles from '../newsapi';
 import techGenres, { categories } from '../constants';
@@ -68,9 +70,39 @@ async function removeOldArticles(days?: number): Promise<number> {
 const serverStart = () => {
     const server = express();
     server.use(express.json());
+    server.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
     const port = process.env.PORT;
 
-    // endpoint to delete articles - shouldn't really be an endpoint, but that's fine.
+    /**
+     * @openapi
+     * /api/RemoveOldArticles:
+     *   post:
+     *     summary: Remove old articles from the database
+     *     requestBody:
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             properties:
+     *               days:
+     *                 type: integer
+     *                 description: Number of days to keep (default 7)
+     *                 example: 7
+     *     responses:
+     *       200:
+     *         description: Articles removed successfully
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 ok:
+     *                   type: boolean
+     *                 message:
+     *                   type: string
+     *       500:
+     *         description: Internal server error
+     */
     server.post('/api/RemoveOldArticles', (req, res) => {
         const days = req.body?.days as number;
         const execute = async (days: number) => {
@@ -92,6 +124,26 @@ const serverStart = () => {
         execute(days);
     });
 
+    /**
+     * @openapi
+     * /api/FetchArticles:
+     *   get:
+     *     summary: Fetch articles from NewsAPI for all genres and categories
+     *     responses:
+     *       200:
+     *         description: Articles fetched and stored successfully
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 ok:
+     *                   type: boolean
+     *                 message:
+     *                   type: string
+     *       500:
+     *         description: Internal server error
+     */
     server.get('/api/FetchArticles', (req, res) => {
         const execute = async () => {
             const result = await retrieveData();
@@ -113,6 +165,77 @@ const serverStart = () => {
         execute();
     });
 
+    /**
+     * @openapi
+     * /api/GetArticles:
+     *   post:
+     *     summary: Get articles by genre or category
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             properties:
+     *               genre:
+     *                 type: object
+     *                 properties:
+     *                   genre:
+     *                     type: string
+     *                     description: Comma-separated genre values
+     *                     example: "Artificial Intelligence,Gaming"
+     *               category:
+     *                 type: object
+     *                 properties:
+     *                   cat:
+     *                     type: string
+     *                     description: Category value
+     *                     example: "Technology"
+     *               articleRetrievalLimit:
+     *                 type: object
+     *                 properties:
+     *                   limit:
+     *                     type: integer
+     *                     description: Max articles per genre
+     *                     example: 10
+     *     responses:
+     *       200:
+     *         description: Articles retrieved successfully
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 articles:
+     *                   type: array
+     *                   items:
+     *                     type: object
+     *                     properties:
+     *                       id:
+     *                         type: string
+     *                         format: uuid
+     *                       genre:
+     *                         type: string
+     *                       category:
+     *                         type: string
+     *                       source:
+     *                         type: string
+     *                       author:
+     *                         type: string
+     *                       title:
+     *                         type: string
+     *                       description:
+     *                         type: string
+     *                       url:
+     *                         type: string
+     *                       url_to_image:
+     *                         type: string
+     *                       published_at:
+     *                         type: string
+     *                         format: date
+     *                       content:
+     *                         type: string
+     */
     server.post('/api/GetArticles', (req, res) => {
         let genres = req.body.genre?.genre as string;
         let category = req.body.category?.cat as string;
