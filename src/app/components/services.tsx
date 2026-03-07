@@ -2,95 +2,93 @@ import * as SQLite from 'expo-sqlite';
 import Article from './constants';
 import { updateArticleQueryTime } from './utilities';
 
-const BASE_URL = 'http://192.168.0.248:8081';
+const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL || 'http://localhost:8081';
 
 export async function downloadAndGetArticles(genreSelection?: string, category?: string) {
-    // get articles by genre selection
     try {
-        var results = null;
+        let results = null;
         if (genreSelection) {
-            const result = await articleAPI(genreSelection, undefined);
-
-            if (result === undefined || result === null) {
-                console.error(`Error: Recieved ${result} from the API. Try again.`);
+            const count = await articleAPI(genreSelection, undefined);
+            if (count === undefined || count === null) {
+                console.error(`Error: Received ${count} from the API.`);
                 return;
             }
-            console.log(`${result} articles downloaded.`);
             results = await getArticles(genreSelection, undefined);
         } else if (category) {
-            const result = await articleAPI(undefined, category);
-
-            if (result === undefined || result === null) {
-                console.error(`Error: Recieved ${result} from the API. Try again.`);
+            const count = await articleAPI(undefined, category);
+            if (count === undefined || count === null) {
+                console.error(`Error: Received ${count} from the API.`);
                 return;
             }
-
-            console.log(`${result} articles downloaded.`);
             results = await getArticles(undefined, category);
         }
+        updateArticleQueryTime();
+        return results as Article[];
     } catch (error) {
         console.error(error);
     }
-    updateArticleQueryTime();
-    return results as Article[];
 }
 
-// fetches articles from SQLite DB
 export default async function getArticles(
     genreSelection?: string,
     category?: string,
     numberOfArticles?: number,
 ): Promise<Article[] | undefined> {
     const db = await SQLite.openDatabaseAsync('newsapp');
-    var results = null;
-    var articleRetrievalLimit = 20;
-    if (numberOfArticles) {
-        articleRetrievalLimit = numberOfArticles;
-    }
+    const articleRetrievalLimit = numberOfArticles || 20;
 
-    // genreSelection can be comma seperated genres
     if (genreSelection !== undefined && category === undefined) {
         const genreArr = genreSelection.split(',');
-        results = await Promise.all(
+        const results = await Promise.all(
             genreArr.map(async (genre) => {
-                const query_results = await db.getAllAsync(
+                return await db.getAllAsync(
                     `SELECT * FROM articles WHERE genre = ? LIMIT ${articleRetrievalLimit}`,
                     [genre],
                 );
-                return query_results;
             }),
         );
         if (results) {
             return results.flat() as Article[];
-        } else {
-            console.error('Error retrieving articles.');
         }
     } else if (category !== undefined && genreSelection === undefined) {
-        results = await db.getAllAsync('SELECT * FROM articles WHERE category = ?', [category]);
+        const results = await db.getAllAsync('SELECT * FROM articles WHERE category = ?', [
+            category,
+        ]);
         if (results) {
             return results.flat() as Article[];
-        } else {
-            console.error('Error retrieving articles.');
         }
     }
 }
 
-// fetches articles the endpoint /api/articles, optionally can give either genre or category
-export async function articleAPI(genreSelection?: string, category?: string, limit: number = 100) {
-    var genre = '';
-    var cat = '';
+export async function getSavedArticles(): Promise<Article[]> {
+    const db = await SQLite.openDatabaseAsync('newsapp');
+    const results = await db.getAllAsync('SELECT * FROM articles WHERE saved = 1');
+    return (results as Article[]) ?? [];
+}
 
-    if (genreSelection) {
-        genre = genreSelection;
-    }
+export async function searchArticles(query: string): Promise<Article[]> {
+    const db = await SQLite.openDatabaseAsync('newsapp');
+    const searchTerm = `%${query}%`;
+    const results = await db.getAllAsync(
+        'SELECT * FROM articles WHERE title LIKE ? OR description LIKE ? LIMIT 50',
+        [searchTerm, searchTerm],
+    );
+    return (results as Article[]) ?? [];
+}
 
-    if (category) {
-        cat = category;
-    }
+export async function articleAPI(
+    genreSelection?: string,
+    category?: string,
+    limit: number = 100,
+) {
+    let genre = '';
+    let cat = '';
+
+    if (genreSelection) genre = genreSelection;
+    if (category) cat = category;
 
     try {
-        var response = await fetch(`${BASE_URL}/api/GetArticles`, {
-            // TODO: Add authorization somewhere. Maybe here, maybe not.
+        const response = await fetch(`${BASE_URL}/api/GetArticles`, {
             method: 'POST',
             headers: {
                 Accept: 'application/json',
@@ -103,18 +101,18 @@ export async function articleAPI(genreSelection?: string, category?: string, lim
             }),
         });
 
-        if (response.status == 500) {
+        if (response.status === 500) {
             console.error('Server is down... start the server?');
             return;
         }
 
         if (!response.ok) {
-            console.error(`Error ocurred, response status: ${response.status}`);
+            console.error(`Error occurred, response status: ${response.status}`);
             return;
         }
 
-        var articleCount = 0;
-        var data = await response.json();
+        let articleCount = 0;
+        const data = await response.json();
         const articles = data.articles as Article[];
         const results = articles.map((article) => ({
             id: article.id,
@@ -131,44 +129,39 @@ export async function articleAPI(genreSelection?: string, category?: string, lim
             saved: 0,
         }));
 
-        // add results to database
-        try {
-            await Promise.all(
-                results.map(async (article) => {
-                    const db = await SQLite.openDatabaseAsync('newsapp');
-                    const existing_article = await db.getFirstAsync(
-                        'SELECT id FROM articles WHERE id = ?',
-                        [article.id],
-                    );
+        const db = await SQLite.openDatabaseAsync('newsapp');
+        await Promise.all(
+            results.map(async (article) => {
+                const existing = await db.getFirstAsync(
+                    'SELECT id FROM articles WHERE id = ?',
+                    [article.id],
+                );
 
-                    if (!existing_article) {
-                        const statement = await db.prepareAsync(
-                            'INSERT OR IGNORE INTO articles(id, genre, category, source, author, title, description, url, url_to_image, published_at, content, saved) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                        );
-                        await statement.executeAsync([
-                            article.id,
-                            article.genre ?? null,
-                            article.category ?? null,
-                            article.source ?? null,
-                            article.author ?? null,
-                            article.title ?? null,
-                            article.description ?? null,
-                            article.url?.toString() ?? null,
-                            article.url_to_image?.toString() ?? null,
-                            article.published_at ?? null,
-                            article.content ?? null,
-                            article.saved ?? 0,
-                        ]);
-                        await statement.finalizeAsync();
-                        articleCount += 1;
-                    }
-                }),
-            );
-            return articleCount;
-        } catch (error) {
-            console.error(`Error ocurred inserting data into local DB: ${error}`);
-        }
+                if (!existing) {
+                    const statement = await db.prepareAsync(
+                        'INSERT OR IGNORE INTO articles(id, genre, category, source, author, title, description, url, url_to_image, published_at, content, saved) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    );
+                    await statement.executeAsync([
+                        article.id,
+                        article.genre ?? null,
+                        article.category ?? null,
+                        article.source ?? null,
+                        article.author ?? null,
+                        article.title ?? null,
+                        article.description ?? null,
+                        article.url?.toString() ?? null,
+                        article.url_to_image?.toString() ?? null,
+                        article.published_at ?? null,
+                        article.content ?? null,
+                        article.saved ?? 0,
+                    ]);
+                    await statement.finalizeAsync();
+                    articleCount += 1;
+                }
+            }),
+        );
+        return articleCount;
     } catch (error) {
-        console.error(`Error ocurred: ${error}`);
+        console.error(`Error occurred: ${error}`);
     }
 }
