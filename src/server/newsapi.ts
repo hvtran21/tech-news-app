@@ -28,14 +28,14 @@ async function fetchArticles(genre?: string | undefined, category?: string | und
     // Parameters: None
     // Return: None
     // Fetches a news article from News API, and adds it to database
-    var url = '';
-    var page = 1;
+    let url = '';
+    let page = 1;
     const country = 'us'; // should be based off of user preferences later
     const language = 'en';
     const toDate = new Date();
     const fromDate = new Date(toDate.getTime() - 1.5 * DAYS_IN_SECONDS); // get relevant articles a day and a half ago
-    var totalProcesssed = 0;
-    var totalResults = Infinity;
+    let totalProcesssed = 0;
+    let totalResults = Infinity;
     const apiKey = process.env.NEWS_API_KEY;
     let betterSearchMap = new Map<string, string>([
         [techGenres.AI, '"artificial intelligence" OR "AI"'],
@@ -80,7 +80,7 @@ async function fetchArticles(genre?: string | undefined, category?: string | und
             }
 
             // save data in memory
-            var data = await response.json();
+            const data = await response.json();
 
             // set up data to be inserted into db
             const articles: Article[] = data.articles;

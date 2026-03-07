@@ -40,11 +40,7 @@ const toStandardDateFormat = (d: Date): string => {
 };
 
 async function removeOldArticles(days?: number): Promise<number> {
-    var maxDays: number = 7;
-
-    if (days) {
-        maxDays = days;
-    }
+    const maxDays: number = days ?? 7;
 
     try {
         const currentDate = new Date();
@@ -118,11 +114,11 @@ const serverStart = () => {
     });
 
     server.post('/api/GetArticles', (req, res) => {
-        var genres = req.body.genre?.genre as string;
-        var category = req.body.category?.cat as string;
+        let genres = req.body.genre?.genre as string;
+        let category = req.body.category?.cat as string;
         const limit = req.body.articleRetrievalLimit?.limit as number;
 
-        var results: any[] = [];
+        let results: any[] = [];
 
         // send JSON response back
         try {
@@ -134,7 +130,7 @@ const serverStart = () => {
                     const queries = genreArray.map((genre) => {
                         const enum_check = getEnumKey(genre);
                         if (!enum_check) {
-                            throw new Error(`Error: Genre not in ENUM, got: $`);
+                            throw new Error(`Error: Genre not in ENUM, got: ${genre}`);
                         }
                         return t.any('SELECT * FROM articles WHERE genre = $1 LIMIT $2', [
                             genre,
