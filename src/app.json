@@ -10,7 +10,6 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "usesAppleSignIn": true,
       "bundleIdentifier": "com.anonymous.tldr-newsapp"
     },
     "android": {

@@ -7,15 +7,12 @@ type metadataSchema = {
 
 // delete articles by parameter: days -> how old articles can be from at the time the function called.
 export async function DeleteArticlesByAge(days?: number): Promise<number> {
-    var articlesDeleted;
-    var cutOFfDays = 4;
-    if (days) {
-        cutOFfDays = days;
-    }
+    let articlesDeleted;
+    const cutOffDays = days ?? 4;
 
     const db = await SQLite.openDatabaseAsync('newsapp');
     const today = new Date();
-    today.setDate(today.getDate() - cutOFfDays);
+    today.setDate(today.getDate() - cutOffDays);
     const cutOffDate = today.toISOString().split('T')[0];
 
     try {

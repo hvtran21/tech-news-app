@@ -3,49 +3,36 @@ import { Image } from 'expo-image';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faEllipsisH } from '@fortawesome/free-solid-svg-icons';
 import { useState, useEffect } from 'react';
-import Animated from 'react-native-reanimated';
+import { router } from 'expo-router';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 function formatDate(date: Date): string {
     if (!(date instanceof Date) || isNaN(date.getTime())) {
-        throw new Error('Invalid input: Please provide a valid Date object.');
+        return '';
     }
 
     const months: string[] = [
-        'January',
-        'February',
-        'March',
-        'April',
-        'May',
-        'June',
-        'July',
-        'August',
-        'September',
-        'October',
-        'November',
-        'December',
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December',
     ];
 
     const month: string = months[date.getMonth()];
     const day: number = date.getDate();
 
     function getOrdinalSuffix(day: number): string {
-        if (day > 3 && day < 21) {
-            return 'th';
-        }
+        if (day > 3 && day < 21) return 'th';
         switch (day % 10) {
-            case 1:
-                return 'st';
-            case 2:
-                return 'nd';
-            case 3:
-                return 'rd';
-            default:
-                return 'th';
+            case 1: return 'st';
+            case 2: return 'nd';
+            case 3: return 'rd';
+            default: return 'th';
         }
     }
 
     return `${month} ${day}${getOrdinalSuffix(day)}`;
 }
+
+export { formatDate };
 
 interface CardFrontProps {
     title: string;
@@ -56,6 +43,8 @@ interface CardFrontProps {
     handleEllipsisPress: (id: string) => void;
 }
 
+const fallBackImage = require('../../assets/images/computer_2.jpg');
+
 export const NewsCard = ({
     title,
     url_to_image,
@@ -64,29 +53,28 @@ export const NewsCard = ({
     id,
     handleEllipsisPress,
 }: CardFrontProps) => {
-    const [imageLoaded, setImageLoaded] = useState(false);
     const [imageError, setImageError] = useState(false);
-    const [badLoad, setBadLoad] = useState(false);
 
     const date = formatDate(new Date(published_at));
-    const fallBackImage = require('../../assets/images/computer_2.jpg');
-    const uri_image = url_to_image ? { uri: url_to_image } : { uri: fallBackImage };
+    const imageSource = url_to_image && !imageError ? { uri: url_to_image } : fallBackImage;
     const label = genre === '' ? 'Top' : genre;
 
     useEffect(() => {
-        const result = Image.prefetch(url_to_image, 'disk');
-        if (!result) {
-            console.log(`Failed to prefetch url: ${url_to_image}`);
+        if (url_to_image) {
+            Image.prefetch(url_to_image, 'disk');
         }
-    }, []);
+    }, [url_to_image]);
+
+    const handleCardPress = () => {
+        router.push({ pathname: '/article/[id]', params: { id } });
+    };
 
     return (
-        <Animated.View style={card_style.main_card}>
+        <Animated.View entering={FadeIn.duration(300)} style={card_style.main_card}>
             <TouchableOpacity
-                style={{ position: 'absolute', top: 0, right: 7 }}
-                onPress={() => {
-                    handleEllipsisPress(id);
-                }}
+                style={{ position: 'absolute', top: 0, right: 7, zIndex: 2 }}
+                onPress={() => handleEllipsisPress(id)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
                 <FontAwesomeIcon
                     icon={faEllipsisH}
@@ -95,44 +83,35 @@ export const NewsCard = ({
                     style={{ opacity: 0.5, marginBottom: 10 }}
                 />
             </TouchableOpacity>
-            <View
-                style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                }}
+            <TouchableOpacity
+                onPress={handleCardPress}
+                activeOpacity={0.7}
+                style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
             >
-                <View style={{ width: '60%' }} hitSlop={{ top: 30, bottom: 30, right: 80 }}>
+                <View style={{ width: '60%' }}>
                     <View style={{ flexDirection: 'column', height: 'auto' }}>
                         <Text style={card_style.date}>
                             {date} | {label}
                         </Text>
                         <View style={{ width: '95%' }}>
-                            <Text style={card_style.card_title}>{title}</Text>
+                            <Text style={card_style.card_title} numberOfLines={3}>
+                                {title}
+                            </Text>
                         </View>
                     </View>
                 </View>
 
                 <View style={card_style.thumbnail_frame}>
-                    {badLoad && !imageLoaded && (
-                        <Image
-                            source={fallBackImage}
-                            alt="Image"
-                            style={card_style.thumbnail_image}
-                        />
-                    )}
-                    {!imageError && (
-                        <Image
-                            source={imageError ? fallBackImage : uri_image}
-                            alt="Image"
-                            style={card_style.thumbnail_image}
-                            onLoad={(e) => {}}
-                            onError={() => {
-                                setImageError(true);
-                            }}
-                        />
-                    )}
+                    <Image
+                        source={imageSource}
+                        alt="Article thumbnail"
+                        style={card_style.thumbnail_image}
+                        contentFit="cover"
+                        onError={() => setImageError(true)}
+                        transition={200}
+                    />
                 </View>
-            </View>
+            </TouchableOpacity>
         </Animated.View>
     );
 };
@@ -146,7 +125,6 @@ export const card_style = StyleSheet.create({
         justifyContent: 'center',
         height: 150,
     },
-
     card_title: {
         color: 'white',
         fontSize: 16,
@@ -155,18 +133,15 @@ export const card_style = StyleSheet.create({
         fontFamily: 'WorkSans-Light',
         opacity: 0.8,
     },
-
     thumbnail_frame: {
         width: '40%',
         height: '80%',
         padding: 2,
     },
-
     thumbnail_image: {
         height: '95%',
         borderRadius: 15,
     },
-
     date: {
         flexDirection: 'row',
         fontSize: 13,
