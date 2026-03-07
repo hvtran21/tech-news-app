@@ -1,7 +1,7 @@
 import { Text, View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faEllipsisH } from '@fortawesome/free-solid-svg-icons';
+import { faEllipsisVertical } from '@fortawesome/free-solid-svg-icons';
 import { useState, useEffect } from 'react';
 import { router } from 'expo-router';
 import Animated, { FadeIn } from 'react-native-reanimated';
@@ -72,33 +72,31 @@ export const NewsCard = ({
     return (
         <Animated.View entering={FadeIn.duration(300)} style={card_style.main_card}>
             <TouchableOpacity
-                style={{ position: 'absolute', top: 0, right: 7, zIndex: 2 }}
-                onPress={() => handleEllipsisPress(id)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-                <FontAwesomeIcon
-                    icon={faEllipsisH}
-                    color="white"
-                    size={18}
-                    style={{ opacity: 0.5, marginBottom: 10 }}
-                />
-            </TouchableOpacity>
-            <TouchableOpacity
                 onPress={handleCardPress}
                 activeOpacity={0.7}
-                style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
+                style={card_style.card_touchable}
             >
-                <View style={{ width: '60%' }}>
-                    <View style={{ flexDirection: 'column', height: 'auto' }}>
-                        <Text style={card_style.date}>
-                            {date} | {label}
+                <View style={card_style.text_column}>
+                    <View style={card_style.meta_row}>
+                        <Text style={card_style.date} numberOfLines={1}>
+                            {date} · {label}
                         </Text>
-                        <View style={{ width: '95%' }}>
-                            <Text style={card_style.card_title} numberOfLines={3}>
-                                {title}
-                            </Text>
-                        </View>
+                        <TouchableOpacity
+                            onPress={() => handleEllipsisPress(id)}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            style={card_style.ellipsis_btn}
+                        >
+                            <FontAwesomeIcon
+                                icon={faEllipsisVertical}
+                                color="white"
+                                size={14}
+                                style={{ opacity: 0.3 }}
+                            />
+                        </TouchableOpacity>
                     </View>
+                    <Text style={card_style.card_title} numberOfLines={3}>
+                        {title}
+                    </Text>
                 </View>
 
                 <View style={card_style.thumbnail_frame}>
@@ -125,16 +123,36 @@ export const card_style = StyleSheet.create({
         justifyContent: 'center',
         height: 150,
     },
+    card_touchable: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
+    text_column: {
+        flex: 3,
+        justifyContent: 'center',
+        paddingRight: 8,
+    },
+    meta_row: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingBottom: 5,
+    },
+    ellipsis_btn: {
+        padding: 6,
+        marginLeft: 4,
+        marginTop: -2,
+    },
     card_title: {
         color: 'white',
         fontSize: 16,
-        width: '100%',
+        width: '95%',
         paddingLeft: 2,
         fontFamily: 'WorkSans-Light',
         opacity: 0.8,
     },
     thumbnail_frame: {
-        width: '40%',
+        flex: 2,
         height: '80%',
         padding: 2,
     },
@@ -143,13 +161,11 @@ export const card_style = StyleSheet.create({
         borderRadius: 15,
     },
     date: {
-        flexDirection: 'row',
+        flex: 1,
         fontSize: 13,
         color: 'white',
         fontFamily: 'WorkSans-Light',
-        width: '100%',
         paddingLeft: 3,
-        paddingBottom: 5,
         opacity: 0.5,
     },
 });
