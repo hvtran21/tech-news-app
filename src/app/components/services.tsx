@@ -66,6 +66,15 @@ export async function getSavedArticles(): Promise<Article[]> {
     return (results as Article[]) ?? [];
 }
 
+export async function getAllArticles(limit: number = 100): Promise<Article[]> {
+    const db = await SQLite.openDatabaseAsync('newsapp');
+    const results = await db.getAllAsync(
+        'SELECT * FROM articles ORDER BY published_at DESC LIMIT ?',
+        [limit],
+    );
+    return (results as Article[]) ?? [];
+}
+
 export async function searchArticles(query: string): Promise<Article[]> {
     const db = await SQLite.openDatabaseAsync('newsapp');
     const searchTerm = `%${query}%`;
