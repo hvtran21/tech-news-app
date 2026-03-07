@@ -25,8 +25,8 @@ import IconFontAwesome from '@react-native-vector-icons/fontawesome';
 import Article from '../components/constants';
 import { getSavedArticles } from '../components/services';
 import { NewsCard } from '../components/news_card';
-import { HorizonalLine } from '../components/styles';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import { TabHeader, HorizonalLine } from '../components/styles';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 export default function SavedScreen() {
     const [savedArticles, setSavedArticles] = useState<Article[]>([]);
@@ -93,13 +93,15 @@ export default function SavedScreen() {
     return (
         <SafeAreaProvider>
             <SafeAreaView style={styles.theme} edges={['top', 'left', 'right']}>
-                <Animated.View entering={FadeInDown.duration(400)} style={styles.header}>
-                    <Text style={styles.header_title}>Saved</Text>
-                    <Text style={styles.header_count}>
-                        {savedArticles.length}{' '}
-                        {savedArticles.length === 1 ? 'article' : 'articles'}
-                    </Text>
-                </Animated.View>
+                <TabHeader
+                    title="Saved"
+                    rightAccessory={
+                        <Text style={styles.header_count}>
+                            {savedArticles.length}{' '}
+                            {savedArticles.length === 1 ? 'article' : 'articles'}
+                        </Text>
+                    }
+                />
 
                 <FlatList
                     showsVerticalScrollIndicator={false}
@@ -133,7 +135,7 @@ export default function SavedScreen() {
                     onRequestClose={() => setShowModal(false)}
                 >
                     <TouchableWithoutFeedback onPress={() => setShowModal(false)}>
-                        <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.4)' }} />
+                        <View style={{ flex: 1 }} />
                     </TouchableWithoutFeedback>
                     <View style={[styles.modal_sheet, { top: height - 225 }]}>
                         <View style={styles.modal_close}>
@@ -204,21 +206,6 @@ const styles = StyleSheet.create({
     theme: {
         flex: 1,
         backgroundColor: '#000000',
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'baseline',
-        paddingHorizontal: 16,
-        paddingVertical: 14,
-        borderBottomColor: '#141414',
-        borderBottomWidth: StyleSheet.hairlineWidth,
-    },
-    header_title: {
-        fontFamily: 'WorkSans-Bold',
-        fontSize: 28,
-        color: 'white',
-        opacity: 0.9,
     },
     header_count: {
         fontFamily: 'WorkSans-Light',

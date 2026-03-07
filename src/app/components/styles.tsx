@@ -2,6 +2,7 @@ import React from 'react';
 import { Text, TextStyle, StyleSheet, View } from 'react-native';
 import MaskedView from '@react-native-masked-view/masked-view';
 import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 type GradientTextProps = {
     text: string;
@@ -30,6 +31,40 @@ export const GradientText: React.FC<GradientTextProps> = ({ text, colors, style 
         </MaskedView>
     );
 };
+
+interface TabHeaderProps {
+    title: string;
+    rightAccessory?: React.ReactNode;
+}
+
+export const TabHeader = ({ title, rightAccessory }: TabHeaderProps) => {
+    return (
+        <Animated.View entering={FadeInDown.duration(300)} style={header_styles.container}>
+            <Text style={header_styles.title}>{title}</Text>
+            {rightAccessory}
+        </Animated.View>
+    );
+};
+
+const header_styles = StyleSheet.create({
+    container: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingTop: 12,
+        paddingBottom: 12,
+        borderBottomColor: '#1a1a1a',
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        overflow: 'visible',
+        zIndex: 10,
+    },
+    title: {
+        fontFamily: 'WorkSans-SemiBold',
+        fontSize: 28,
+        color: 'white',
+    },
+});
 
 export const HorizonalLine = () => {
     return (
