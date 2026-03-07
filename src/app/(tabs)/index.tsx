@@ -36,7 +36,7 @@ import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Article from '../components/constants';
 import getArticles, { downloadAndGetArticles } from '../components/services';
-import { DeleteArticlesByAge, sortArticlesByDate } from '../components/utilities';
+import { deleteArticlesByAge, sortArticlesByDate } from '../components/utilities';
 import { canRefreshArticles, updateArticleQueryTime } from '../components/utilities';
 import ReAnimated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
@@ -120,7 +120,7 @@ export default function HomeFeed() {
     const [refreshing, setRefreshing] = useState(false);
 
     const onRefresh = useCallback(async () => {
-        DeleteArticlesByAge();
+     deleteArticlesByAge();
         const canRefresh = await canRefreshArticles();
         if (!canRefresh) return;
 

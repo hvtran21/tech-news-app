@@ -6,7 +6,7 @@ type metadataSchema = {
 };
 
 // delete articles by parameter: days -> how old articles can be from at the time the function called.
-export async function DeleteArticlesByAge(days?: number): Promise<number> {
+export async function deleteArticlesByAge(days?: number): Promise<number> {
     let articlesDeleted;
     const cutOffDays = days ?? 4;
 
