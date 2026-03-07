@@ -2,11 +2,11 @@ import { SafeAreaView, SafeAreaProvider, useSafeAreaInsets } from 'react-native-
 import { Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
-import { openDatabaseAsync } from 'expo-sqlite';
 import { faArrowRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
+import { initializeDatabase } from './components/database';
 
 enum options {
     AI = 'Artificial Intelligence',
@@ -18,36 +18,6 @@ enum options {
     CYBERSECURITY = 'Cybersecurity',
     GAME_DEVELOPMENT = 'Game development',
     NINTENDO = 'Nintendo',
-}
-
-async function initializeDatabase() {
-    const db = await openDatabaseAsync('newsapp');
-
-    await db.execAsync(`
-        DROP TABLE IF EXISTS articles;
-    `);
-
-    await db.execAsync(`
-        PRAGMA journal_mode = WAL;
-        CREATE TABLE IF NOT EXISTS articles (
-        id TEXT PRIMARY KEY,
-        genre TEXT,
-        category TEXT,
-        source TEXT,
-        author TEXT,
-        title TEXT,
-        description TEXT,
-        url TEXT,
-        url_to_image TEXT,
-        published_at TEXT,
-        content TEXT,
-        saved INTEGER CHECK (saved IN (0, 1)) DEFAULT 0
-    );`);
-
-    await db.execAsync(`
-        CREATE TABLE IF NOT EXISTS metadata (
-        latest_article_query TEXT
-    );`);
 }
 
 export default function WelcomePage() {
