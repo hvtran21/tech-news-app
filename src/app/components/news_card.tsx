@@ -5,6 +5,7 @@ import { faEllipsisVertical } from '@fortawesome/free-solid-svg-icons';
 import { useState, useEffect } from 'react';
 import { router } from 'expo-router';
 import Animated, { FadeIn } from 'react-native-reanimated';
+import { theme, getTopicColor } from './styles';
 
 function formatDate(date: Date): string {
     if (!(date instanceof Date) || isNaN(date.getTime())) {
@@ -32,6 +33,24 @@ function formatDate(date: Date): string {
     return `${month} ${day}${getOrdinalSuffix(day)}`;
 }
 
+function relativeTime(dateString: string): string {
+    const now = Date.now();
+    const then = new Date(dateString).getTime();
+    if (isNaN(then)) return '';
+
+    const diff = now - then;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+
+    return formatDate(new Date(dateString));
+}
+
 export { formatDate };
 
 interface CardFrontProps {
@@ -55,9 +74,10 @@ export const NewsCard = ({
 }: CardFrontProps) => {
     const [imageError, setImageError] = useState(false);
 
-    const date = formatDate(new Date(published_at));
+    const time = relativeTime(published_at);
     const imageSource = url_to_image && !imageError ? { uri: url_to_image } : fallBackImage;
     const label = genre === '' ? 'Top' : genre;
+    const topicColor = getTopicColor(label);
 
     useEffect(() => {
         if (url_to_image) {
@@ -73,27 +93,17 @@ export const NewsCard = ({
         <Animated.View entering={FadeIn.duration(300)} style={card_style.main_card}>
             <TouchableOpacity
                 onPress={handleCardPress}
-                activeOpacity={0.7}
+                activeOpacity={0.65}
                 style={card_style.card_touchable}
             >
                 <View style={card_style.text_column}>
-                    <View style={card_style.meta_row}>
-                        <Text style={card_style.date} numberOfLines={1}>
-                            {date} · {label}
-                        </Text>
-                        <TouchableOpacity
-                            onPress={() => handleEllipsisPress(id)}
-                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                            style={card_style.ellipsis_btn}
-                        >
-                            <FontAwesomeIcon
-                                icon={faEllipsisVertical}
-                                color="white"
-                                size={14}
-                                style={{ opacity: 0.3 }}
-                            />
-                        </TouchableOpacity>
+                    <View style={card_style.tag_row}>
+                        <View style={[card_style.tag_pill, { backgroundColor: topicColor.bg }]}>
+                            <Text style={[card_style.tag_text, { color: topicColor.color }]}>{label}</Text>
+                        </View>
+                        <Text style={card_style.time_text}>{time}</Text>
                     </View>
+
                     <Text style={card_style.card_title} numberOfLines={3}>
                         {title}
                     </Text>
@@ -108,6 +118,18 @@ export const NewsCard = ({
                         onError={() => setImageError(true)}
                         transition={200}
                     />
+                    <TouchableOpacity
+                        onPress={() => handleEllipsisPress(id)}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        style={card_style.ellipsis_btn}
+                    >
+                        <FontAwesomeIcon
+                            icon={faEllipsisVertical}
+                            color="white"
+                            size={13}
+                            style={{ opacity: 0.35 }}
+                        />
+                    </TouchableOpacity>
                 </View>
             </TouchableOpacity>
         </Animated.View>
@@ -116,57 +138,63 @@ export const NewsCard = ({
 
 export const card_style = StyleSheet.create({
     main_card: {
-        flexDirection: 'row',
-        backgroundColor: '#000000',
-        maxHeight: 175,
-        alignContent: 'center',
-        justifyContent: 'center',
-        height: 150,
+        paddingHorizontal: 20,
+        paddingVertical: 16,
     },
     card_touchable: {
         flexDirection: 'row',
         alignItems: 'center',
-        flex: 1,
     },
     text_column: {
-        flex: 3,
-        justifyContent: 'center',
-        paddingRight: 8,
+        flex: 1,
+        paddingRight: 16,
     },
-    meta_row: {
+    tag_row: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingBottom: 5,
+        marginBottom: 8,
+        marginLeft: -1,
+        gap: 8,
     },
-    ellipsis_btn: {
-        padding: 6,
-        marginLeft: 4,
-        marginTop: -2,
+    tag_pill: {
+        backgroundColor: theme.accent_soft,
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 6,
+    },
+    tag_text: {
+        fontFamily: 'WorkSans-SemiBold',
+        fontSize: 11,
+        color: theme.accent,
+        letterSpacing: 0.3,
+        textTransform: 'uppercase',
+    },
+    time_text: {
+        fontFamily: 'WorkSans-Light',
+        fontSize: 12,
+        color: theme.text_tertiary,
     },
     card_title: {
-        color: 'white',
-        fontSize: 16,
-        width: '95%',
-        paddingLeft: 2,
-        fontFamily: 'WorkSans-Light',
-        opacity: 0.8,
+        color: theme.text,
+        fontSize: 17,
+        fontFamily: 'WorkSans-Regular',
+        lineHeight: 24,
+        letterSpacing: -0.2,
     },
     thumbnail_frame: {
-        flex: 2,
-        height: '80%',
-        padding: 2,
+        width: 96,
+        height: 96,
     },
     thumbnail_image: {
-        height: '95%',
-        borderRadius: 15,
+        width: '100%',
+        height: '100%',
+        borderRadius: 14,
     },
-    date: {
-        flex: 1,
-        fontSize: 13,
-        color: 'white',
-        fontFamily: 'WorkSans-Light',
-        paddingLeft: 3,
-        opacity: 0.5,
+    ellipsis_btn: {
+        position: 'absolute',
+        bottom: -4,
+        right: -4,
+        padding: 8,
     },
 });
 
