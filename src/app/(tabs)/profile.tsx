@@ -13,8 +13,8 @@ import {
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faUser, faCheck } from '@fortawesome/free-solid-svg-icons';
-import { TabHeader } from '../components/styles';
+import { faUser, faCheck, faPen } from '@fortawesome/free-solid-svg-icons';
+import { TabHeader, theme } from '../components/styles';
 import { getUser, upsertUser } from '../components/database';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
@@ -67,52 +67,49 @@ export default function ProfileScreen() {
                                     <View style={styles.avatar_circle}>
                                         <FontAwesomeIcon
                                             icon={faUser}
-                                            size={32}
+                                            size={30}
                                             color="white"
-                                            style={{ opacity: 0.3 }}
+                                            style={{ opacity: 0.15 }}
                                         />
                                     </View>
 
-                                    <Text style={styles.form_label}>Display name</Text>
+                                    <Text style={styles.form_label}>DISPLAY NAME</Text>
                                     <TextInput
                                         style={styles.input}
                                         value={displayName}
                                         onChangeText={setDisplayName}
                                         placeholder="Your name"
-                                        placeholderTextColor="rgba(255, 255, 255, 0.2)"
+                                        placeholderTextColor={theme.text_tertiary}
                                         autoCapitalize="words"
                                         autoCorrect={false}
                                     />
 
-                                    <Text style={styles.form_label}>Email (optional)</Text>
+                                    <Text style={styles.form_label}>EMAIL (OPTIONAL)</Text>
                                     <TextInput
                                         style={styles.input}
                                         value={email}
                                         onChangeText={setEmail}
                                         placeholder="you@example.com"
-                                        placeholderTextColor="rgba(255, 255, 255, 0.2)"
+                                        placeholderTextColor={theme.text_tertiary}
                                         keyboardType="email-address"
                                         autoCapitalize="none"
                                         autoCorrect={false}
                                     />
 
                                     <TouchableOpacity
-                                        style={[
-                                            styles.save_button,
-                                            displayName.trim().length === 0 && { opacity: 0.4 },
-                                        ]}
+                                        style={[styles.save_button, displayName.trim().length === 0 && { opacity: 0.35 }]}
                                         onPress={handleSave}
-                                        activeOpacity={0.7}
+                                        activeOpacity={0.8}
                                         disabled={displayName.trim().length === 0}
                                     >
                                         <Text style={styles.save_text}>
-                                            {hasProfile ? 'Update' : 'Save'}
+                                            {hasProfile ? 'Update profile' : 'Save profile'}
                                         </Text>
                                     </TouchableOpacity>
                                 </Animated.View>
                             ) : (
                                 <Animated.View entering={FadeIn.duration(300)} style={styles.profile_view}>
-                                    <View style={styles.avatar_circle}>
+                                    <View style={styles.avatar_circle_filled}>
                                         <Text style={styles.avatar_initial}>
                                             {displayName.charAt(0).toUpperCase()}
                                         </Text>
@@ -125,7 +122,7 @@ export default function ProfileScreen() {
 
                                     {saved && (
                                         <Animated.View entering={FadeIn.duration(200)} style={styles.saved_badge}>
-                                            <FontAwesomeIcon icon={faCheck} size={12} color="#4ade80" />
+                                            <FontAwesomeIcon icon={faCheck} size={11} color="#4ade80" />
                                             <Text style={styles.saved_text}>Saved</Text>
                                         </Animated.View>
                                     )}
@@ -135,7 +132,8 @@ export default function ProfileScreen() {
                                         onPress={() => setEditing(true)}
                                         activeOpacity={0.7}
                                     >
-                                        <Text style={styles.edit_text}>Edit Profile</Text>
+                                        <FontAwesomeIcon icon={faPen} size={12} color={theme.text_secondary} style={{ marginRight: 8 }} />
+                                        <Text style={styles.edit_text}>Edit profile</Text>
                                     </TouchableOpacity>
                                 </Animated.View>
                             )}
@@ -150,55 +148,69 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
     theme: {
         flex: 1,
-        backgroundColor: '#000000',
+        backgroundColor: theme.bg,
     },
     content: {
         flex: 1,
         paddingHorizontal: 24,
-        paddingTop: 40,
+        paddingTop: 48,
     },
     form: {
         alignItems: 'center',
     },
     avatar_circle: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        backgroundColor: '#141414',
+        width: 88,
+        height: 88,
+        borderRadius: 44,
+        backgroundColor: theme.surface,
+        borderWidth: 1,
+        borderColor: theme.border,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 32,
+        marginBottom: 36,
+    },
+    avatar_circle_filled: {
+        width: 88,
+        height: 88,
+        borderRadius: 44,
+        backgroundColor: theme.accent_soft,
+        borderWidth: 1,
+        borderColor: theme.accent_border,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 20,
     },
     avatar_initial: {
-        fontFamily: 'WorkSans-SemiBold',
-        fontSize: 32,
-        color: '#8B5CF6',
+        fontFamily: 'WorkSans-Bold',
+        fontSize: 34,
+        color: theme.accent,
     },
     form_label: {
-        fontFamily: 'WorkSans-Regular',
-        fontSize: 14,
-        color: 'white',
-        opacity: 0.5,
+        fontFamily: 'WorkSans-SemiBold',
+        fontSize: 11,
+        color: theme.text_tertiary,
+        letterSpacing: 1.5,
         alignSelf: 'flex-start',
         marginBottom: 8,
-        marginTop: 16,
+        marginTop: 20,
     },
     input: {
         width: '100%',
-        backgroundColor: '#141414',
-        borderRadius: 12,
-        paddingHorizontal: 16,
-        paddingVertical: 14,
+        backgroundColor: theme.surface,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: theme.border,
+        paddingHorizontal: 18,
+        paddingVertical: 16,
         fontFamily: 'WorkSans-Regular',
         fontSize: 16,
         color: 'white',
     },
     save_button: {
-        backgroundColor: '#8B5CF6',
-        borderRadius: 12,
-        paddingVertical: 14,
-        paddingHorizontal: 32,
-        marginTop: 32,
+        backgroundColor: theme.accent,
+        borderRadius: 14,
+        paddingVertical: 16,
+        marginTop: 36,
         width: '100%',
         alignItems: 'center',
     },
@@ -211,23 +223,22 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     profile_name: {
-        fontFamily: 'WorkSans-SemiBold',
-        fontSize: 24,
-        color: 'white',
+        fontFamily: 'WorkSans-Bold',
+        fontSize: 26,
+        color: theme.text,
+        letterSpacing: -0.3,
         marginBottom: 4,
     },
     profile_email: {
         fontFamily: 'WorkSans-Light',
         fontSize: 15,
-        color: 'white',
-        opacity: 0.4,
-        marginBottom: 8,
+        color: theme.text_tertiary,
     },
     saved_badge: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
-        marginTop: 8,
+        marginTop: 12,
     },
     saved_text: {
         fontFamily: 'WorkSans-Regular',
@@ -235,16 +246,19 @@ const styles = StyleSheet.create({
         color: '#4ade80',
     },
     edit_button: {
-        backgroundColor: '#141414',
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: theme.surface,
         borderRadius: 12,
+        borderWidth: 1,
+        borderColor: theme.border,
         paddingVertical: 12,
-        paddingHorizontal: 28,
-        marginTop: 24,
+        paddingHorizontal: 24,
+        marginTop: 28,
     },
     edit_text: {
         fontFamily: 'WorkSans-Regular',
-        fontSize: 15,
-        color: 'white',
-        opacity: 0.7,
+        fontSize: 14,
+        color: theme.text_secondary,
     },
 });
