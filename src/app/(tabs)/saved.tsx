@@ -15,7 +15,6 @@ import { useFocusEffect } from 'expo-router';
 import * as SQLite from 'expo-sqlite';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import {
-    faCircleXmark,
     faUpRightFromSquare,
     faBan,
     faFlag,
@@ -25,8 +24,8 @@ import IconFontAwesome from '@react-native-vector-icons/fontawesome';
 import Article from '../components/constants';
 import { getSavedArticles } from '../components/services';
 import { NewsCard } from '../components/news_card';
-import { HorizonalLine } from '../components/styles';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import { TabHeader, HorizonalLine, theme } from '../components/styles';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 export default function SavedScreen() {
     const [savedArticles, setSavedArticles] = useState<Article[]>([]);
@@ -47,9 +46,7 @@ export default function SavedScreen() {
     const handleEllipsisPress = useCallback((id: string) => {
         const fetchArticle = async () => {
             const db = await SQLite.openDatabaseAsync('newsapp');
-            const article = (await db.getFirstAsync('SELECT * FROM articles WHERE id = ?', [
-                id,
-            ])) as Article;
+            const article = (await db.getFirstAsync('SELECT * FROM articles WHERE id = ?', [id])) as Article;
             if (article) {
                 setModalArticle(article);
                 setShowModal(true);
@@ -70,22 +67,17 @@ export default function SavedScreen() {
     const handleOpenInBrowser = async () => {
         if (!modalArticle) return;
         const supported = await Linking.canOpenURL(modalArticle.url);
-        if (supported) {
-            await Linking.openURL(modalArticle.url);
-        }
+        if (supported) await Linking.openURL(modalArticle.url);
     };
 
     const EmptyState = () => (
         <Animated.View entering={FadeIn.duration(500)} style={styles.empty_container}>
-            <FontAwesomeIcon
-                icon={faBookmark}
-                size={40}
-                color="white"
-                style={{ opacity: 0.15, marginBottom: 16 }}
-            />
-            <Text style={styles.empty_title}>No saved articles</Text>
+            <View style={styles.empty_icon_circle}>
+                <FontAwesomeIcon icon={faBookmark} size={28} color="white" style={{ opacity: 0.12 }} />
+            </View>
+            <Text style={styles.empty_title}>Nothing saved yet</Text>
             <Text style={styles.empty_subtitle}>
-                Articles you save will appear here for easy access.
+                Tap the bookmark on any article to save it for later.
             </Text>
         </Animated.View>
     );
@@ -93,13 +85,16 @@ export default function SavedScreen() {
     return (
         <SafeAreaProvider>
             <SafeAreaView style={styles.theme} edges={['top', 'left', 'right']}>
-                <Animated.View entering={FadeInDown.duration(400)} style={styles.header}>
-                    <Text style={styles.header_title}>Saved</Text>
-                    <Text style={styles.header_count}>
-                        {savedArticles.length}{' '}
-                        {savedArticles.length === 1 ? 'article' : 'articles'}
-                    </Text>
-                </Animated.View>
+                <TabHeader
+                    title="Saved"
+                    rightAccessory={
+                        savedArticles.length > 0 ? (
+                            <View style={styles.count_badge}>
+                                <Text style={styles.count_text}>{savedArticles.length}</Text>
+                            </View>
+                        ) : undefined
+                    }
+                />
 
                 <FlatList
                     showsVerticalScrollIndicator={false}
@@ -107,21 +102,19 @@ export default function SavedScreen() {
                     contentContainerStyle={
                         savedArticles.length === 0
                             ? { flexGrow: 1, justifyContent: 'center' }
-                            : { flexGrow: 1 }
+                            : { flexGrow: 1, paddingBottom: 20 }
                     }
                     ListEmptyComponent={<EmptyState />}
+                    ItemSeparatorComponent={() => <HorizonalLine />}
                     renderItem={({ item }) => (
-                        <View style={{ flexDirection: 'column' }}>
-                            <NewsCard
-                                title={item.title}
-                                url_to_image={item.url_to_image}
-                                published_at={item.published_at}
-                                genre={item.genre ?? ''}
-                                id={item.id}
-                                handleEllipsisPress={handleEllipsisPress}
-                            />
-                            <HorizonalLine />
-                        </View>
+                        <NewsCard
+                            title={item.title}
+                            url_to_image={item.url_to_image}
+                            published_at={item.published_at}
+                            genre={item.genre ?? ''}
+                            id={item.id}
+                            handleEllipsisPress={handleEllipsisPress}
+                        />
                     )}
                     keyExtractor={(item) => item.id}
                 />
@@ -133,64 +126,32 @@ export default function SavedScreen() {
                     onRequestClose={() => setShowModal(false)}
                 >
                     <TouchableWithoutFeedback onPress={() => setShowModal(false)}>
-                        <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.4)' }} />
+                        <View style={{ flex: 1 }} />
                     </TouchableWithoutFeedback>
-                    <View style={[styles.modal_sheet, { top: height - 225 }]}>
-                        <View style={styles.modal_close}>
-                            <TouchableOpacity onPress={() => setShowModal(false)} hitSlop={10}>
-                                <FontAwesomeIcon
-                                    icon={faCircleXmark}
-                                    color="white"
-                                    size={20}
-                                    style={{ opacity: 0.8 }}
-                                />
-                            </TouchableOpacity>
-                        </View>
+                    <View style={[styles.modal_sheet, { top: height - 240 }]}>
+                        <View style={styles.handle_bar} />
 
                         <View style={styles.modal_content}>
                             <TouchableOpacity style={styles.modal_option} onPress={handleUnsave}>
-                                <IconFontAwesome
-                                    name="bookmark"
-                                    color="white"
-                                    size={18}
-                                    style={{ opacity: 0.8, marginRight: 10 }}
-                                />
+                                <IconFontAwesome name="bookmark" color="white" size={18} style={{ opacity: 0.7, width: 24 }} />
                                 <Text style={styles.modal_text}>Unsave</Text>
                             </TouchableOpacity>
 
-                            <TouchableOpacity
-                                style={styles.modal_option}
-                                onPress={handleOpenInBrowser}
-                            >
-                                <FontAwesomeIcon
-                                    icon={faUpRightFromSquare}
-                                    color="white"
-                                    size={18}
-                                    style={{ opacity: 0.8, marginRight: 10 }}
-                                />
+                            <TouchableOpacity style={styles.modal_option} onPress={handleOpenInBrowser}>
+                                <FontAwesomeIcon icon={faUpRightFromSquare} color="white" size={17} style={{ opacity: 0.7 }} />
                                 <Text style={styles.modal_text}>Open in browser</Text>
                             </TouchableOpacity>
 
                             <TouchableOpacity style={styles.modal_option}>
-                                <FontAwesomeIcon
-                                    icon={faBan}
-                                    color="white"
-                                    size={18}
-                                    style={{ opacity: 0.8, marginRight: 10 }}
-                                />
-                                <Text style={styles.modal_text}>Not Interested</Text>
+                                <FontAwesomeIcon icon={faBan} color="white" size={17} style={{ opacity: 0.7 }} />
+                                <Text style={styles.modal_text}>Not interested</Text>
                             </TouchableOpacity>
 
+                            <View style={styles.modal_divider} />
+
                             <TouchableOpacity style={styles.modal_option}>
-                                <FontAwesomeIcon
-                                    icon={faFlag}
-                                    color="#FF6B6B"
-                                    size={18}
-                                    style={{ opacity: 0.8, marginRight: 10 }}
-                                />
-                                <Text style={[styles.modal_text, { color: '#FF6B6B' }]}>
-                                    Report
-                                </Text>
+                                <FontAwesomeIcon icon={faFlag} color={theme.danger} size={16} style={{ opacity: 0.8 }} />
+                                <Text style={[styles.modal_text, { color: theme.danger }]}>Report</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -203,83 +164,83 @@ export default function SavedScreen() {
 const styles = StyleSheet.create({
     theme: {
         flex: 1,
-        backgroundColor: '#000000',
+        backgroundColor: theme.bg,
     },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'baseline',
-        paddingHorizontal: 16,
-        paddingVertical: 14,
-        borderBottomColor: '#141414',
-        borderBottomWidth: StyleSheet.hairlineWidth,
+    count_badge: {
+        backgroundColor: theme.accent_soft,
+        borderRadius: 8,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
     },
-    header_title: {
-        fontFamily: 'WorkSans-Bold',
-        fontSize: 28,
-        color: 'white',
-        opacity: 0.9,
-    },
-    header_count: {
-        fontFamily: 'WorkSans-Light',
-        fontSize: 14,
-        color: 'white',
-        opacity: 0.4,
+    count_text: {
+        fontFamily: 'WorkSans-SemiBold',
+        fontSize: 13,
+        color: theme.accent,
     },
     empty_container: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 40,
+        paddingHorizontal: 48,
+    },
+    empty_icon_circle: {
+        width: 72,
+        height: 72,
+        borderRadius: 36,
+        backgroundColor: theme.surface,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 20,
     },
     empty_title: {
         fontFamily: 'WorkSans-SemiBold',
-        fontSize: 20,
-        color: 'white',
-        opacity: 0.7,
+        fontSize: 18,
+        color: theme.text_secondary,
         marginBottom: 8,
     },
     empty_subtitle: {
         fontFamily: 'WorkSans-Light',
-        fontSize: 15,
-        color: 'white',
-        opacity: 0.4,
+        fontSize: 14,
+        color: theme.text_tertiary,
         textAlign: 'center',
+        lineHeight: 20,
     },
     modal_sheet: {
         position: 'absolute',
-        backgroundColor: '#141414',
-        justifyContent: 'center',
-        alignContent: 'center',
-        height: 225,
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-        padding: 20,
+        backgroundColor: theme.elevated,
+        height: 240,
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        paddingTop: 8,
+        paddingHorizontal: 8,
         width: '100%',
     },
-    modal_close: {
-        top: 15,
-        right: 15,
-        position: 'absolute',
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
+    handle_bar: {
+        width: 36,
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: 'rgba(255,255,255,0.12)',
+        alignSelf: 'center',
+        marginBottom: 20,
     },
     modal_content: {
-        justifyContent: 'flex-start',
-        flexDirection: 'column',
-        width: '100%',
-        paddingHorizontal: 20,
+        paddingHorizontal: 16,
     },
     modal_option: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'flex-start',
-        marginVertical: 8,
+        gap: 14,
+        paddingVertical: 13,
+        paddingHorizontal: 8,
     },
     modal_text: {
         fontFamily: 'WorkSans-Regular',
-        fontSize: 18,
-        color: 'white',
-        opacity: 0.8,
+        fontSize: 16,
+        color: theme.text,
+    },
+    modal_divider: {
+        height: StyleSheet.hairlineWidth,
+        backgroundColor: theme.border,
+        marginVertical: 4,
     },
 });

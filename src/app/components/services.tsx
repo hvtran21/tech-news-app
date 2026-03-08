@@ -29,6 +29,15 @@ export async function downloadAndGetArticles(genreSelection?: string, category?:
     }
 }
 
+function shuffle<T>(arr: T[]): T[] {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
 export default async function getArticles(
     genreSelection?: string,
     category?: string,
@@ -48,14 +57,14 @@ export default async function getArticles(
             }),
         );
         if (results) {
-            return results.flat() as Article[];
+            return shuffle(results.flat() as Article[]);
         }
     } else if (category !== undefined && genreSelection === undefined) {
         const results = await db.getAllAsync('SELECT * FROM articles WHERE category = ?', [
             category,
         ]);
         if (results) {
-            return results.flat() as Article[];
+            return shuffle(results.flat() as Article[]);
         }
     }
 }
@@ -63,6 +72,15 @@ export default async function getArticles(
 export async function getSavedArticles(): Promise<Article[]> {
     const db = await SQLite.openDatabaseAsync('newsapp');
     const results = await db.getAllAsync('SELECT * FROM articles WHERE saved = 1');
+    return (results as Article[]) ?? [];
+}
+
+export async function getAllArticles(limit: number = 100): Promise<Article[]> {
+    const db = await SQLite.openDatabaseAsync('newsapp');
+    const results = await db.getAllAsync(
+        'SELECT * FROM articles ORDER BY published_at DESC LIMIT ?',
+        [limit],
+    );
     return (results as Article[]) ?? [];
 }
 

@@ -44,7 +44,7 @@ export default function Main() {
 
     return (
         <View style={styles.container}>
-            <ActivityIndicator size="small" color="#8B5CF6" />
+            <ActivityIndicator size="small" color="#06B6D4" />
         </View>
     );
 }
@@ -52,7 +52,7 @@ export default function Main() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#000000',
+        backgroundColor: '#050505',
         justifyContent: 'center',
         alignItems: 'center',
     },

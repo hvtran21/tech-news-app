@@ -43,3 +43,5 @@ yarn-error.*
 .venv
 
 .env
+
+CLAUDE.md
