@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faHome, faBookmark, faUser } from '@fortawesome/free-solid-svg-icons';
 import { StyleSheet } from 'react-native';
+import { theme } from '../components/styles';
 
 export default function TabLayout() {
     return (
@@ -9,26 +10,18 @@ export default function TabLayout() {
             screenOptions={{
                 headerShown: false,
                 tabBarStyle: tab_styles.tab_bar,
-                tabBarActiveTintColor: '#8B5CF6',
-                tabBarInactiveTintColor: 'rgba(255, 255, 255, 0.4)',
-                tabBarShowLabel: false,
+                tabBarActiveTintColor: theme.accent,
+                tabBarInactiveTintColor: theme.text_tertiary,
+                tabBarShowLabel: true,
+                tabBarLabelStyle: tab_styles.label,
             }}
         >
             <Tabs.Screen
                 name="index"
                 options={{
-                    title: 'Home',
+                    title: 'Feed',
                     tabBarIcon: ({ color }) => (
                         <FontAwesomeIcon icon={faHome} size={20} color={color} />
-                    ),
-                }}
-            />
-            <Tabs.Screen
-                name="saved"
-                options={{
-                    title: 'Saved',
-                    tabBarIcon: ({ color }) => (
-                        <FontAwesomeIcon icon={faBookmark} size={18} color={color} />
                     ),
                 }}
             />
@@ -37,7 +30,16 @@ export default function TabLayout() {
                 options={{
                     title: 'Profile',
                     tabBarIcon: ({ color }) => (
-                        <FontAwesomeIcon icon={faUser} size={18} color={color} />
+                        <FontAwesomeIcon icon={faUser} size={17} color={color} />
+                    ),
+                }}
+            />
+            <Tabs.Screen
+                name="saved"
+                options={{
+                    title: 'Saved',
+                    tabBarIcon: ({ color }) => (
+                        <FontAwesomeIcon icon={faBookmark} size={17} color={color} />
                     ),
                 }}
             />
@@ -47,10 +49,16 @@ export default function TabLayout() {
 
 const tab_styles = StyleSheet.create({
     tab_bar: {
-        backgroundColor: '#000000',
-        borderTopColor: '#1a1a1a',
+        backgroundColor: theme.bg,
+        borderTopColor: theme.border,
         borderTopWidth: StyleSheet.hairlineWidth,
-        height: 85,
+        height: 88,
         paddingTop: 8,
+    },
+    label: {
+        fontFamily: 'WorkSans-Regular',
+        fontSize: 10,
+        letterSpacing: 0.3,
+        marginTop: 2,
     },
 });

@@ -6,7 +6,9 @@ import { faArrowRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import { initializeDatabase } from './components/database';
+import { theme, topicColors } from './components/styles';
 
 enum options {
     AI = 'Artificial Intelligence',
@@ -51,28 +53,36 @@ export default function WelcomePage() {
 
     return (
         <SafeAreaProvider>
-            <SafeAreaView style={welcomeTemplate.theme} edges={['top', 'left', 'right', 'bottom']}>
+            <SafeAreaView style={welcomeStyles.theme} edges={['top', 'left', 'right', 'bottom']}>
+                <LinearGradient
+                    colors={['rgba(6, 182, 212, 0.06)', 'transparent']}
+                    style={welcomeStyles.bg_gradient}
+                    start={{ x: 0.5, y: 0 }}
+                    end={{ x: 0.5, y: 0.5 }}
+                />
+
                 <Animated.View
-                    entering={FadeInDown.duration(600)}
-                    style={welcomeTemplate.title_container}
+                    entering={FadeInDown.duration(700)}
+                    style={welcomeStyles.title_container}
                 >
-                    <Text style={welcomeTemplate.main_title}>Stay updated.</Text>
-                    <Text style={welcomeTemplate.subtitle_italic}>No cookies, no emails.</Text>
+                    <Text style={welcomeStyles.main_title}>Stay{'\n'}updated.</Text>
+                    <Text style={welcomeStyles.subtitle_italic}>No cookies, no emails.</Text>
                 </Animated.View>
 
                 <Animated.View
                     entering={FadeIn.duration(800).delay(300)}
-                    style={genreStyling.preference_header}
+                    style={welcomeStyles.preference_header}
                 >
-                    <Text style={welcomeTemplate.sub_title}>Choose some preferences</Text>
+                    <Text style={welcomeStyles.section_label}>CHOOSE YOUR INTERESTS</Text>
                 </Animated.View>
 
                 <Animated.View
                     entering={FadeInUp.duration(600).delay(500)}
-                    style={genreStyling.genre_container}
+                    style={welcomeStyles.genre_container}
                 >
                     {genre_arr.map((item, index) => {
                         const isSelected = userGenreSelection.includes(item);
+                        const tc = topicColors[item];
                         return (
                             <TouchableOpacity
                                 key={index}
@@ -82,14 +92,20 @@ export default function WelcomePage() {
                                 <Animated.View
                                     entering={FadeIn.duration(400).delay(500 + index * 60)}
                                     style={[
-                                        genreStyling.icon_container,
-                                        isSelected && genreStyling.highlight_icon,
+                                        welcomeStyles.chip,
+                                        isSelected && tc && {
+                                            backgroundColor: tc.bg,
+                                            borderColor: tc.color + '40',
+                                        },
                                     ]}
                                 >
                                     <Text
                                         style={[
-                                            genreStyling.icon_text,
-                                            isSelected && { opacity: 1 },
+                                            welcomeStyles.chip_text,
+                                            isSelected && tc && {
+                                                color: tc.color,
+                                                fontFamily: 'WorkSans-SemiBold',
+                                            },
                                         ]}
                                     >
                                         {item}
@@ -102,11 +118,11 @@ export default function WelcomePage() {
 
                 <Animated.View
                     entering={FadeIn.duration(600).delay(800)}
-                    style={genreStyling.info_container}
+                    style={welcomeStyles.info_container}
                 >
-                    <Text style={genreStyling.info_text}>Select up to {limit}</Text>
-                    <Text style={[genreStyling.info_text, { fontSize: 14, marginTop: 15 }]}>
-                        Or not, that's fine.
+                    <Text style={welcomeStyles.info_text}>Select up to {limit}</Text>
+                    <Text style={[welcomeStyles.info_text, { fontSize: 13, marginTop: 12 }]}>
+                        {"Or don't \u2014 that's fine too."}
                     </Text>
                 </Animated.View>
 
@@ -121,124 +137,128 @@ export default function WelcomePage() {
                 >
                     <TouchableOpacity
                         onPress={handleSubmit}
-                        activeOpacity={0.7}
-                        style={genreStyling.submit_button}
+                        activeOpacity={0.8}
+                        style={welcomeStyles.submit_button}
                     >
-                        <Text style={genreStyling.submit_text}>Get started</Text>
-                        <FontAwesomeIcon
-                            icon={faArrowRight}
-                            size={16}
-                            color="white"
-                        />
+                        <LinearGradient
+                            colors={['#06B6D4', '#0891B2']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={welcomeStyles.submit_gradient}
+                        >
+                            <Text style={welcomeStyles.submit_text}>Get started</Text>
+                            <FontAwesomeIcon
+                                icon={faArrowRight}
+                                size={16}
+                                color="white"
+                            />
+                        </LinearGradient>
                     </TouchableOpacity>
+
+                    {userGenreSelection.length > 0 && (
+                        <Animated.View entering={FadeIn.duration(200)}>
+                            <Text style={welcomeStyles.selection_count}>
+                                {userGenreSelection.length} of {limit} selected
+                            </Text>
+                        </Animated.View>
+                    )}
                 </Animated.View>
             </SafeAreaView>
         </SafeAreaProvider>
     );
 }
 
-const genreStyling = StyleSheet.create({
-    icon_container: {
-        backgroundColor: '#141414',
-        width: 'auto',
-        height: 56,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginLeft: 4,
-        marginRight: 4,
-        marginTop: 8,
-        marginBottom: 8,
-        borderRadius: 15,
-        padding: 15,
+const welcomeStyles = StyleSheet.create({
+    theme: {
+        flex: 1,
+        backgroundColor: theme.bg,
     },
-    icon_text: {
+    bg_gradient: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 400,
+    },
+    title_container: {
+        paddingHorizontal: 28,
+        paddingTop: 48,
+    },
+    main_title: {
+        fontFamily: 'WorkSans-Bold',
         color: 'white',
-        opacity: 0.6,
-        fontFamily: 'WorkSans-Light',
-        fontSize: 16,
+        fontSize: 52,
+        lineHeight: 58,
+        letterSpacing: -1.5,
+    },
+    subtitle_italic: {
+        fontFamily: 'WorkSans-LightItalic',
+        fontSize: 20,
+        color: theme.text_secondary,
+        marginTop: 8,
+    },
+    preference_header: {
+        paddingHorizontal: 28,
+        marginTop: 40,
+        marginBottom: 20,
+    },
+    section_label: {
+        fontFamily: 'WorkSans-SemiBold',
+        fontSize: 11,
+        color: theme.text_tertiary,
+        letterSpacing: 2,
     },
     genre_container: {
         flexWrap: 'wrap',
-        width: '100%',
+        flexDirection: 'row',
+        paddingHorizontal: 24,
+        gap: 8,
+    },
+    chip: {
+        backgroundColor: theme.surface,
+        height: 48,
         justifyContent: 'center',
         alignItems: 'center',
-        flexDirection: 'row',
-        height: 'auto',
-    },
-    highlight_icon: {
-        backgroundColor: '#2a2a2a',
+        borderRadius: 24,
+        paddingHorizontal: 20,
         borderWidth: 1,
-        borderColor: 'rgba(139, 92, 246, 0.4)',
+        borderColor: theme.border,
+    },
+    chip_text: {
+        color: theme.text_secondary,
+        fontFamily: 'WorkSans-Regular',
+        fontSize: 15,
+    },
+    info_container: {
+        alignItems: 'center',
+        marginTop: 24,
+    },
+    info_text: {
+        fontFamily: 'WorkSans-Light',
+        fontSize: 14,
+        color: theme.text_tertiary,
     },
     submit_button: {
+        borderRadius: 16,
+        overflow: 'hidden',
+    },
+    submit_gradient: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#8B5CF6',
-        borderRadius: 14,
-        paddingVertical: 16,
-        gap: 8,
+        paddingVertical: 18,
+        gap: 10,
     },
     submit_text: {
         fontFamily: 'WorkSans-SemiBold',
         fontSize: 17,
         color: 'white',
     },
-    preference_header: {
-        height: 'auto',
-        flexDirection: 'row',
-        justifyContent: 'center',
-        marginBottom: 30,
-        marginTop: 30,
-    },
-    info_container: {
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: 20,
-    },
-    info_text: {
-        fontFamily: 'WorkSans-LightItalic',
-        fontSize: 16,
-        color: 'white',
-        opacity: 0.5,
-        margin: 2,
-    },
-});
-
-const welcomeTemplate = StyleSheet.create({
-    theme: {
-        flex: 1,
-        backgroundColor: '#000000',
-        alignItems: 'center',
-        flexDirection: 'column',
-    },
-    main_title: {
-        fontFamily: 'WorkSans-Bold',
-        color: 'white',
-        opacity: 0.8,
-        fontSize: 40,
-        marginTop: 20,
-    },
-    subtitle_italic: {
-        fontFamily: 'WorkSans-LightItalic',
-        fontSize: 30,
-        opacity: 0.8,
-        color: 'white',
-    },
-    sub_title: {
+    selection_count: {
         fontFamily: 'WorkSans-Light',
-        color: 'white',
-        opacity: 0.6,
-        fontSize: 24,
-    },
-    title_container: {
-        paddingLeft: 15,
-        paddingRight: 15,
-        paddingTop: 55,
-        height: 'auto',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
+        fontSize: 13,
+        color: theme.text_tertiary,
+        textAlign: 'center',
+        marginTop: 12,
     },
 });
