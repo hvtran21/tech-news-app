@@ -31,7 +31,13 @@ const betterSearchMap = new Map<string, string>([
     [techGenres.GAMING, 'gaming OR videogames OR "video games"'],
     [techGenres.APPLE, 'Apple'],
     [techGenres.AMAZON, 'Amazon'],
+    [techGenres.GOOGLE, 'Google'],
     [techGenres.NINTENDO, 'Nintendo'],
+    [techGenres.TESLA, 'Tesla OR "electric vehicle" OR EV'],
+    [techGenres.SPACE_TECH, 'SpaceX OR NASA OR "space technology" OR satellite'],
+    [techGenres.STARTUPS, 'startup OR "venture capital" OR "series A" OR YC'],
+    [techGenres.BLOCKCHAIN, 'blockchain OR crypto OR "web3"'],
+    [techGenres.ROBOTICS, 'robotics OR "humanoid robot" OR automation'],
 ]);
 
 async function insertArticles(

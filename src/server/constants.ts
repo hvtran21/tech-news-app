@@ -4,10 +4,16 @@ enum techGenres {
     APPLE = 'Apple',
     MICROSOFT = 'Microsoft',
     AMAZON = 'Amazon',
+    GOOGLE = 'Google',
     GAMING = 'Gaming',
     CYBERSECURITY = 'Cybersecurity',
     GAME_DEVELOPMENT = 'Game development',
     NINTENDO = 'Nintendo',
+    TESLA = 'Tesla',
+    SPACE_TECH = 'Space Tech',
+    STARTUPS = 'Startups',
+    BLOCKCHAIN = 'Blockchain',
+    ROBOTICS = 'Robotics',
 }
 
 enum categories {
