@@ -41,12 +41,14 @@ const genreOptions = [
 function GenrePreferences() {
     const [selected, setSelected] = useState<string[]>([]);
     const [saved, setSaved] = useState(false);
+    const [loaded, setLoaded] = useState(false);
 
     useFocusEffect(
         useCallback(() => {
             const load = async () => {
                 const stored = await AsyncStorage.getItem('genreSelection');
                 if (stored) setSelected(stored.split(','));
+                setLoaded(true);
             };
             load();
         }, []),
@@ -84,7 +86,7 @@ function GenrePreferences() {
                 {selected.length} selected
             </Text>
             <View style={styles.chip_container}>
-                {genreOptions.map((genre, index) => {
+                {!loaded ? null : genreOptions.map((genre, index) => {
                     const active = selected.includes(genre);
                     const tc = topicColors[genre];
                     return (
@@ -347,10 +349,12 @@ const styles = StyleSheet.create({
         marginBottom: 14,
     },
     saved_inline: {
+        position: 'absolute',
+        right: 0,
+        top: 0,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 4,
-        marginBottom: 12,
     },
     saved_inline_text: {
         fontFamily: 'WorkSans-Regular',
