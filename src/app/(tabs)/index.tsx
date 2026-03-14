@@ -44,8 +44,6 @@ import getArticles, { downloadAndGetArticles, getAllArticles, searchArticles } f
 import { deleteArticlesByAge, canRefreshArticles } from '../components/utilities';
 import ReAnimated, { FadeIn } from 'react-native-reanimated';
 
-// ── Filter Menu ────────────────────────────────────────────
-
 type MenuOptionProp = {
     title: string;
     icon: IconProp;
@@ -86,8 +84,6 @@ const FilterMenu = ({ setFilter, activeFilter }: MenuFilterProp) => {
         </View>
     );
 };
-
-// ── Home Feed ──────────────────────────────────────────────
 
 export default function HomeFeed() {
     const [articles, setArticles] = useState<Article[]>([]);
@@ -237,6 +233,12 @@ export default function HomeFeed() {
         setSearchQuery('');
         searchInputRef.current?.clear();
         if (preSearchArticles.current.length > 0) setArticles(preSearchArticles.current);
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            if (debounceTimer.current) clearTimeout(debounceTimer.current);
+        };
     }, []);
 
     useEffect(() => {
@@ -430,7 +432,6 @@ export default function HomeFeed() {
                         </Animated.View>
                     )}
 
-                    {/* Scroll to top FAB */}
                     <Animated.View
                         pointerEvents={showScrollTop ? 'auto' : 'none'}
                         style={[fab_styles.container, { opacity: scrollTopAnim, transform: [{ scale: scrollTopAnim }] }]}
@@ -458,8 +459,6 @@ export default function HomeFeed() {
         </SafeAreaProvider>
     );
 }
-
-// ── Modal Options ──────────────────────────────────────────
 
 type ModalProps = {
     setShowModal: React.Dispatch<React.SetStateAction<boolean>>;
@@ -530,8 +529,6 @@ const ModalOptions = ({ setShowModal, article }: ModalProps) => {
         </>
     );
 };
-
-// ── Styles ─────────────────────────────────────────────────
 
 const empty_styles = StyleSheet.create({
     container: {

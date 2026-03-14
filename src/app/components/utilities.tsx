@@ -5,7 +5,6 @@ type metadataSchema = {
     latest_article_query: string | null;
 };
 
-// delete articles by parameter: days -> how old articles can be from at the time the function called.
 export async function deleteArticlesByAge(days?: number): Promise<number> {
     let articlesDeleted;
     const cutOffDays = days ?? 4;
@@ -43,14 +42,13 @@ export async function deleteArticlesById(id: string) {
             console.log(`Successfully removed article ${id}`);
             return;
         } else {
-            console.error(`Deleteing article ${id} failed, it may not exist, or ID is wrong.`);
+            console.error(`Deleting article ${id} failed, it may not exist, or ID is wrong.`);
         }
     } catch (error) {
-        console.error(`Error ocurred: ${error}`);
+        console.error(`Error occurred: ${error}`);
     }
 }
 
-// Gets and returns articles using the as an Article object
 export default async function getArticleById(id: string) {
     const db = await SQLite.openDatabaseAsync('newsapp');
     try {
@@ -62,7 +60,7 @@ export default async function getArticleById(id: string) {
         }
         return article;
     } catch (error) {
-        console.error(`Error ocurred: ${error}`);
+        console.error(`Error occurred: ${error}`);
     }
 }
 
@@ -81,7 +79,6 @@ export async function updateArticleQueryTime() {
             $date: currentDate,
         });
 
-        // first user launch
         if (result.changes === 0) {
             await db.runAsync('INSERT INTO metadata (latest_article_query) VALUES ($date)', {
                 $date: currentDate,
@@ -94,7 +91,6 @@ export async function updateArticleQueryTime() {
     }
 }
 
-// don't constantly overwhelm the server, not very good.
 export async function canRefreshArticles() {
     const refreshLimitInMin = 0.5;
     const db = await SQLite.openDatabaseAsync('newsapp');
@@ -102,7 +98,6 @@ export async function canRefreshArticles() {
     try {
         const query = (await db.getFirstAsync('SELECT * FROM metadata')) as metadataSchema;
 
-        // empty query indicates first user sign on
         if (query === null || query === undefined) {
             return true;
         }

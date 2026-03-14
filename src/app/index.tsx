@@ -33,7 +33,7 @@ export default function Main() {
             if (!fontsLoaded) return;
 
             const firstLaunch = await checkFirstLaunch();
-            if (true) {
+            if (firstLaunch) {
                 router.replace('/welcome');
             } else {
                 router.replace('/(tabs)');

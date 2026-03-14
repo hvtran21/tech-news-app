@@ -113,9 +113,9 @@ export async function articleAPI(
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                genre: { genre },
-                category: { cat },
-                articleRetrievalLimit: { limit },
+                genre: genre || undefined,
+                category: cat || undefined,
+                limit,
             }),
         });
 
@@ -159,22 +159,25 @@ export async function articleAPI(
                     const statement = await db.prepareAsync(
                         'INSERT OR IGNORE INTO articles(id, genre, category, source, author, title, description, url, url_to_image, published_at, content, saved) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                     );
-                    await statement.executeAsync([
-                        article.id,
-                        article.genre ?? null,
-                        article.category ?? null,
-                        article.source ?? null,
-                        article.author ?? null,
-                        article.title ?? null,
-                        article.description ?? null,
-                        article.url?.toString() ?? null,
-                        article.url_to_image?.toString() ?? null,
-                        article.published_at ?? null,
-                        article.content ?? null,
-                        article.saved ?? 0,
-                    ]);
-                    await statement.finalizeAsync();
-                    articleCount += 1;
+                    try {
+                        await statement.executeAsync([
+                            article.id,
+                            article.genre ?? null,
+                            article.category ?? null,
+                            article.source ?? null,
+                            article.author ?? null,
+                            article.title ?? null,
+                            article.description ?? null,
+                            article.url?.toString() ?? null,
+                            article.url_to_image?.toString() ?? null,
+                            article.published_at ?? null,
+                            article.content ?? null,
+                            article.saved ?? 0,
+                        ]);
+                        articleCount += 1;
+                    } finally {
+                        await statement.finalizeAsync();
+                    }
                 }
             }),
         );
