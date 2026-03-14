@@ -2,7 +2,7 @@ import { Tabs } from 'expo-router';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faHome, faBookmark, faUser } from '@fortawesome/free-solid-svg-icons';
 import { StyleSheet } from 'react-native';
-import { theme } from '../components/styles';
+import { theme, tabAccents } from '../components/styles';
 
 export default function TabLayout() {
     return (
@@ -10,7 +10,6 @@ export default function TabLayout() {
             screenOptions={{
                 headerShown: false,
                 tabBarStyle: tab_styles.tab_bar,
-                tabBarActiveTintColor: theme.accent,
                 tabBarInactiveTintColor: theme.text_tertiary,
                 tabBarShowLabel: true,
                 tabBarLabelStyle: tab_styles.label,
@@ -20,6 +19,7 @@ export default function TabLayout() {
                 name="index"
                 options={{
                     title: 'Feed',
+                    tabBarActiveTintColor: tabAccents.feed,
                     tabBarIcon: ({ color }) => (
                         <FontAwesomeIcon icon={faHome} size={20} color={color} />
                     ),
@@ -29,6 +29,7 @@ export default function TabLayout() {
                 name="profile"
                 options={{
                     title: 'Profile',
+                    tabBarActiveTintColor: tabAccents.profile,
                     tabBarIcon: ({ color }) => (
                         <FontAwesomeIcon icon={faUser} size={17} color={color} />
                     ),
@@ -38,6 +39,7 @@ export default function TabLayout() {
                 name="saved"
                 options={{
                     title: 'Saved',
+                    tabBarActiveTintColor: tabAccents.saved,
                     tabBarIcon: ({ color }) => (
                         <FontAwesomeIcon icon={faBookmark} size={17} color={color} />
                     ),

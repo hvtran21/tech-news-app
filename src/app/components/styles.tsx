@@ -2,7 +2,7 @@ import React from 'react';
 import { Text, TextStyle, StyleSheet, View } from 'react-native';
 import MaskedView from '@react-native-masked-view/masked-view';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 export const theme = {
     bg: '#050505',
@@ -18,16 +18,28 @@ export const theme = {
     danger: '#EF4444',
 };
 
+export const tabAccents = {
+    feed: '#06B6D4',
+    saved: '#F59E0B',
+    profile: '#A78BFA',
+} as const;
+
 export const topicColors: Record<string, { color: string; bg: string }> = {
     'Artificial Intelligence': { color: '#60A5FA', bg: 'rgba(96, 165, 250, 0.10)' },
     'Machine Learning':       { color: '#A78BFA', bg: 'rgba(167, 139, 250, 0.10)' },
     'Apple':                  { color: '#F472B6', bg: 'rgba(244, 114, 182, 0.10)' },
     'Microsoft':              { color: '#34D399', bg: 'rgba(52, 211, 153, 0.10)' },
     'Amazon':                 { color: '#FBBF24', bg: 'rgba(251, 191, 36, 0.10)' },
+    'Google':                 { color: '#4ADE80', bg: 'rgba(74, 222, 128, 0.10)' },
     'Gaming':                 { color: '#FB923C', bg: 'rgba(251, 146, 60, 0.10)' },
     'Cybersecurity':          { color: '#F87171', bg: 'rgba(248, 113, 113, 0.10)' },
     'Game development':       { color: '#C084FC', bg: 'rgba(192, 132, 252, 0.10)' },
     'Nintendo':               { color: '#E879F9', bg: 'rgba(232, 121, 249, 0.10)' },
+    'Tesla':                  { color: '#F43F5E', bg: 'rgba(244, 63, 94, 0.10)' },
+    'Space Tech':             { color: '#818CF8', bg: 'rgba(129, 140, 248, 0.10)' },
+    'Startups':               { color: '#FB7185', bg: 'rgba(251, 113, 133, 0.10)' },
+    'Blockchain':             { color: '#FACC15', bg: 'rgba(250, 204, 21, 0.10)' },
+    'Robotics':               { color: '#22D3EE', bg: 'rgba(34, 211, 238, 0.10)' },
     'Technology':             { color: '#2DD4BF', bg: 'rgba(45, 212, 191, 0.10)' },
     'Top':                    { color: '#2DD4BF', bg: 'rgba(45, 212, 191, 0.10)' },
 };
@@ -67,27 +79,42 @@ interface TabHeaderProps {
     title: string;
     rightAccessory?: React.ReactNode;
     subtitle?: string;
+    accent?: string;
 }
 
-export const TabHeader = ({ title, rightAccessory, subtitle }: TabHeaderProps) => {
+export const TabHeader = ({ title, rightAccessory, subtitle, accent = theme.accent }: TabHeaderProps) => {
     return (
-        <Animated.View entering={FadeInDown.duration(300)} style={header_styles.container}>
-            <View>
-                {subtitle && (
-                    <Animated.Text entering={FadeInDown.duration(250).delay(80)} style={header_styles.subtitle}>
-                        {subtitle}
-                    </Animated.Text>
-                )}
-                <GradientText
-                    text={title}
-                    colors={['#ffffff', 'rgba(255,255,255,0.55)']}
-                    style={header_styles.title}
-                />
+        <Animated.View entering={FadeIn.duration(450)} style={header_styles.container}>
+            <View style={header_styles.title_row}>
+                <View style={[header_styles.accent_bar, { backgroundColor: accent }]} />
+                <View style={header_styles.title_block}>
+                    {subtitle && (
+                        <Text style={[header_styles.subtitle, { color: accent }]}>
+                            {subtitle}
+                        </Text>
+                    )}
+                    <GradientText
+                        text={title}
+                        colors={['#ffffff', 'rgba(255,255,255,0.48)']}
+                        style={header_styles.title}
+                    />
+                </View>
             </View>
             {rightAccessory}
         </Animated.View>
     );
 };
+
+export const HeaderRule = ({ accent = theme.accent }: { accent?: string }) => (
+    <View style={header_styles.rule_wrapper}>
+        <LinearGradient
+            colors={[accent, 'transparent']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={header_styles.rule_line}
+        />
+    </View>
+);
 
 const header_styles = StyleSheet.create({
     container: {
@@ -96,22 +123,43 @@ const header_styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: 20,
         paddingTop: 16,
-        paddingBottom: 14,
+        paddingBottom: 6,
         overflow: 'visible',
         zIndex: 10,
     },
+    title_row: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    accent_bar: {
+        width: 3,
+        height: 32,
+        borderRadius: 2,
+        marginRight: 12,
+    },
+    title_block: {
+        justifyContent: 'center',
+    },
     title: {
         fontFamily: 'WorkSans-Bold',
-        fontSize: 32,
+        fontSize: 30,
         letterSpacing: -0.5,
     },
     subtitle: {
-        fontFamily: 'WorkSans-Regular',
-        fontSize: 12,
-        color: theme.text_tertiary,
-        letterSpacing: 1.5,
+        fontFamily: 'WorkSans-SemiBold',
+        fontSize: 10,
+        letterSpacing: 2.5,
         textTransform: 'uppercase',
-        marginBottom: 2,
+        marginBottom: 1,
+        opacity: 0.7,
+    },
+    rule_wrapper: {
+        paddingHorizontal: 20,
+        paddingBottom: 10,
+    },
+    rule_line: {
+        height: StyleSheet.hairlineWidth * 2,
+        borderRadius: 1,
     },
 });
 

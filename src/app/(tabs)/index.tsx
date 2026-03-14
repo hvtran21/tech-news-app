@@ -20,7 +20,7 @@ import {
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { NewsCard } from '../components/news_card';
-import { TabHeader, HorizonalLine, theme } from '../components/styles';
+import { TabHeader, HeaderRule, HorizonalLine, theme, tabAccents } from '../components/styles';
 import {
     faHouse,
     faAngleDown,
@@ -316,6 +316,8 @@ export default function HomeFeed() {
                 <View style={base_template.config}>
                     <TabHeader
                         title="Feed"
+                        subtitle="Your news"
+                        accent={tabAccents.feed}
                         rightAccessory={
                             <View style={base_template.header_actions}>
                                 <TouchableOpacity
@@ -361,6 +363,7 @@ export default function HomeFeed() {
                             </View>
                         }
                     />
+                    <HeaderRule accent={tabAccents.feed} />
 
                     <Animated.View style={[search_styles.bar_wrapper, { height: searchBarHeight, opacity: searchAnim }]}>
                         <View style={search_styles.bar}>
