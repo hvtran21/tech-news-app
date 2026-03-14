@@ -1,6 +1,19 @@
 import * as SQLite from 'expo-sqlite';
 import Article from './constants';
 
+export function stripHtml(text: string): string {
+    return text
+        .replace(/<[^>]*>/g, '')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&nbsp;/g, ' ')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+}
+
 type metadataSchema = {
     latest_article_query: string | null;
 };
