@@ -88,10 +88,6 @@ async function insertArticles(
     }
 }
 
-/**
- * Fetch articles from the /everything endpoint, filtered to curated domains.
- * Used for genre-based queries (AI, Gaming, Apple, etc.)
- */
 async function fetchArticles(genre?: string, category?: string) {
     let page = 1;
     let totalProcessed = 0;
@@ -119,7 +115,6 @@ async function fetchArticles(genre?: string, category?: string) {
                     `&page=${page}` +
                     `&apiKey=${apiKey}`;
             } else if (category && !genre) {
-                // Top headlines with curated sources
                 url =
                     `https://newsapi.org/v2/top-headlines` +
                     `?sources=${curatedSources}` +

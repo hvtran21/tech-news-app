@@ -11,7 +11,7 @@ async function initDatabase() {
         await db.none(articleTableDefinition);
         console.log('Database initialized...');
     } catch (error) {
-        console.error('Error ocurred when initializing Database: ', error);
+        console.error('Error occurred when initializing Database: ', error);
         return;
     }
 }
@@ -103,16 +103,14 @@ const serverStart = () => {
      *       500:
      *         description: Internal server error
      */
-    server.post('/api/RemoveOldArticles', (req, res) => {
+    server.post('/api/RemoveOldArticles', async (req, res) => {
         const days = req.body?.days as number;
-        const execute = async (days: number) => {
+        try {
             const result = await removeOldArticles(days);
-
-            // catch internal server error
-            if (result != 0) {
+            if (result !== 0) {
                 res.status(500).json({
                     ok: false,
-                    message: 'Error ocurred while removing articles.',
+                    message: 'Error occurred while removing articles.',
                 });
             } else {
                 res.status(200).json({
@@ -120,8 +118,10 @@ const serverStart = () => {
                     message: 'Removing articles successful.',
                 });
             }
-        };
-        execute(days);
+        } catch (error) {
+            console.error(`RemoveOldArticles error: ${error}`);
+            res.status(500).json({ ok: false, message: 'Internal server error.' });
+        }
     });
 
     /**
@@ -144,25 +144,24 @@ const serverStart = () => {
      *       500:
      *         description: Internal server error
      */
-    server.get('/api/FetchArticles', (req, res) => {
-        const execute = async () => {
+    server.get('/api/FetchArticles', async (req, res) => {
+        try {
             const result = await retrieveData();
-
-            // catch internal server error
-            if (result != 0) {
+            if (result !== 0) {
                 res.status(500).json({
                     ok: false,
                     message: 'Fetching articles failed, internal server error.',
                 });
                 return;
             }
-
             res.status(200).json({
                 ok: true,
                 message: 'Fetching articles successful.',
             });
-        };
-        execute();
+        } catch (error) {
+            console.error(`FetchArticles error: ${error}`);
+            res.status(500).json({ ok: false, message: 'Internal server error.' });
+        }
     });
 
     /**
@@ -236,24 +235,21 @@ const serverStart = () => {
      *                       content:
      *                         type: string
      */
-    server.post('/api/GetArticles', (req, res) => {
-        let genres = req.body.genre?.genre as string;
-        let category = req.body.category?.cat as string;
-        const limit = req.body.articleRetrievalLimit?.limit as number;
+    server.post('/api/GetArticles', async (req, res) => {
+        const genres = (req.body.genre?.genre ?? req.body.genre ?? '') as string;
+        const category = (req.body.category?.cat ?? req.body.category ?? '') as string;
+        const limit = (req.body.articleRetrievalLimit?.limit ?? req.body.limit ?? 100) as number;
 
-        let results: any[] = [];
-
-        // send JSON response back
         try {
-            // fetch articles by genre
-            if (genres !== '') {
+            if (genres && genres.length > 0) {
                 const genreArray = genres.split(',');
-                console.log(`Recieved query: ${genreArray}`);
-                db.tx((t) => {
+                console.log(`Received query: ${genreArray}`);
+
+                const data = await db.tx((t) => {
                     const queries = genreArray.map((genre) => {
                         const enum_check = getEnumKey(genre);
                         if (!enum_check) {
-                            throw new Error(`Error: Genre not in ENUM, got: ${genre}`);
+                            throw new Error(`Genre not in ENUM, got: ${genre}`);
                         }
                         return t.any('SELECT * FROM articles WHERE genre = $1 LIMIT $2', [
                             genre,
@@ -261,29 +257,26 @@ const serverStart = () => {
                         ]);
                     });
                     return t.batch(queries);
-                })
-                    .then((data) => {
-                        results = data;
-                        const articles = results.flat();
-                        console.log('Sending data...');
-                        res.json({ articles });
-                    })
-                    .catch((error) => {
-                        console.error(
-                            `Error ocurred retrieving user preference articles: ${error}`,
-                        );
-                    });
-            } else if (category !== '') {
-                console.log(`Recieved query for category: ${category}`);
-                db.any('SELECT * FROM ARTICLES WHERE category = $1', category).then((data) => {
-                    results = data;
-                    const articles = results.flat();
-                    console.log('Sending data...');
-                    res.json({ articles });
                 });
+
+                const articles = data.flat();
+                console.log('Sending data...');
+                res.json({ articles });
+            } else if (category && category.length > 0) {
+                console.log(`Received query for category: ${category}`);
+                const data = await db.any(
+                    'SELECT * FROM articles WHERE category = $1',
+                    category,
+                );
+                const articles = data.flat();
+                console.log('Sending data...');
+                res.json({ articles });
+            } else {
+                res.status(400).json({ error: 'Missing genre or category parameter.' });
             }
         } catch (error) {
-            console.error(`Error occurred: ${error}`);
+            console.error(`Error occurred retrieving articles: ${error}`);
+            res.status(500).json({ error: 'Internal server error.' });
         }
     });
 
