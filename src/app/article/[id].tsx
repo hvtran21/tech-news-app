@@ -22,6 +22,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Article from '../components/constants';
 import { formatDate } from '../components/news_card';
 import { theme, getTopicColor } from '../components/styles';
+import { stripHtml } from '../components/utilities';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 
 const fallBackImage = require('../../assets/images/computer_2.jpg');
@@ -145,13 +146,13 @@ export default function ArticleDetail() {
 
                     {article.description && (
                         <Animated.View entering={FadeInDown.duration(400).delay(350)} style={styles.content_block}>
-                            <Text style={styles.description}>{article.description}</Text>
+                            <Text style={styles.description}>{stripHtml(article.description)}</Text>
                         </Animated.View>
                     )}
 
                     {article.content && (
                         <Animated.View entering={FadeInDown.duration(400).delay(400)} style={styles.content_block}>
-                            <Text style={styles.content}>{article.content}</Text>
+                            <Text style={styles.content}>{stripHtml(article.content)}</Text>
                         </Animated.View>
                     )}
 
