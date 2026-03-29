@@ -1,19 +1,57 @@
 import express from 'express';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from '../swagger';
-import { articleTableDefinition } from '../models';
+import { articleTableDefinition, fetchLogTableDefinition } from '../models';
 import fetchArticles from '../newsapi';
 import techGenres, { categories } from '../constants';
 import db from '../db';
 
+const STALE_THRESHOLD_MS = 30 * 60 * 1000; // 30 minutes
+
 async function initDatabase() {
     try {
         await db.none(articleTableDefinition);
+        await db.none(fetchLogTableDefinition);
         console.log('[db] Database initialized');
     } catch (error) {
         console.error('[db] Failed to initialize database:', error);
         throw error;
     }
+}
+
+// Returns true if the source hasn't been fetched recently
+async function isStale(sourceKey: string): Promise<boolean> {
+    const row = await db.oneOrNone(
+        'SELECT last_fetched_at FROM fetch_log WHERE source_key = $1',
+        sourceKey,
+    );
+
+    if (!row) return true;
+
+    const elapsed = Date.now() - new Date(row.last_fetched_at).getTime();
+    return elapsed > STALE_THRESHOLD_MS;
+}
+
+async function updateFetchTime(sourceKey: string) {
+    await db.none(
+        `INSERT INTO fetch_log (source_key, last_fetched_at) VALUES ($1, NOW())
+         ON CONFLICT (source_key) DO UPDATE SET last_fetched_at = NOW()`,
+        sourceKey,
+    );
+}
+
+// Fetches a single genre or category from NewsAPI if it's stale, then updates the fetch log
+async function refreshIfStale(genre?: string, category?: string): Promise<boolean> {
+    const sourceKey = genre ?? category;
+    if (!sourceKey) return false;
+
+    const stale = await isStale(sourceKey);
+    if (!stale) return false;
+
+    console.log(`[fetch] "${sourceKey}" is stale, fetching from NewsAPI`);
+    await fetchArticles(genre, category);
+    await updateFetchTime(sourceKey);
+    return true;
 }
 
 async function fetchAllSources() {
@@ -22,6 +60,7 @@ async function fetchAllSources() {
     for (const genre of Object.values(techGenres)) {
         try {
             await fetchArticles(genre, undefined);
+            await updateFetchTime(genre);
         } catch (error) {
             console.error(`[fetch] Failed to fetch genre "${genre}":`, error);
             totalErrors++;
@@ -31,6 +70,7 @@ async function fetchAllSources() {
     for (const category of Object.values(categories)) {
         try {
             await fetchArticles(undefined, category);
+            await updateFetchTime(category);
         } catch (error) {
             console.error(`[fetch] Failed to fetch category "${category}":`, error);
             totalErrors++;
@@ -155,7 +195,7 @@ const startServer = () => {
      * @openapi
      * /api/FetchArticles:
      *   get:
-     *     summary: Fetch articles from NewsAPI for all genres and categories
+     *     summary: Force-fetch articles from NewsAPI for all genres and categories (ignores staleness)
      *     responses:
      *       200:
      *         description: Articles fetched and stored successfully
@@ -195,7 +235,7 @@ const startServer = () => {
      * @openapi
      * /api/GetArticles:
      *   post:
-     *     summary: Get articles by genre or category
+     *     summary: Get articles by genre or category (auto-fetches from NewsAPI if stale)
      *     requestBody:
      *       required: true
      *       content:
@@ -273,12 +313,22 @@ const startServer = () => {
                 const genreArray = genres.split(',');
                 console.log(`[api] GetArticles genres=${genreArray.join(', ')} limit=${limit}`);
 
+                // Auto-fetch stale genres from NewsAPI before querying
+                for (const genre of genreArray) {
+                    const genreKey = findGenreKey(genre);
+                    if (!genreKey) {
+                        res.status(400).json({ error: `Invalid genre: ${genre}` });
+                        return;
+                    }
+                    try {
+                        await refreshIfStale(genre, undefined);
+                    } catch (error) {
+                        console.error(`[fetch] Background refresh failed for "${genre}":`, error);
+                    }
+                }
+
                 const data = await db.tx((t) => {
                     const queries = genreArray.map((genre) => {
-                        const genreKey = findGenreKey(genre);
-                        if (!genreKey) {
-                            throw new Error(`Genre not in ENUM, got: ${genre}`);
-                        }
                         return t.any('SELECT * FROM articles WHERE genre = $1 LIMIT $2', [
                             genre,
                             limit,
@@ -292,6 +342,13 @@ const startServer = () => {
                 res.json({ articles });
             } else if (category && category.length > 0) {
                 console.log(`[api] GetArticles category=${category}`);
+
+                try {
+                    await refreshIfStale(undefined, category);
+                } catch (error) {
+                    console.error(`[fetch] Background refresh failed for "${category}":`, error);
+                }
+
                 const data = await db.any(
                     'SELECT * FROM articles WHERE category = $1 LIMIT $2',
                     [category, limit],

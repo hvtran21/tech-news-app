@@ -18,4 +18,13 @@ const articleTableDefinition = `
     CREATE INDEX IF NOT EXISTS idx_articles_published_at ON articles(published_at);
 `;
 
-export { articleTableDefinition };
+// Tracks the last time each genre/category was fetched from NewsAPI.
+// Used to avoid redundant fetches when multiple users request the same source.
+const fetchLogTableDefinition = `
+    CREATE TABLE IF NOT EXISTS fetch_log (
+    source_key VARCHAR(255) PRIMARY KEY,
+    last_fetched_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+`;
+
+export { articleTableDefinition, fetchLogTableDefinition };
