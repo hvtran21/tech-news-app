@@ -40,7 +40,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Article from '../components/constants';
-import getArticles, { downloadAndGetArticles, getAllArticles, searchArticles } from '../components/services';
+import getArticles, { syncArticles, getAllArticles, searchArticles } from '../components/services';
 import { deleteArticlesByAge, canRefreshArticles } from '../components/utilities';
 import ReAnimated, { FadeIn } from 'react-native-reanimated';
 
@@ -151,9 +151,9 @@ export default function HomeFeed() {
 
         const userPreferences = await AsyncStorage.getItem('genreSelection');
         if (userPreferences) {
-            await downloadAndGetArticles(userPreferences, undefined);
+            await syncArticles(userPreferences, undefined);
         }
-        await downloadAndGetArticles(undefined, 'Technology');
+        await syncArticles(undefined, 'Technology');
 
         const newArticles = await loadByFilter(filter);
         setArticles(newArticles);
@@ -260,8 +260,8 @@ export default function HomeFeed() {
             setLoading(true);
             try {
                 const existingPreferences = await AsyncStorage.getItem('genreSelection');
-                if (existingPreferences) await downloadAndGetArticles(existingPreferences, undefined);
-                await downloadAndGetArticles(undefined, 'Technology');
+                if (existingPreferences) await syncArticles(existingPreferences, undefined);
+                await syncArticles(undefined, 'Technology');
                 const loadedArticles = await loadByFilter('Home');
                 setArticles(loadedArticles);
             } catch (error) {
