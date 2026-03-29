@@ -20,7 +20,7 @@ enum categories {
     TECHNOLOGY = 'Technology',
 }
 
-export const DAYS_IN_SECONDS = 24 * 60 * 60 * 1000;
+export const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 // Curated reputable tech sources for higher quality content.
 // Used as the `domains` param on the /everything endpoint.

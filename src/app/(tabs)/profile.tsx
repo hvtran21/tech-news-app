@@ -14,7 +14,7 @@ import {
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faUser, faCheck, faPen, faChevronRight, faArrowLeft } from '@fortawesome/free-solid-svg-icons';
+import { faUser, faCheck, faChevronRight, faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TabHeader, HeaderRule, theme, tabAccents, topicColors } from '../components/styles';
 import { getUser, upsertUser } from '../components/database';
