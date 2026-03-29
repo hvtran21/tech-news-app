@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const cn = {
+const dbConfig = {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '5432'),
     database: process.env.DB_NAME || 'newsapp',
@@ -12,8 +12,15 @@ const cn = {
 };
 
 const pgp = pgPromise();
+export const db = pgp(dbConfig);
 
-// connect to database
-export const db = pgp(cn);
+db.connect()
+    .then((obj) => {
+        console.log(`[db] Connected to PostgreSQL at ${dbConfig.host}:${dbConfig.port}/${dbConfig.database}`);
+        obj.done();
+    })
+    .catch((error) => {
+        console.error('[db] Failed to connect to PostgreSQL:', error.message);
+    });
 
 export default db;

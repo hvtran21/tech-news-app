@@ -1,35 +1,44 @@
 import * as SQLite from 'expo-sqlite';
 import Article from './constants';
 
-type metadataSchema = {
+export function stripHtml(text: string): string {
+    return text
+        .replace(/<[^>]*>/g, '')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&nbsp;/g, ' ')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+}
+
+type MetadataRow = {
     latest_article_query: string | null;
 };
 
-// delete articles by parameter: days -> how old articles can be from at the time the function called.
 export async function deleteArticlesByAge(days?: number): Promise<number> {
-    let articlesDeleted;
-    const cutOffDays = days ?? 4;
+    const retentionDays = days ?? 4;
 
     const db = await SQLite.openDatabaseAsync('newsapp');
-    const today = new Date();
-    today.setDate(today.getDate() - cutOffDays);
-    const cutOffDate = today.toISOString().split('T')[0];
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - retentionDays);
+    const cutoffDate = cutoff.toISOString().split('T')[0];
 
     try {
         const result = await db.runAsync(
             'DELETE FROM articles WHERE published_at <= $date AND saved = 0',
             {
-                $date: cutOffDate,
+                $date: cutoffDate,
             },
         );
-        console.log(`${result.changes} articles were removed.`);
-        articlesDeleted = result.changes;
+        console.log(`[cleanup] Removed ${result.changes} article(s) older than ${retentionDays} days`);
+        return result.changes;
     } catch (error) {
-        console.error(error);
+        console.error('[cleanup] Error removing old articles:', error);
         return -1;
     }
-
-    return articlesDeleted;
 }
 
 export async function deleteArticlesById(id: string) {
@@ -43,14 +52,13 @@ export async function deleteArticlesById(id: string) {
             console.log(`Successfully removed article ${id}`);
             return;
         } else {
-            console.error(`Deleteing article ${id} failed, it may not exist, or ID is wrong.`);
+            console.error(`Deleting article ${id} failed, it may not exist, or ID is wrong.`);
         }
     } catch (error) {
-        console.error(`Error ocurred: ${error}`);
+        console.error(`Error occurred: ${error}`);
     }
 }
 
-// Gets and returns articles using the as an Article object
 export default async function getArticleById(id: string) {
     const db = await SQLite.openDatabaseAsync('newsapp');
     try {
@@ -62,7 +70,7 @@ export default async function getArticleById(id: string) {
         }
         return article;
     } catch (error) {
-        console.error(`Error ocurred: ${error}`);
+        console.error(`Error occurred: ${error}`);
     }
 }
 
@@ -81,7 +89,6 @@ export async function updateArticleQueryTime() {
             $date: currentDate,
         });
 
-        // first user launch
         if (result.changes === 0) {
             await db.runAsync('INSERT INTO metadata (latest_article_query) VALUES ($date)', {
                 $date: currentDate,
@@ -94,31 +101,28 @@ export async function updateArticleQueryTime() {
     }
 }
 
-// don't constantly overwhelm the server, not very good.
 export async function canRefreshArticles() {
-    const refreshLimitInMin = 0.5;
+    const cooldownMinutes = 0.5;
     const db = await SQLite.openDatabaseAsync('newsapp');
 
     try {
-        const query = (await db.getFirstAsync('SELECT * FROM metadata')) as metadataSchema;
+        const row = (await db.getFirstAsync('SELECT * FROM metadata')) as MetadataRow;
 
-        // empty query indicates first user sign on
-        if (query === null || query === undefined) {
+        if (row === null || row === undefined) {
             return true;
         }
 
-        const queryResult = query.latest_article_query ?? '';
+        const lastQueryTime = row.latest_article_query ?? '';
 
-        if (!queryResult) {
+        if (!lastQueryTime) {
             throw new Error('latest_article_query is empty. This should not have happened..');
         }
 
-        const latestQueryTime = new Date(queryResult);
-        const currentTime = new Date();
-        const differenceInMS = Math.abs(currentTime.getTime() - latestQueryTime.getTime());
-        const differenceInMin = differenceInMS / (1000 * 60);
+        const lastRefresh = new Date(lastQueryTime);
+        const now = new Date();
+        const elapsedMinutes = Math.abs(now.getTime() - lastRefresh.getTime()) / (1000 * 60);
 
-        if (differenceInMin < refreshLimitInMin) {
+        if (elapsedMinutes < cooldownMinutes) {
             console.log('Refresh cooldown in effect.');
             return false;
         }

@@ -22,7 +22,11 @@ interface Article {
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const apiKey = process.env.NEWS_API_KEY;
 
-const betterSearchMap = new Map<string, string>([
+if (!apiKey) {
+    console.warn('[newsapi] NEWS_API_KEY is not set — article fetching will fail');
+}
+
+const genreSearchQueries = new Map<string, string>([
     [techGenres.AI, '"artificial intelligence" OR "AI"'],
     [techGenres.ML, '"machine learning" OR "ML"'],
     [techGenres.MICROSOFT, 'Microsoft'],
@@ -31,7 +35,13 @@ const betterSearchMap = new Map<string, string>([
     [techGenres.GAMING, 'gaming OR videogames OR "video games"'],
     [techGenres.APPLE, 'Apple'],
     [techGenres.AMAZON, 'Amazon'],
+    [techGenres.GOOGLE, 'Google'],
     [techGenres.NINTENDO, 'Nintendo'],
+    [techGenres.TESLA, 'Tesla OR "electric vehicle" OR EV'],
+    [techGenres.SPACE_TECH, 'SpaceX OR NASA OR "space technology" OR satellite'],
+    [techGenres.STARTUPS, 'startup OR "venture capital" OR "series A" OR YC'],
+    [techGenres.BLOCKCHAIN, 'blockchain OR crypto OR "web3"'],
+    [techGenres.ROBOTICS, 'robotics OR "humanoid robot" OR automation'],
 ]);
 
 async function insertArticles(
@@ -39,7 +49,7 @@ async function insertArticles(
     genre: string | undefined,
     category: string | undefined,
 ) {
-    const lst = articles
+    const rows = articles
         .filter((a) => a.title && a.title !== '[Removed]')
         .map((article) => ({
             id: uuidv4(),
@@ -55,11 +65,11 @@ async function insertArticles(
             content: article.content,
         }));
 
-    if (lst.length === 0) return 0;
+    if (rows.length === 0) return 0;
 
     try {
         await db.tx((t) => {
-            const queries = lst.map((article) => {
+            const queries = rows.map((article) => {
                 return t.none(
                     `INSERT INTO articles(id, genre, category, source, author, title, description, url, url_to_image, published_at, content)
                      VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
@@ -81,17 +91,13 @@ async function insertArticles(
             });
             return t.batch(queries);
         });
-        return lst.length;
+        return rows.length;
     } catch (error) {
-        console.error(`Error inserting articles into DB: ${error}`);
+        console.error(`[newsapi] Error inserting articles into DB:`, error);
         return 0;
     }
 }
 
-/**
- * Fetch articles from the /everything endpoint, filtered to curated domains.
- * Used for genre-based queries (AI, Gaming, Apple, etc.)
- */
 async function fetchArticles(genre?: string, category?: string) {
     let page = 1;
     let totalProcessed = 0;
@@ -106,7 +112,7 @@ async function fetchArticles(genre?: string, category?: string) {
             let url = '';
 
             if (genre && !category) {
-                const q = betterSearchMap.get(genre.trim()) ?? genre;
+                const q = genreSearchQueries.get(genre.trim()) ?? genre;
                 url =
                     `https://newsapi.org/v2/everything` +
                     `?q=${encodeURIComponent(q)}` +
@@ -119,7 +125,6 @@ async function fetchArticles(genre?: string, category?: string) {
                     `&page=${page}` +
                     `&apiKey=${apiKey}`;
             } else if (category && !genre) {
-                // Top headlines with curated sources
                 url =
                     `https://newsapi.org/v2/top-headlines` +
                     `?sources=${curatedSources}` +
@@ -132,15 +137,17 @@ async function fetchArticles(genre?: string, category?: string) {
 
             const response = await fetch(url);
 
+            const source = genre ?? category;
+
             if (response.status === 429) {
-                console.log('Rate limit hit. Waiting 3s...');
+                console.warn(`[newsapi] Rate limited on "${source}", retrying in 3s`);
                 await delay(3000);
                 continue;
             }
 
             if (!response.ok) {
                 const body = await response.text();
-                console.error(`NewsAPI error ${response.status}: ${body}`);
+                console.error(`[newsapi] API error ${response.status} for "${source}": ${body}`);
                 break;
             }
 
@@ -148,7 +155,7 @@ async function fetchArticles(genre?: string, category?: string) {
             const articles: Article[] = data.articles ?? [];
 
             if (articles.length === 0) {
-                console.log(`No articles for ${genre ?? category}`);
+                console.log(`[newsapi] No articles found for "${source}"`);
                 break;
             }
 
@@ -157,11 +164,11 @@ async function fetchArticles(genre?: string, category?: string) {
             totalProcessed += articles.length;
 
             console.log(
-                `[${genre ?? category}] page ${page}: ${inserted} inserted, ${totalResults - totalProcessed} remaining`,
+                `[newsapi] ${source} page ${page}: ${inserted} inserted, ${totalResults - totalProcessed} remaining`,
             );
             page += 1;
         } catch (error) {
-            console.error(`Fetch error for ${genre ?? category}: ${error}`);
+            console.error(`[newsapi] Fetch error for "${genre ?? category}":`, error);
             break;
         }
 

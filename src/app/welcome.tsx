@@ -16,16 +16,21 @@ enum options {
     APPLE = 'Apple',
     MICROSOFT = 'Microsoft',
     AMAZON = 'Amazon',
+    GOOGLE = 'Google',
     GAMING = 'Gaming',
     CYBERSECURITY = 'Cybersecurity',
     GAME_DEVELOPMENT = 'Game development',
     NINTENDO = 'Nintendo',
+    TESLA = 'Tesla',
+    SPACE_TECH = 'Space Tech',
+    STARTUPS = 'Startups',
+    BLOCKCHAIN = 'Blockchain',
+    ROBOTICS = 'Robotics',
 }
 
 export default function WelcomePage() {
     const [userGenreSelection, setUserGenreSelection] = useState<string[]>([]);
     const genre_arr = Object.values(options) as string[];
-    const limit = 5;
     const insets = useSafeAreaInsets();
 
     const toggleGenre = (genre: string) => {
@@ -33,10 +38,7 @@ export default function WelcomePage() {
             if (prev.includes(genre)) {
                 return prev.filter((g) => g !== genre);
             }
-            if (prev.length < limit) {
-                return [...prev, genre];
-            }
-            return prev;
+            return [...prev, genre];
         });
     };
 
@@ -120,7 +122,7 @@ export default function WelcomePage() {
                     entering={FadeIn.duration(600).delay(800)}
                     style={welcomeStyles.info_container}
                 >
-                    <Text style={welcomeStyles.info_text}>Select up to {limit}</Text>
+                    <Text style={welcomeStyles.info_text}>Select as many as you like</Text>
                     <Text style={[welcomeStyles.info_text, { fontSize: 13, marginTop: 12 }]}>
                         {"Or don't \u2014 that's fine too."}
                     </Text>
@@ -158,7 +160,7 @@ export default function WelcomePage() {
                     {userGenreSelection.length > 0 && (
                         <Animated.View entering={FadeIn.duration(200)}>
                             <Text style={welcomeStyles.selection_count}>
-                                {userGenreSelection.length} of {limit} selected
+                                {userGenreSelection.length} selected
                             </Text>
                         </Animated.View>
                     )}

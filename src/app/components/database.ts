@@ -6,10 +6,6 @@ export async function initializeDatabase() {
     const db = await openDatabaseAsync(DB_NAME);
 
     await db.execAsync(`
-        DROP TABLE IF EXISTS articles;
-    `);
-
-    await db.execAsync(`
         PRAGMA journal_mode = WAL;
         CREATE TABLE IF NOT EXISTS articles (
             id TEXT PRIMARY KEY,

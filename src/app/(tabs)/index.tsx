@@ -20,7 +20,7 @@ import {
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { NewsCard } from '../components/news_card';
-import { TabHeader, HorizonalLine, theme } from '../components/styles';
+import { TabHeader, HeaderRule, HorizonalLine, theme, tabAccents } from '../components/styles';
 import {
     faHouse,
     faAngleDown,
@@ -40,11 +40,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Article from '../components/constants';
-import getArticles, { downloadAndGetArticles, getAllArticles, searchArticles } from '../components/services';
+import getArticles, { syncArticles, getAllArticles, searchArticles } from '../components/services';
 import { deleteArticlesByAge, canRefreshArticles } from '../components/utilities';
 import ReAnimated, { FadeIn } from 'react-native-reanimated';
-
-// ── Filter Menu ────────────────────────────────────────────
 
 type MenuOptionProp = {
     title: string;
@@ -86,8 +84,6 @@ const FilterMenu = ({ setFilter, activeFilter }: MenuFilterProp) => {
         </View>
     );
 };
-
-// ── Home Feed ──────────────────────────────────────────────
 
 export default function HomeFeed() {
     const [articles, setArticles] = useState<Article[]>([]);
@@ -155,9 +151,9 @@ export default function HomeFeed() {
 
         const userPreferences = await AsyncStorage.getItem('genreSelection');
         if (userPreferences) {
-            await downloadAndGetArticles(userPreferences, undefined);
+            await syncArticles(userPreferences, undefined);
         }
-        await downloadAndGetArticles(undefined, 'Technology');
+        await syncArticles(undefined, 'Technology');
 
         const newArticles = await loadByFilter(filter);
         setArticles(newArticles);
@@ -240,6 +236,12 @@ export default function HomeFeed() {
     }, []);
 
     useEffect(() => {
+        return () => {
+            if (debounceTimer.current) clearTimeout(debounceTimer.current);
+        };
+    }, []);
+
+    useEffect(() => {
         resetContentAnim();
         animateContent();
     }, [filter]);
@@ -258,8 +260,8 @@ export default function HomeFeed() {
             setLoading(true);
             try {
                 const existingPreferences = await AsyncStorage.getItem('genreSelection');
-                if (existingPreferences) await downloadAndGetArticles(existingPreferences, undefined);
-                await downloadAndGetArticles(undefined, 'Technology');
+                if (existingPreferences) await syncArticles(existingPreferences, undefined);
+                await syncArticles(undefined, 'Technology');
                 const loadedArticles = await loadByFilter('Home');
                 setArticles(loadedArticles);
             } catch (error) {
@@ -314,6 +316,8 @@ export default function HomeFeed() {
                 <View style={base_template.config}>
                     <TabHeader
                         title="Feed"
+                        subtitle="Your news"
+                        accent={tabAccents.feed}
                         rightAccessory={
                             <View style={base_template.header_actions}>
                                 <TouchableOpacity
@@ -359,6 +363,7 @@ export default function HomeFeed() {
                             </View>
                         }
                     />
+                    <HeaderRule accent={tabAccents.feed} />
 
                     <Animated.View style={[search_styles.bar_wrapper, { height: searchBarHeight, opacity: searchAnim }]}>
                         <View style={search_styles.bar}>
@@ -430,7 +435,6 @@ export default function HomeFeed() {
                         </Animated.View>
                     )}
 
-                    {/* Scroll to top FAB */}
                     <Animated.View
                         pointerEvents={showScrollTop ? 'auto' : 'none'}
                         style={[fab_styles.container, { opacity: scrollTopAnim, transform: [{ scale: scrollTopAnim }] }]}
@@ -458,8 +462,6 @@ export default function HomeFeed() {
         </SafeAreaProvider>
     );
 }
-
-// ── Modal Options ──────────────────────────────────────────
 
 type ModalProps = {
     setShowModal: React.Dispatch<React.SetStateAction<boolean>>;
@@ -530,8 +532,6 @@ const ModalOptions = ({ setShowModal, article }: ModalProps) => {
         </>
     );
 };
-
-// ── Styles ─────────────────────────────────────────────────
 
 const empty_styles = StyleSheet.create({
     container: {

@@ -4,20 +4,20 @@ import { updateArticleQueryTime } from './utilities';
 
 const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL || 'http://localhost:8081';
 
-export async function downloadAndGetArticles(genreSelection?: string, category?: string) {
+export async function syncArticles(genre?: string, category?: string) {
     try {
         let results = null;
-        if (genreSelection) {
-            const count = await articleAPI(genreSelection, undefined);
+        if (genre) {
+            const count = await fetchAndCacheArticles(genre, undefined);
             if (count === undefined || count === null) {
-                console.error(`Error: Received ${count} from the API.`);
+                console.error(`[sync] No articles returned from API for genre "${genre}"`);
                 return;
             }
-            results = await getArticles(genreSelection, undefined);
+            results = await getArticles(genre, undefined);
         } else if (category) {
-            const count = await articleAPI(undefined, category);
+            const count = await fetchAndCacheArticles(undefined, category);
             if (count === undefined || count === null) {
-                console.error(`Error: Received ${count} from the API.`);
+                console.error(`[sync] No articles returned from API for category "${category}"`);
                 return;
             }
             results = await getArticles(undefined, category);
@@ -25,7 +25,7 @@ export async function downloadAndGetArticles(genreSelection?: string, category?:
         updateArticleQueryTime();
         return results as Article[];
     } catch (error) {
-        console.error(error);
+        console.error('[sync] syncArticles failed:', error);
     }
 }
 
@@ -39,19 +39,18 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 export default async function getArticles(
-    genreSelection?: string,
+    genres?: string,
     category?: string,
-    numberOfArticles?: number,
+    limit: number = 20,
 ): Promise<Article[] | undefined> {
     const db = await SQLite.openDatabaseAsync('newsapp');
-    const articleRetrievalLimit = numberOfArticles || 20;
 
-    if (genreSelection !== undefined && category === undefined) {
-        const genreArr = genreSelection.split(',');
+    if (genres !== undefined && category === undefined) {
+        const genreList = genres.split(',');
         const results = await Promise.all(
-            genreArr.map(async (genre) => {
+            genreList.map(async (genre) => {
                 return await db.getAllAsync(
-                    `SELECT * FROM articles WHERE genre = ? LIMIT ${articleRetrievalLimit}`,
+                    `SELECT * FROM articles WHERE genre = ? LIMIT ${limit}`,
                     [genre],
                 );
             }),
@@ -59,7 +58,7 @@ export default async function getArticles(
         if (results) {
             return shuffle(results.flat() as Article[]);
         }
-    } else if (category !== undefined && genreSelection === undefined) {
+    } else if (category !== undefined && genres === undefined) {
         const results = await db.getAllAsync('SELECT * FROM articles WHERE category = ?', [
             category,
         ]);
@@ -94,17 +93,12 @@ export async function searchArticles(query: string): Promise<Article[]> {
     return (results as Article[]) ?? [];
 }
 
-export async function articleAPI(
-    genreSelection?: string,
+// Fetches articles from the backend API and inserts them into local SQLite
+export async function fetchAndCacheArticles(
+    genre?: string,
     category?: string,
     limit: number = 100,
 ) {
-    let genre = '';
-    let cat = '';
-
-    if (genreSelection) genre = genreSelection;
-    if (category) cat = category;
-
     try {
         const response = await fetch(`${BASE_URL}/api/GetArticles`, {
             method: 'POST',
@@ -113,73 +107,55 @@ export async function articleAPI(
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                genre: { genre },
-                category: { cat },
-                articleRetrievalLimit: { limit },
+                genre: genre || undefined,
+                category: category || undefined,
+                limit,
             }),
         });
 
         if (response.status === 500) {
-            console.error('Server is down... start the server?');
+            console.error('[api] Server returned 500 — is the backend running?');
             return;
         }
 
         if (!response.ok) {
-            console.error(`Error occurred, response status: ${response.status}`);
+            console.error(`[api] Request failed with status ${response.status}`);
             return;
         }
 
-        let articleCount = 0;
         const data = await response.json();
         const articles = data.articles as Article[];
-        const results = articles.map((article) => ({
-            id: article.id,
-            genre: article.genre,
-            category: article.category,
-            source: article.source,
-            author: article.author,
-            title: article.title,
-            description: article.description,
-            url: article.url,
-            url_to_image: article.url_to_image,
-            published_at: article.published_at,
-            content: article.content,
-            saved: 0,
-        }));
 
         const db = await SQLite.openDatabaseAsync('newsapp');
-        await Promise.all(
-            results.map(async (article) => {
-                const existing = await db.getFirstAsync(
-                    'SELECT id FROM articles WHERE id = ?',
-                    [article.id],
-                );
-
-                if (!existing) {
-                    const statement = await db.prepareAsync(
-                        'INSERT OR IGNORE INTO articles(id, genre, category, source, author, title, description, url, url_to_image, published_at, content, saved) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                    );
-                    await statement.executeAsync([
-                        article.id,
-                        article.genre ?? null,
-                        article.category ?? null,
-                        article.source ?? null,
-                        article.author ?? null,
-                        article.title ?? null,
-                        article.description ?? null,
-                        article.url?.toString() ?? null,
-                        article.url_to_image?.toString() ?? null,
-                        article.published_at ?? null,
-                        article.content ?? null,
-                        article.saved ?? 0,
-                    ]);
-                    await statement.finalizeAsync();
-                    articleCount += 1;
-                }
-            }),
+        const statement = await db.prepareAsync(
+            'INSERT OR IGNORE INTO articles(id, genre, category, source, author, title, description, url, url_to_image, published_at, content, saved) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         );
-        return articleCount;
+
+        let insertedCount = 0;
+        try {
+            for (const article of articles) {
+                const result = await statement.executeAsync([
+                    article.id,
+                    article.genre ?? null,
+                    article.category ?? null,
+                    article.source ?? null,
+                    article.author ?? null,
+                    article.title ?? null,
+                    article.description ?? null,
+                    article.url?.toString() ?? null,
+                    article.url_to_image?.toString() ?? null,
+                    article.published_at ?? null,
+                    article.content ?? null,
+                    0,
+                ]);
+                if (result.changes > 0) insertedCount++;
+            }
+        } finally {
+            await statement.finalizeAsync();
+        }
+
+        return insertedCount;
     } catch (error) {
-        console.error(`Error occurred: ${error}`);
+        console.error('[api] fetchAndCacheArticles failed:', error);
     }
 }
