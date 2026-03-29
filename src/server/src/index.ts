@@ -9,32 +9,48 @@ import db from '../db';
 async function initDatabase() {
     try {
         await db.none(articleTableDefinition);
-        console.log('Database initialized...');
+        console.log('[db] Database initialized');
     } catch (error) {
-        console.error('Error occurred when initializing Database: ', error);
-        return;
+        console.error('[db] Failed to initialize database:', error);
+        throw error;
     }
 }
 
-async function retrieveData() {
-    for (const val of Object.values(techGenres)) {
-        await fetchArticles(val, undefined);
+async function fetchAllSources() {
+    let totalErrors = 0;
+
+    for (const genre of Object.values(techGenres)) {
+        try {
+            await fetchArticles(genre, undefined);
+        } catch (error) {
+            console.error(`[fetch] Failed to fetch genre "${genre}":`, error);
+            totalErrors++;
+        }
     }
 
-    for (const val of Object.values(categories)) {
-        await fetchArticles(undefined, val);
+    for (const category of Object.values(categories)) {
+        try {
+            await fetchArticles(undefined, category);
+        } catch (error) {
+            console.error(`[fetch] Failed to fetch category "${category}":`, error);
+            totalErrors++;
+        }
     }
 
-    return 0;
+    if (totalErrors > 0) {
+        console.warn(`[fetch] Completed with ${totalErrors} error(s)`);
+    }
+
+    return totalErrors;
 }
 
-function getEnumKey(val: string) {
+function findGenreKey(genre: string) {
     return Object.keys(techGenres).find((k) => {
-        return techGenres[k as keyof typeof techGenres] === val;
+        return techGenres[k as keyof typeof techGenres] === genre;
     });
 }
 
-const toStandardDateFormat = (d: Date): string => {
+const formatDateUTC = (d: Date): string => {
     const y = d.getUTCFullYear();
     const m = String(d.getUTCMonth() + 1).padStart(2, '0');
     const day = String(d.getUTCDate()).padStart(2, '0');
@@ -42,36 +58,41 @@ const toStandardDateFormat = (d: Date): string => {
 };
 
 async function removeOldArticles(days?: number): Promise<number> {
-    const maxDays: number = days ?? 7;
+    const retentionDays: number = days ?? 7;
 
     try {
-        const currentDate = new Date();
-        const cutOffDate = toStandardDateFormat(
-            new Date(currentDate.getTime() - maxDays * 24 * 60 * 60 * 1000),
+        const now = new Date();
+        const cutoffDate = formatDateUTC(
+            new Date(now.getTime() - retentionDays * 24 * 60 * 60 * 1000),
         );
 
-        await db
-            .result('DELETE FROM articles WHERE published_at <= $1', cutOffDate)
-            .then((result) => {
-                console.log(`Removed ${result.rowCount} articles.`);
-            })
-            .catch((error) => {
-                console.error(`Error removing articles: ${error}`);
-                return -1;
-            });
+        const result = await db.result(
+            'DELETE FROM articles WHERE published_at <= $1',
+            cutoffDate,
+        );
+        console.log(`[cleanup] Removed ${result.rowCount} article(s) older than ${retentionDays} days`);
+        return 0;
     } catch (error) {
-        console.error(error);
+        console.error('[cleanup] Error removing articles:', error);
         return -1;
     }
-
-    return 0;
 }
 
-const serverStart = () => {
-    const server = express();
-    server.use(express.json());
-    server.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-    const port = process.env.PORT;
+const startServer = () => {
+    const app = express();
+    app.use(express.json());
+    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+    const port = process.env.PORT || 8000;
+
+    // Request logging
+    app.use((req, res, next) => {
+        const start = Date.now();
+        res.on('finish', () => {
+            const duration = Date.now() - start;
+            console.log(`[http] ${req.method} ${req.path} ${res.statusCode} ${duration}ms`);
+        });
+        next();
+    });
 
     /**
      * @openapi
@@ -103,8 +124,14 @@ const serverStart = () => {
      *       500:
      *         description: Internal server error
      */
-    server.post('/api/RemoveOldArticles', async (req, res) => {
+    app.post('/api/RemoveOldArticles', async (req, res) => {
         const days = req.body?.days as number;
+
+        if (days !== undefined && (typeof days !== 'number' || days < 1 || days > 365)) {
+            res.status(400).json({ ok: false, message: 'days must be a number between 1 and 365.' });
+            return;
+        }
+
         try {
             const result = await removeOldArticles(days);
             if (result !== 0) {
@@ -119,7 +146,7 @@ const serverStart = () => {
                 });
             }
         } catch (error) {
-            console.error(`RemoveOldArticles error: ${error}`);
+            console.error('[api] RemoveOldArticles error:', error);
             res.status(500).json({ ok: false, message: 'Internal server error.' });
         }
     });
@@ -144,13 +171,13 @@ const serverStart = () => {
      *       500:
      *         description: Internal server error
      */
-    server.get('/api/FetchArticles', async (req, res) => {
+    app.get('/api/FetchArticles', async (req, res) => {
         try {
-            const result = await retrieveData();
-            if (result !== 0) {
-                res.status(500).json({
-                    ok: false,
-                    message: 'Fetching articles failed, internal server error.',
+            const errors = await fetchAllSources();
+            if (errors > 0) {
+                res.status(200).json({
+                    ok: true,
+                    message: `Fetched articles with ${errors} source error(s).`,
                 });
                 return;
             }
@@ -159,7 +186,7 @@ const serverStart = () => {
                 message: 'Fetching articles successful.',
             });
         } catch (error) {
-            console.error(`FetchArticles error: ${error}`);
+            console.error('[api] FetchArticles error:', error);
             res.status(500).json({ ok: false, message: 'Internal server error.' });
         }
     });
@@ -235,20 +262,21 @@ const serverStart = () => {
      *                       content:
      *                         type: string
      */
-    server.post('/api/GetArticles', async (req, res) => {
+    app.post('/api/GetArticles', async (req, res) => {
         const genres = (req.body.genre?.genre ?? req.body.genre ?? '') as string;
         const category = (req.body.category?.cat ?? req.body.category ?? '') as string;
-        const limit = (req.body.articleRetrievalLimit?.limit ?? req.body.limit ?? 100) as number;
+        const rawLimit = req.body.articleRetrievalLimit?.limit ?? req.body.limit ?? 100;
+        const limit = Math.min(Math.max(Number(rawLimit) || 100, 1), 500);
 
         try {
             if (genres && genres.length > 0) {
                 const genreArray = genres.split(',');
-                console.log(`Received query: ${genreArray}`);
+                console.log(`[api] GetArticles genres=${genreArray.join(', ')} limit=${limit}`);
 
                 const data = await db.tx((t) => {
                     const queries = genreArray.map((genre) => {
-                        const enum_check = getEnumKey(genre);
-                        if (!enum_check) {
+                        const genreKey = findGenreKey(genre);
+                        if (!genreKey) {
                             throw new Error(`Genre not in ENUM, got: ${genre}`);
                         }
                         return t.any('SELECT * FROM articles WHERE genre = $1 LIMIT $2', [
@@ -260,30 +288,35 @@ const serverStart = () => {
                 });
 
                 const articles = data.flat();
-                console.log('Sending data...');
+                console.log(`[api] Returning ${articles.length} article(s)`);
                 res.json({ articles });
             } else if (category && category.length > 0) {
-                console.log(`Received query for category: ${category}`);
+                console.log(`[api] GetArticles category=${category}`);
                 const data = await db.any(
-                    'SELECT * FROM articles WHERE category = $1',
-                    category,
+                    'SELECT * FROM articles WHERE category = $1 LIMIT $2',
+                    [category, limit],
                 );
                 const articles = data.flat();
-                console.log('Sending data...');
+                console.log(`[api] Returning ${articles.length} article(s)`);
                 res.json({ articles });
             } else {
                 res.status(400).json({ error: 'Missing genre or category parameter.' });
             }
         } catch (error) {
-            console.error(`Error occurred retrieving articles: ${error}`);
+            console.error('[api] Error retrieving articles:', error);
             res.status(500).json({ error: 'Internal server error.' });
         }
     });
 
-    server.listen(port, () => {
-        console.log(`Listening on port ${port}...`);
+    app.listen(port, () => {
+        console.log(`[server] Listening on port ${port}`);
     });
 };
 
-initDatabase();
-serverStart();
+// Startup: init DB first, then start server
+initDatabase()
+    .then(() => startServer())
+    .catch((error) => {
+        console.error('[server] Startup failed, exiting:', error);
+        process.exit(1);
+    });
