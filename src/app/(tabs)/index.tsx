@@ -102,6 +102,12 @@ export default function HomeFeed() {
     const [refreshing, setRefreshing] = useState(false);
     const initialLoadDone = useRef(false);
 
+    // Pagination
+    const PAGE_SIZE = 20;
+    const [page, setPage] = useState(0);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
+
     // Search
     const [searchOpen, setSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -129,17 +135,17 @@ export default function HomeFeed() {
         flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
     }, []);
 
-    const loadByFilter = useCallback(async (activeFilter: string): Promise<Article[]> => {
+    const loadByFilter = useCallback(async (activeFilter: string, offset: number = 0): Promise<Article[]> => {
         const userPreferences = await AsyncStorage.getItem('genreSelection');
         if (activeFilter === 'Recent') {
-            return await getAllArticles();
+            return await getAllArticles(PAGE_SIZE, offset);
         } else if (activeFilter === 'Top') {
-            return (await getArticles(undefined, 'Technology')) ?? [];
+            return (await getArticles(undefined, 'Technology', PAGE_SIZE, offset)) ?? [];
         }
         if (userPreferences) {
-            return (await getArticles(userPreferences, undefined)) ?? [];
+            return (await getArticles(userPreferences, undefined, PAGE_SIZE, offset)) ?? [];
         }
-        return (await getArticles(undefined, 'Technology')) ?? [];
+        return (await getArticles(undefined, 'Technology', PAGE_SIZE, offset)) ?? [];
     }, []);
 
     const onRefresh = useCallback(async () => {
@@ -155,10 +161,29 @@ export default function HomeFeed() {
         }
         await syncArticles(undefined, 'Technology');
 
-        const newArticles = await loadByFilter(filter);
+        const newArticles = await loadByFilter(filter, 0);
         setArticles(newArticles);
+        setPage(0);
+        setHasMore(newArticles.length >= PAGE_SIZE);
         setRefreshing(false);
     }, [filter, loadByFilter]);
+
+    const loadNextPage = useCallback(async () => {
+        if (loadingMore || !hasMore || searchOpen) return;
+
+        setLoadingMore(true);
+        const nextOffset = (page + 1) * PAGE_SIZE;
+        const nextBatch = await loadByFilter(filter, nextOffset);
+
+        if (nextBatch.length < PAGE_SIZE) {
+            setHasMore(false);
+        }
+        if (nextBatch.length > 0) {
+            setArticles((prev) => [...prev, ...nextBatch]);
+            setPage((prev) => prev + 1);
+        }
+        setLoadingMore(false);
+    }, [loadingMore, hasMore, searchOpen, page, filter, loadByFilter]);
 
     const handleEllipsisPress = useCallback((id: string) => {
         const fetchArticle = async () => {
@@ -262,8 +287,10 @@ export default function HomeFeed() {
                 const existingPreferences = await AsyncStorage.getItem('genreSelection');
                 if (existingPreferences) await syncArticles(existingPreferences, undefined);
                 await syncArticles(undefined, 'Technology');
-                const loadedArticles = await loadByFilter('Home');
+                const loadedArticles = await loadByFilter('Home', 0);
                 setArticles(loadedArticles);
+                setPage(0);
+                setHasMore(loadedArticles.length >= PAGE_SIZE);
             } catch (error) {
                 console.error(`Error occurred: ${error}`);
             } finally {
@@ -280,8 +307,10 @@ export default function HomeFeed() {
         const applyFilter = async () => {
             setLoading(true);
             try {
-                const filtered = await loadByFilter(filter);
+                const filtered = await loadByFilter(filter, 0);
                 setArticles(filtered);
+                setPage(0);
+                setHasMore(filtered.length >= PAGE_SIZE);
             } catch (error) {
                 console.error(`Error occurred: ${error}`);
             } finally {
@@ -428,6 +457,15 @@ export default function HomeFeed() {
                                     />
                                 )}
                                 keyExtractor={(item) => item.id}
+                                onEndReached={loadNextPage}
+                                onEndReachedThreshold={0.5}
+                                ListFooterComponent={
+                                    loadingMore ? (
+                                        <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+                                            <ActivityIndicator size="small" color={theme.accent} />
+                                        </View>
+                                    ) : null
+                                }
                                 refreshControl={
                                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} />
                                 }
@@ -481,15 +519,9 @@ const ModalOptions = ({ setShowModal, article }: ModalProps) => {
     const handleSave = async () => {
         if (article) {
             const db = await SQLite.openDatabaseAsync('newsapp');
-            if (article.saved === 0) {
-                article.saved = 1;
-                setSaved(true);
-                await db.runAsync('UPDATE articles SET saved = 1 WHERE id = ?', article.id);
-            } else {
-                article.saved = 0;
-                setSaved(false);
-                await db.runAsync('UPDATE articles SET saved = 0 WHERE id = ?', article.id);
-            }
+            const newSaved = saved ? 0 : 1;
+            await db.runAsync('UPDATE articles SET saved = ? WHERE id = ?', [newSaved, article.id]);
+            setSaved(!saved);
         }
     };
 

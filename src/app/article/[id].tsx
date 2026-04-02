@@ -50,7 +50,7 @@ export default function ArticleDetail() {
         const db = await SQLite.openDatabaseAsync('newsapp');
         const newSaved = saved ? 0 : 1;
         await db.runAsync('UPDATE articles SET saved = ? WHERE id = ?', [newSaved, article.id]);
-        article.saved = newSaved;
+        setArticle({ ...article, saved: newSaved });
         setSaved(!saved);
     };
 
