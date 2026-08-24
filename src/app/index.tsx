@@ -3,6 +3,7 @@ import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { useFonts } from 'expo-font';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { initializeDatabase } from './components/database';
 
 const checkFirstLaunch = async () => {
     try {
@@ -31,6 +32,8 @@ export default function Main() {
     useEffect(() => {
         const init = async () => {
             if (!fontsLoaded) return;
+
+            await initializeDatabase();
 
             const firstLaunch = await checkFirstLaunch();
             if (firstLaunch) {
