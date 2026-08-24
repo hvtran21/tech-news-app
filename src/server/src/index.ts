@@ -1,8 +1,6 @@
 import express from 'express';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from '../swagger';
-import { articleTableDefinition, fetchLogTableDefinition } from '../models';
-import db from '../db';
 import { env } from './config/env';
 import logger from './lib/logger';
 import { asyncHandler } from './lib/asyncHandler';
@@ -11,21 +9,11 @@ import errorHandler from './middleware/errorHandler';
 import * as articleService from './services/articleService';
 import * as refreshService from './services/refreshService';
 
-async function initDatabase() {
-    try {
-        await db.none(articleTableDefinition);
-        await db.none(fetchLogTableDefinition);
-        logger.info('Database initialized');
-    } catch (error) {
-        logger.error({ err: error }, 'Failed to initialize database');
-        throw error;
-    }
-}
-
 const startServer = () => {
     const app = express();
     app.use(express.json());
     app.use(requestLogger);
+    logger.info('Schema managed by node-pg-migrate; run `npm run migrate:up` to apply pending migrations.');
     app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
     const port = env.PORT;
 
@@ -235,10 +223,10 @@ const startServer = () => {
     });
 };
 
-// Startup: init DB first, then start server
-initDatabase()
-    .then(() => startServer())
-    .catch((error) => {
-        logger.error({ err: error }, 'Startup failed, exiting');
-        process.exit(1);
-    });
+// Startup: schema is managed externally via `npm run migrate:up` (node-pg-migrate).
+try {
+    startServer();
+} catch (error) {
+    logger.error({ err: error }, 'Startup failed, exiting');
+    process.exit(1);
+}

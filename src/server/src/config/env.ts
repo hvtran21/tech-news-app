@@ -10,6 +10,7 @@ const envSchema = z.object({
     DB_NAME: z.string(),
     DB_USER: z.string(),
     DB_PASSWORD: z.string(),
+    DATABASE_URL: z.string().url(),
 });
 
 const parsed = envSchema.safeParse(process.env);

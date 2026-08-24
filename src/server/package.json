@@ -6,7 +6,10 @@
     "build": "tsc",
     "dev": "concurrently \"tsc -w\" \"nodemon dist/src/index.js\"",
     "start": "node dist/src/index.js",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "migrate:up": "node-pg-migrate up   -m migrations -j sql --envPath .env --database-url-var DATABASE_URL",
+    "migrate:down": "node-pg-migrate down -m migrations -j sql --envPath .env --database-url-var DATABASE_URL",
+    "migrate:create": "node-pg-migrate create -m migrations -j sql"
   },
   "keywords": [],
   "author": "",
@@ -15,6 +18,7 @@
   "dependencies": {
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
+    "node-pg-migrate": "^9.0.0",
     "pg-promise": "^11.14.0",
     "pino": "^10.3.1",
     "pino-http": "^11.0.0",
