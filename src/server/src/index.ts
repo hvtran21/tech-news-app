@@ -2,137 +2,32 @@ import express from 'express';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from '../swagger';
 import { articleTableDefinition, fetchLogTableDefinition } from '../models';
-import fetchArticles from '../newsapi';
-import techGenres, { categories } from '../constants';
 import db from '../db';
-
-const STALE_THRESHOLD_MS = 30 * 60 * 1000; // 30 minutes
+import { env } from './config/env';
+import logger from './lib/logger';
+import { asyncHandler } from './lib/asyncHandler';
+import requestLogger from './middleware/requestLogger';
+import errorHandler from './middleware/errorHandler';
+import * as articleService from './services/articleService';
+import * as refreshService from './services/refreshService';
 
 async function initDatabase() {
     try {
         await db.none(articleTableDefinition);
         await db.none(fetchLogTableDefinition);
-        console.log('[db] Database initialized');
+        logger.info('Database initialized');
     } catch (error) {
-        console.error('[db] Failed to initialize database:', error);
+        logger.error({ err: error }, 'Failed to initialize database');
         throw error;
-    }
-}
-
-// Returns true if the source hasn't been fetched recently
-async function isStale(sourceKey: string): Promise<boolean> {
-    const row = await db.oneOrNone(
-        'SELECT last_fetched_at FROM fetch_log WHERE source_key = $1',
-        sourceKey,
-    );
-
-    if (!row) return true;
-
-    const elapsed = Date.now() - new Date(row.last_fetched_at).getTime();
-    return elapsed > STALE_THRESHOLD_MS;
-}
-
-async function updateFetchTime(sourceKey: string) {
-    await db.none(
-        `INSERT INTO fetch_log (source_key, last_fetched_at) VALUES ($1, NOW())
-         ON CONFLICT (source_key) DO UPDATE SET last_fetched_at = NOW()`,
-        sourceKey,
-    );
-}
-
-// Fetches a single genre or category from NewsAPI if it's stale, then updates the fetch log
-async function refreshIfStale(genre?: string, category?: string): Promise<boolean> {
-    const sourceKey = genre ?? category;
-    if (!sourceKey) return false;
-
-    const stale = await isStale(sourceKey);
-    if (!stale) return false;
-
-    console.log(`[fetch] "${sourceKey}" is stale, fetching from NewsAPI`);
-    await fetchArticles(genre, category);
-    await updateFetchTime(sourceKey);
-    return true;
-}
-
-async function fetchAllSources() {
-    let totalErrors = 0;
-
-    for (const genre of Object.values(techGenres)) {
-        try {
-            await fetchArticles(genre, undefined);
-            await updateFetchTime(genre);
-        } catch (error) {
-            console.error(`[fetch] Failed to fetch genre "${genre}":`, error);
-            totalErrors++;
-        }
-    }
-
-    for (const category of Object.values(categories)) {
-        try {
-            await fetchArticles(undefined, category);
-            await updateFetchTime(category);
-        } catch (error) {
-            console.error(`[fetch] Failed to fetch category "${category}":`, error);
-            totalErrors++;
-        }
-    }
-
-    if (totalErrors > 0) {
-        console.warn(`[fetch] Completed with ${totalErrors} error(s)`);
-    }
-
-    return totalErrors;
-}
-
-function findGenreKey(genre: string) {
-    return Object.keys(techGenres).find((k) => {
-        return techGenres[k as keyof typeof techGenres] === genre;
-    });
-}
-
-const formatDateUTC = (d: Date): string => {
-    const y = d.getUTCFullYear();
-    const m = String(d.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(d.getUTCDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-};
-
-async function removeOldArticles(days?: number): Promise<number> {
-    const retentionDays: number = days ?? 7;
-
-    try {
-        const now = new Date();
-        const cutoffDate = formatDateUTC(
-            new Date(now.getTime() - retentionDays * 24 * 60 * 60 * 1000),
-        );
-
-        const result = await db.result(
-            'DELETE FROM articles WHERE published_at <= $1',
-            cutoffDate,
-        );
-        console.log(`[cleanup] Removed ${result.rowCount} article(s) older than ${retentionDays} days`);
-        return 0;
-    } catch (error) {
-        console.error('[cleanup] Error removing articles:', error);
-        return -1;
     }
 }
 
 const startServer = () => {
     const app = express();
     app.use(express.json());
+    app.use(requestLogger);
     app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-    const port = process.env.PORT || 8000;
-
-    // Request logging
-    app.use((req, res, next) => {
-        const start = Date.now();
-        res.on('finish', () => {
-            const duration = Date.now() - start;
-            console.log(`[http] ${req.method} ${req.path} ${res.statusCode} ${duration}ms`);
-        });
-        next();
-    });
+    const port = env.PORT;
 
     /**
      * @openapi
@@ -164,32 +59,20 @@ const startServer = () => {
      *       500:
      *         description: Internal server error
      */
-    app.post('/api/RemoveOldArticles', async (req, res) => {
-        const days = req.body?.days as number;
+    app.post(
+        '/api/RemoveOldArticles',
+        asyncHandler(async (req, res) => {
+            const days = req.body?.days as number | undefined;
 
-        if (days !== undefined && (typeof days !== 'number' || days < 1 || days > 365)) {
-            res.status(400).json({ ok: false, message: 'days must be a number between 1 and 365.' });
-            return;
-        }
-
-        try {
-            const result = await removeOldArticles(days);
-            if (result !== 0) {
-                res.status(500).json({
-                    ok: false,
-                    message: 'Error occurred while removing articles.',
-                });
-            } else {
-                res.status(200).json({
-                    ok: true,
-                    message: 'Removing articles successful.',
-                });
+            if (days !== undefined && (typeof days !== 'number' || days < 1 || days > 365)) {
+                res.status(400).json({ ok: false, message: 'days must be a number between 1 and 365.' });
+                return;
             }
-        } catch (error) {
-            console.error('[api] RemoveOldArticles error:', error);
-            res.status(500).json({ ok: false, message: 'Internal server error.' });
-        }
-    });
+
+            const removed = await articleService.deleteOldArticles(days ?? 7);
+            res.json({ ok: true, message: 'Removing articles successful.', removed });
+        }),
+    );
 
     /**
      * @openapi
@@ -211,25 +94,19 @@ const startServer = () => {
      *       500:
      *         description: Internal server error
      */
-    app.get('/api/FetchArticles', async (req, res) => {
-        try {
-            const errors = await fetchAllSources();
-            if (errors > 0) {
-                res.status(200).json({
-                    ok: true,
-                    message: `Fetched articles with ${errors} source error(s).`,
-                });
-                return;
-            }
-            res.status(200).json({
+    app.get(
+        '/api/FetchArticles',
+        asyncHandler(async (req, res) => {
+            const errors = await refreshService.fetchAllSources();
+            res.json({
                 ok: true,
-                message: 'Fetching articles successful.',
+                message:
+                    errors > 0
+                        ? `Fetched articles with ${errors} source error(s).`
+                        : 'Fetching articles successful.',
             });
-        } catch (error) {
-            console.error('[api] FetchArticles error:', error);
-            res.status(500).json({ ok: false, message: 'Internal server error.' });
-        }
-    });
+        }),
+    );
 
     /**
      * @openapi
@@ -302,71 +179,59 @@ const startServer = () => {
      *                       content:
      *                         type: string
      */
-    app.post('/api/GetArticles', async (req, res) => {
-        const genres = (req.body.genre?.genre ?? req.body.genre ?? '') as string;
-        const category = (req.body.category?.cat ?? req.body.category ?? '') as string;
-        const rawLimit = req.body.articleRetrievalLimit?.limit ?? req.body.limit ?? 100;
-        const limit = Math.min(Math.max(Number(rawLimit) || 100, 1), 500);
+    app.post(
+        '/api/GetArticles',
+        asyncHandler(async (req, res) => {
+            const genres = (req.body.genre?.genre ?? req.body.genre ?? '') as string;
+            const category = (req.body.category?.cat ?? req.body.category ?? '') as string;
+            const rawLimit = req.body.articleRetrievalLimit?.limit ?? req.body.limit ?? 100;
+            const limit = Math.min(Math.max(Number(rawLimit) || 100, 1), 500);
 
-        try {
             if (genres && genres.length > 0) {
                 const genreArray = genres.split(',');
-                console.log(`[api] GetArticles genres=${genreArray.join(', ')} limit=${limit}`);
+                logger.info(`GetArticles genres=${genreArray.join(', ')} limit=${limit}`);
 
-                // Auto-fetch stale genres from NewsAPI before querying
-                for (const genre of genreArray) {
-                    const genreKey = findGenreKey(genre);
-                    if (!genreKey) {
-                        res.status(400).json({ error: `Invalid genre: ${genre}` });
+                for (const g of genreArray) {
+                    if (!refreshService.findGenreKey(g)) {
+                        res.status(400).json({ error: `Invalid genre: ${g}` });
                         return;
                     }
                     try {
-                        await refreshIfStale(genre, undefined);
-                    } catch (error) {
-                        console.error(`[fetch] Background refresh failed for "${genre}":`, error);
+                        await refreshService.refreshIfStale(g, undefined);
+                    } catch (err) {
+                        logger.error({ err, genre: g }, 'Background refresh failed');
                     }
                 }
 
-                const data = await db.tx((t) => {
-                    const queries = genreArray.map((genre) => {
-                        return t.any('SELECT * FROM articles WHERE genre = $1 LIMIT $2', [
-                            genre,
-                            limit,
-                        ]);
-                    });
-                    return t.batch(queries);
-                });
-
-                const articles = data.flat();
-                console.log(`[api] Returning ${articles.length} article(s)`);
+                const articles = await articleService.listByGenres(genres, limit);
+                logger.info({ count: articles.length }, 'Returning articles');
                 res.json({ articles });
-            } else if (category && category.length > 0) {
-                console.log(`[api] GetArticles category=${category}`);
+                return;
+            }
+
+            if (category && category.length > 0) {
+                logger.info(`GetArticles category=${category}`);
 
                 try {
-                    await refreshIfStale(undefined, category);
-                } catch (error) {
-                    console.error(`[fetch] Background refresh failed for "${category}":`, error);
+                    await refreshService.refreshIfStale(undefined, category);
+                } catch (err) {
+                    logger.error({ err, category }, 'Background refresh failed');
                 }
 
-                const data = await db.any(
-                    'SELECT * FROM articles WHERE category = $1 LIMIT $2',
-                    [category, limit],
-                );
-                const articles = data.flat();
-                console.log(`[api] Returning ${articles.length} article(s)`);
+                const articles = await articleService.listByCategory(category, limit);
+                logger.info({ count: articles.length }, 'Returning articles');
                 res.json({ articles });
-            } else {
-                res.status(400).json({ error: 'Missing genre or category parameter.' });
+                return;
             }
-        } catch (error) {
-            console.error('[api] Error retrieving articles:', error);
-            res.status(500).json({ error: 'Internal server error.' });
-        }
-    });
+
+            res.status(400).json({ error: 'Missing genre or category parameter.' });
+        }),
+    );
+
+    app.use(errorHandler);
 
     app.listen(port, () => {
-        console.log(`[server] Listening on port ${port}`);
+        logger.info(`Listening on port ${port}`);
     });
 };
 
@@ -374,6 +239,6 @@ const startServer = () => {
 initDatabase()
     .then(() => startServer())
     .catch((error) => {
-        console.error('[server] Startup failed, exiting:', error);
+        logger.error({ err: error }, 'Startup failed, exiting');
         process.exit(1);
     });
