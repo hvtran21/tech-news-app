@@ -3,15 +3,19 @@ import type { ZodTypeAny, z } from 'zod';
 
 type Source = 'body' | 'query' | 'params';
 
-// Mutate the existing object in place rather than reassigning req[source] —
-// Express 5's `req.query` is a getter-only property, so `req.query = ...` throws.
+// Express 5 defines req.query as a re-parsing getter — plain assignment throws,
+// and in-place mutation gets discarded on next access. Object.defineProperty
+// replaces the getter with a plain writable value that persists.
 export const validate = <S extends ZodTypeAny>(schema: S, source: Source = 'body'): RequestHandler =>
     (req: Request, _res: Response, next: NextFunction) => {
         const result = schema.safeParse(req[source]);
         if (!result.success) return next(result.error);
-        const target = req[source] as Record<string, unknown>;
-        for (const key of Object.keys(target)) delete target[key];
-        Object.assign(target, result.data as z.infer<S>);
+        Object.defineProperty(req, source, {
+            value: result.data as z.infer<S>,
+            writable: true,
+            configurable: true,
+            enumerable: true,
+        });
         next();
     };
 
