@@ -102,17 +102,17 @@ export async function fetchAndCacheArticles(
     limit: number = 100,
 ) {
     try {
-        const response = await fetch(`${BASE_URL}/api/GetArticles`, {
-            method: 'POST',
+        const params = new URLSearchParams();
+        if (genre) params.set('genre', genre);
+        if (category) params.set('category', category);
+        params.set('limit', String(limit));
+        const url = `${BASE_URL}/api/articles?${params}`;
+
+        const response = await fetch(url, {
+            method: 'GET',
             headers: {
                 Accept: 'application/json',
-                'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                genre: genre || undefined,
-                category: category || undefined,
-                limit,
-            }),
         });
 
         if (response.status === 500) {
