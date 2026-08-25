@@ -16,49 +16,6 @@ import logger from '../lib/logger';
 
 const router = Router();
 
-/**
- * @openapi
- * /api/articles:
- *   get:
- *     summary: Get articles by genre or category (auto-fetches from NewsAPI if stale)
- *     parameters:
- *       - in: query
- *         name: genre
- *         schema:
- *           type: string
- *         description: Comma-separated genre values
- *       - in: query
- *         name: category
- *         schema:
- *           type: string
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 100
- *       - in: query
- *         name: cursor
- *         schema:
- *           type: string
- *         description: Opaque pagination cursor from a previous response's nextCursor (single genre/category only)
- *     responses:
- *       200:
- *         description: Articles retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 articles:
- *                   type: array
- *                   items:
- *                     type: object
- *                 nextCursor:
- *                   type: string
- *                   nullable: true
- *       400:
- *         description: Invalid or missing genre/category, invalid cursor, or CSV genre with cursor
- */
 router.get(
     '/',
     validate(listArticlesQuery, 'query'),
@@ -122,38 +79,6 @@ router.get(
     }),
 );
 
-/**
- * @openapi
- * /api/articles/search:
- *   get:
- *     summary: Search articles by title/description text
- *     parameters:
- *       - in: query
- *         name: q
- *         required: true
- *         schema:
- *           type: string
- *         description: Search term (min 2 chars)
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 20
- *     responses:
- *       200:
- *         description: Matching articles
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 articles:
- *                   type: array
- *                   items:
- *                     type: object
- *       400:
- *         description: Invalid query
- */
 router.get(
     '/search',
     validate(searchArticlesQuery, 'query'),

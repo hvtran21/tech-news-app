@@ -3,7 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
-import swaggerSpec from '../swagger';
+import { getOpenApiDocument } from './openapi/spec';
 import { env } from './config/env';
 import requestLogger from './middleware/requestLogger';
 import errorHandler from './middleware/errorHandler';
@@ -13,6 +13,10 @@ import adminRouter from './routes/admin';
 import healthRouter from './routes/health';
 
 const isTestEnv = env.NODE_ENV === 'test';
+
+// Generated once at module load (getOpenApiDocument memoizes internally too,
+// but createApp() can be invoked more than once, e.g. in tests).
+const openApiDocument = getOpenApiDocument();
 
 // General API limiter: generous ceiling for normal client traffic.
 const apiLimiter = rateLimit({
@@ -50,7 +54,12 @@ export function createApp(): Express {
     app.use('/api/admin', adminRouter);
     app.use('/health', healthRouter);
 
-    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+    // Machine-readable spec (for codegen / external tooling) — mounted before
+    // the swagger-ui catch-all so it doesn't get swallowed by setup()'s HTML.
+    app.get('/api-docs/openapi.json', (_req, res) => {
+        res.json(openApiDocument);
+    });
+    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiDocument));
 
     app.use(errorHandler);
 

@@ -7,24 +7,6 @@ import * as refreshService from '../services/refreshService';
 
 const router = Router();
 
-/**
- * @openapi
- * /api/admin/refresh:
- *   post:
- *     summary: Force-fetch articles from NewsAPI for all genres and categories (ignores staleness)
- *     responses:
- *       200:
- *         description: Articles fetched and stored successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 ok:
- *                   type: boolean
- *                 message:
- *                   type: string
- */
 router.post(
     '/refresh',
     asyncHandler(async (req, res) => {
@@ -36,36 +18,6 @@ router.post(
     }),
 );
 
-/**
- * @openapi
- * /api/admin/cleanup:
- *   post:
- *     summary: Remove old articles from the database
- *     requestBody:
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               days:
- *                 type: integer
- *                 description: Number of days to keep (default 7)
- *                 example: 7
- *     responses:
- *       200:
- *         description: Articles removed successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 ok:
- *                   type: boolean
- *                 message:
- *                   type: string
- *                 removed:
- *                   type: integer
- */
 router.post(
     '/cleanup',
     validate(cleanupBody, 'body'),

@@ -4,17 +4,6 @@ import db from '../../db';
 
 const router = Router();
 
-/**
- * @openapi
- * /health:
- *   get:
- *     summary: Health check (verifies PostgreSQL connectivity)
- *     responses:
- *       200:
- *         description: Service is healthy
- *       503:
- *         description: Database unreachable
- */
 router.get(
     '/',
     asyncHandler(async (req, res) => {
