@@ -22,4 +22,9 @@ db.connect()
         logger.error({ err: error }, 'Failed to connect to PostgreSQL');
     });
 
+// pg-promise has no `db.$pool` accessor; closing all pooled connections goes through
+// the root pgPromise() instance's synchronous `.end()` instead. Exposed here so
+// server.ts can drain connections during graceful shutdown.
+export const closeDb = (): void => pgp.end();
+
 export default db;
