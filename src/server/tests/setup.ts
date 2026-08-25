@@ -8,3 +8,4 @@ process.env.DB_NAME = 'test';
 process.env.DB_USER = 'test';
 process.env.DB_PASSWORD = 'test';
 process.env.DATABASE_URL = 'postgres://test:test@localhost:5432/test';
+process.env.ADMIN_TOKEN = 'test-token-min-16-chars';

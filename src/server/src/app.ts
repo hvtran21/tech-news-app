@@ -7,6 +7,7 @@ import swaggerSpec from '../swagger';
 import { env } from './config/env';
 import requestLogger from './middleware/requestLogger';
 import errorHandler from './middleware/errorHandler';
+import adminAuth from './middleware/adminAuth';
 import articlesRouter from './routes/articles';
 import adminRouter from './routes/admin';
 import healthRouter from './routes/health';
@@ -43,6 +44,7 @@ export function createApp(): Express {
 
     app.use('/api', apiLimiter);
     app.use('/api/admin', adminLimiter);
+    app.use('/api/admin', adminAuth);
 
     app.use('/api/articles', articlesRouter);
     app.use('/api/admin', adminRouter);

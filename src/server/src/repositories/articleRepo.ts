@@ -52,12 +52,57 @@ export async function insertArticles(rows: ArticleRow[]): Promise<number> {
     }
 }
 
-export async function listByGenre(genre: string, limit: number): Promise<Article[]> {
-    return db.any('SELECT * FROM articles WHERE genre = $1 LIMIT $2', [genre, limit]);
+export interface Cursor {
+    t: string;
+    i: string;
 }
 
-export async function listByCategory(category: string, limit: number): Promise<Article[]> {
-    return db.any('SELECT * FROM articles WHERE category = $1 LIMIT $2', [category, limit]);
+export async function listByGenre(genre: string, limit: number, cursor?: Cursor): Promise<Article[]> {
+    if (cursor) {
+        return db.any(
+            `SELECT * FROM articles
+             WHERE genre = $1 AND (published_at, id) < ($2, $3)
+             ORDER BY published_at DESC NULLS LAST, id DESC
+             LIMIT $4`,
+            [genre, cursor.t, cursor.i, limit],
+        );
+    }
+    return db.any(
+        `SELECT * FROM articles
+         WHERE genre = $1
+         ORDER BY published_at DESC NULLS LAST, id DESC
+         LIMIT $2`,
+        [genre, limit],
+    );
+}
+
+export async function listByCategory(category: string, limit: number, cursor?: Cursor): Promise<Article[]> {
+    if (cursor) {
+        return db.any(
+            `SELECT * FROM articles
+             WHERE category = $1 AND (published_at, id) < ($2, $3)
+             ORDER BY published_at DESC NULLS LAST, id DESC
+             LIMIT $4`,
+            [category, cursor.t, cursor.i, limit],
+        );
+    }
+    return db.any(
+        `SELECT * FROM articles
+         WHERE category = $1
+         ORDER BY published_at DESC NULLS LAST, id DESC
+         LIMIT $2`,
+        [category, limit],
+    );
+}
+
+export async function searchByText(query: string, limit: number): Promise<Article[]> {
+    return db.any(
+        `SELECT * FROM articles
+         WHERE title ILIKE $1 OR description ILIKE $1
+         ORDER BY published_at DESC NULLS LAST
+         LIMIT $2`,
+        [`%${query}%`, limit],
+    );
 }
 
 export async function deleteOlderThan(cutoffDate: string): Promise<number> {
