@@ -85,6 +85,21 @@ const FilterMenu = ({ setFilter, activeFilter }: MenuFilterProp) => {
     );
 };
 
+type NetworkScope = { key: string; genre?: string; category?: string };
+
+// Server-side cursor pagination only supports a single genre or category —
+// "Home" with multiple selected genres has no single well-ordered sequence
+// to resume from, so it's left on the existing (first-batch-only) behavior.
+const getNetworkScope = (activeFilter: string, userPreferences: string | null): NetworkScope | null => {
+    if (activeFilter === 'Top') {
+        return { key: 'category:Technology', category: 'Technology' };
+    }
+    if (activeFilter === 'Home' && userPreferences && !userPreferences.includes(',')) {
+        return { key: `genre:${userPreferences}`, genre: userPreferences };
+    }
+    return null;
+};
+
 export default function HomeFeed() {
     const [articles, setArticles] = useState<Article[]>([]);
     const [loading, setLoading] = useState(true);
@@ -107,6 +122,11 @@ export default function HomeFeed() {
     const [page, setPage] = useState(0);
     const [loadingMore, setLoadingMore] = useState(false);
     const [hasMore, setHasMore] = useState(true);
+
+    // Server-side cursor for "load more from the network" once the local
+    // SQLite cache for the current scope (see getNetworkScope) runs dry.
+    // Keyed by scope so Home's and Top's cursors don't clobber each other.
+    const [networkCursors, setNetworkCursors] = useState<Record<string, string | null>>({});
 
     // Search
     const [searchOpen, setSearchOpen] = useState(false);
@@ -148,6 +168,22 @@ export default function HomeFeed() {
         return (await getArticles(undefined, 'Technology', PAGE_SIZE, offset)) ?? [];
     }, []);
 
+    // Runs both prefetch syncs (Home's genres, Top's "Technology" category)
+    // and records whatever nextCursor each returned, so loadNextPage can
+    // pull more from the network later without redoing the initial sync.
+    const syncAndCaptureCursors = useCallback(async (userPreferences: string | null) => {
+        const homeOutcome = userPreferences ? await syncArticles(userPreferences, undefined) : undefined;
+        const topOutcome = await syncArticles(undefined, 'Technology');
+
+        setNetworkCursors((prev) => {
+            const next: Record<string, string | null> = { ...prev, 'category:Technology': topOutcome?.nextCursor ?? null };
+            if (userPreferences && !userPreferences.includes(',')) {
+                next[`genre:${userPreferences}`] = homeOutcome?.nextCursor ?? null;
+            }
+            return next;
+        });
+    }, []);
+
     const onRefresh = useCallback(async () => {
         const canRefresh = await canRefreshArticles();
         if (!canRefresh) return;
@@ -156,24 +192,42 @@ export default function HomeFeed() {
         await deleteArticlesByAge();
 
         const userPreferences = await AsyncStorage.getItem('genreSelection');
-        if (userPreferences) {
-            await syncArticles(userPreferences, undefined);
-        }
-        await syncArticles(undefined, 'Technology');
+        await syncAndCaptureCursors(userPreferences);
 
         const newArticles = await loadByFilter(filter, 0);
         setArticles(newArticles);
         setPage(0);
         setHasMore(newArticles.length >= PAGE_SIZE);
         setRefreshing(false);
-    }, [filter, loadByFilter]);
+    }, [filter, loadByFilter, syncAndCaptureCursors]);
 
     const loadNextPage = useCallback(async () => {
         if (loadingMore || !hasMore || searchOpen) return;
 
         setLoadingMore(true);
         const nextOffset = (page + 1) * PAGE_SIZE;
-        const nextBatch = await loadByFilter(filter, nextOffset);
+        let nextBatch = await loadByFilter(filter, nextOffset);
+
+        // Local cache came up short — if this view maps to a single genre or
+        // category, try pulling the next page from the server before giving up.
+        if (nextBatch.length < PAGE_SIZE) {
+            const userPreferences = await AsyncStorage.getItem('genreSelection');
+            const scope = getNetworkScope(filter, userPreferences);
+            const cursor = scope ? networkCursors[scope.key] : undefined;
+
+            if (scope && cursor) {
+                const outcome = await syncArticles(scope.genre, scope.category, cursor);
+                setNetworkCursors((prev) => ({
+                    ...prev,
+                    // Keep the prior cursor on a failed fetch so the next
+                    // scroll attempt retries, rather than disabling load-more.
+                    [scope.key]: outcome ? outcome.nextCursor : prev[scope.key],
+                }));
+                if (outcome) {
+                    nextBatch = await loadByFilter(filter, nextOffset);
+                }
+            }
+        }
 
         if (nextBatch.length < PAGE_SIZE) {
             setHasMore(false);
@@ -183,7 +237,7 @@ export default function HomeFeed() {
             setPage((prev) => prev + 1);
         }
         setLoadingMore(false);
-    }, [loadingMore, hasMore, searchOpen, page, filter, loadByFilter]);
+    }, [loadingMore, hasMore, searchOpen, page, filter, loadByFilter, networkCursors]);
 
     const handleEllipsisPress = useCallback((id: string) => {
         const fetchArticle = async () => {
@@ -285,8 +339,7 @@ export default function HomeFeed() {
             setLoading(true);
             try {
                 const existingPreferences = await AsyncStorage.getItem('genreSelection');
-                if (existingPreferences) await syncArticles(existingPreferences, undefined);
-                await syncArticles(undefined, 'Technology');
+                await syncAndCaptureCursors(existingPreferences);
                 const loadedArticles = await loadByFilter('Home', 0);
                 setArticles(loadedArticles);
                 setPage(0);

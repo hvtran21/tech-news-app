@@ -13,7 +13,6 @@ const MIGRATIONS: { version: number; up: string }[] = [
     {
         version: 1,
         up: `
-            PRAGMA journal_mode = WAL;
             CREATE TABLE IF NOT EXISTS articles (
                 id TEXT PRIMARY KEY,
                 genre TEXT,
@@ -49,6 +48,9 @@ async function getUserVersion(db: SQLiteDatabase): Promise<number> {
 
 export async function initializeDatabase() {
     const db = await openDatabaseAsync(DB_NAME);
+
+    // Apparently 'PRAGMA journal_mode = WAL' can't run outside of a transaction.
+    await db.execAsync('PRAGMA journal_mode = WAL;');
 
     const currentVersion = await getUserVersion(db);
     const pending = MIGRATIONS.filter((m) => m.version > currentVersion).sort(

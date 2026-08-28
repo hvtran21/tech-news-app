@@ -4,26 +4,29 @@ import { updateArticleQueryTime } from './utilities';
 
 const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL || 'http://localhost:8081';
 
-export async function syncArticles(genre?: string, category?: string) {
+export async function syncArticles(genre?: string, category?: string, cursor?: string) {
     try {
         let results = null;
+        let nextCursor: string | null = null;
         if (genre) {
-            const count = await fetchAndCacheArticles(genre, undefined);
-            if (count === undefined || count === null) {
+            const outcome = await fetchAndCacheArticles(genre, undefined, 100, cursor);
+            if (!outcome) {
                 console.error(`[sync] No articles returned from API for genre "${genre}"`);
                 return;
             }
+            nextCursor = outcome.nextCursor;
             results = await getArticles(genre, undefined);
         } else if (category) {
-            const count = await fetchAndCacheArticles(undefined, category);
-            if (count === undefined || count === null) {
+            const outcome = await fetchAndCacheArticles(undefined, category, 100, cursor);
+            if (!outcome) {
                 console.error(`[sync] No articles returned from API for category "${category}"`);
                 return;
             }
+            nextCursor = outcome.nextCursor;
             results = await getArticles(undefined, category);
         }
         updateArticleQueryTime();
-        return results as Article[];
+        return { articles: results as Article[] | undefined, nextCursor };
     } catch (error) {
         console.error('[sync] syncArticles failed:', error);
     }
@@ -100,12 +103,14 @@ export async function fetchAndCacheArticles(
     genre?: string,
     category?: string,
     limit: number = 100,
+    cursor?: string,
 ) {
     try {
         const params = new URLSearchParams();
         if (genre) params.set('genre', genre);
         if (category) params.set('category', category);
         params.set('limit', String(limit));
+        if (cursor) params.set('cursor', cursor);
         const url = `${BASE_URL}/api/articles?${params}`;
 
         const response = await fetch(url, {
@@ -127,6 +132,7 @@ export async function fetchAndCacheArticles(
 
         const data = await response.json();
         const articles = data.articles as Article[];
+        const nextCursor = (data.nextCursor as string | null | undefined) ?? null;
 
         const db = await SQLite.openDatabaseAsync('newsapp');
         const statement = await db.prepareAsync(
@@ -156,7 +162,7 @@ export async function fetchAndCacheArticles(
             await statement.finalizeAsync();
         }
 
-        return insertedCount;
+        return { insertedCount, nextCursor };
     } catch (error) {
         console.error('[api] fetchAndCacheArticles failed:', error);
     }
