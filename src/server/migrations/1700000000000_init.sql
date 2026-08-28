@@ -1,4 +1,5 @@
-const articleTableDefinition = `
+-- Up Migration
+
     CREATE TABLE IF NOT EXISTS articles (
     id UUID PRIMARY KEY,
     genre VARCHAR(255),
@@ -16,6 +17,13 @@ const articleTableDefinition = `
     CREATE INDEX IF NOT EXISTS idx_articles_genre ON articles(genre);
     CREATE INDEX IF NOT EXISTS idx_articles_category ON articles(category);
     CREATE INDEX IF NOT EXISTS idx_articles_published_at ON articles(published_at);
-`;
 
-export { articleTableDefinition };
+    CREATE TABLE IF NOT EXISTS fetch_log (
+    source_key VARCHAR(255) PRIMARY KEY,
+    last_fetched_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+-- Down Migration
+
+DROP TABLE IF EXISTS fetch_log;
+DROP TABLE IF EXISTS articles;

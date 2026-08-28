@@ -42,6 +42,7 @@ export default async function getArticles(
     genres?: string,
     category?: string,
     limit: number = 20,
+    offset: number = 0,
 ): Promise<Article[] | undefined> {
     const db = await SQLite.openDatabaseAsync('newsapp');
 
@@ -50,8 +51,8 @@ export default async function getArticles(
         const results = await Promise.all(
             genreList.map(async (genre) => {
                 return await db.getAllAsync(
-                    `SELECT * FROM articles WHERE genre = ? LIMIT ${limit}`,
-                    [genre],
+                    'SELECT * FROM articles WHERE genre = ? LIMIT ? OFFSET ?',
+                    [genre, limit, offset],
                 );
             }),
         );
@@ -59,9 +60,10 @@ export default async function getArticles(
             return shuffle(results.flat() as Article[]);
         }
     } else if (category !== undefined && genres === undefined) {
-        const results = await db.getAllAsync('SELECT * FROM articles WHERE category = ?', [
-            category,
-        ]);
+        const results = await db.getAllAsync(
+            'SELECT * FROM articles WHERE category = ? LIMIT ? OFFSET ?',
+            [category, limit, offset],
+        );
         if (results) {
             return shuffle(results.flat() as Article[]);
         }
@@ -74,11 +76,11 @@ export async function getSavedArticles(): Promise<Article[]> {
     return (results as Article[]) ?? [];
 }
 
-export async function getAllArticles(limit: number = 100): Promise<Article[]> {
+export async function getAllArticles(limit: number = 100, offset: number = 0): Promise<Article[]> {
     const db = await SQLite.openDatabaseAsync('newsapp');
     const results = await db.getAllAsync(
-        'SELECT * FROM articles ORDER BY published_at DESC LIMIT ?',
-        [limit],
+        'SELECT * FROM articles ORDER BY published_at DESC LIMIT ? OFFSET ?',
+        [limit, offset],
     );
     return (results as Article[]) ?? [];
 }
@@ -100,17 +102,17 @@ export async function fetchAndCacheArticles(
     limit: number = 100,
 ) {
     try {
-        const response = await fetch(`${BASE_URL}/api/GetArticles`, {
-            method: 'POST',
+        const params = new URLSearchParams();
+        if (genre) params.set('genre', genre);
+        if (category) params.set('category', category);
+        params.set('limit', String(limit));
+        const url = `${BASE_URL}/api/articles?${params}`;
+
+        const response = await fetch(url, {
+            method: 'GET',
             headers: {
                 Accept: 'application/json',
-                'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                genre: genre || undefined,
-                category: category || undefined,
-                limit,
-            }),
         });
 
         if (response.status === 500) {

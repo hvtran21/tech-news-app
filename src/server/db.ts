@@ -1,14 +1,13 @@
 import pgPromise from 'pg-promise';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import { env } from './src/config/env';
+import logger from './src/lib/logger';
 
 const dbConfig = {
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || '5432'),
-    database: process.env.DB_NAME || 'newsapp',
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
+    host: env.DB_HOST,
+    port: env.DB_PORT,
+    database: env.DB_NAME,
+    user: env.DB_USER,
+    password: env.DB_PASSWORD,
 };
 
 const pgp = pgPromise();
@@ -16,11 +15,16 @@ export const db = pgp(dbConfig);
 
 db.connect()
     .then((obj) => {
-        console.log(`[db] Connected to PostgreSQL at ${dbConfig.host}:${dbConfig.port}/${dbConfig.database}`);
+        logger.info(`Connected to PostgreSQL at ${dbConfig.host}:${dbConfig.port}/${dbConfig.database}`);
         obj.done();
     })
     .catch((error) => {
-        console.error('[db] Failed to connect to PostgreSQL:', error.message);
+        logger.error({ err: error }, 'Failed to connect to PostgreSQL');
     });
+
+// pg-promise has no `db.$pool` accessor; closing all pooled connections goes through
+// the root pgPromise() instance's synchronous `.end()` instead. Exposed here so
+// server.ts can drain connections during graceful shutdown.
+export const closeDb = (): void => pgp.end();
 
 export default db;
