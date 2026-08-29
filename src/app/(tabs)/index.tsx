@@ -6,8 +6,6 @@ import {
     TouchableOpacity,
     Animated,
     TouchableHighlight,
-    Modal,
-    Dimensions,
     TouchableWithoutFeedback,
     Linking,
     FlatList,
@@ -18,8 +16,9 @@ import {
 } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
+import { ArticleActionSheet } from '../components/ArticleActionSheet';
 import { getDb } from '../components/database';
-import { NewsCard } from '../components/news_card';
+import { NewsCard } from '../components/NewsCard';
 import { TabHeader, HeaderRule, HorizonalLine, theme } from '../components/styles';
 import {
     faHouse,
@@ -28,14 +27,10 @@ import {
     faBolt,
     faClock,
     faCircleXmark,
-    faFlag,
-    faBan,
-    faUpRightFromSquare,
     faMagnifyingGlass,
     faXmark,
     faArrowUp,
 } from '@fortawesome/free-solid-svg-icons';
-import IconFontAwesome from '@react-native-vector-icons/fontawesome';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -111,7 +106,7 @@ export default function HomeFeed() {
 
     const [showModal, setShowModal] = useState(false);
     const [modalArticle, setModalArticle] = useState<Article>();
-    const { height } = Dimensions.get('window');
+    const [modalSaved, setModalSaved] = useState(false);
 
     const [refreshing, setRefreshing] = useState(false);
     const initialLoadDone = useRef(false);
@@ -247,7 +242,24 @@ export default function HomeFeed() {
     }, []);
 
     useEffect(() => {
-        if (modalArticle) setShowModal(true);
+        if (modalArticle) {
+            setModalSaved(modalArticle.saved === 1);
+            setShowModal(true);
+        }
+    }, [modalArticle]);
+
+    const handleToggleSave = useCallback(async () => {
+        if (!modalArticle) return;
+        const db = await getDb();
+        const newSaved = modalSaved ? 0 : 1;
+        await db.runAsync('UPDATE articles SET saved = ? WHERE id = ?', [newSaved, modalArticle.id]);
+        setModalSaved(!modalSaved);
+    }, [modalArticle, modalSaved]);
+
+    const handleModalOpenInBrowser = useCallback(async () => {
+        if (!modalArticle) return;
+        const supported = await Linking.canOpenURL(modalArticle.url);
+        if (supported) await Linking.openURL(modalArticle.url);
     }, [modalArticle]);
 
     const animateContent = useCallback(() => {
@@ -530,88 +542,19 @@ export default function HomeFeed() {
                         </TouchableOpacity>
                     </Animated.View>
 
-                    <Modal
-                        animationType="slide"
-                        transparent={true}
+                    <ArticleActionSheet
                         visible={showModal}
-                        onRequestClose={() => setShowModal(false)}
-                    >
-                        <TouchableWithoutFeedback onPress={() => setShowModal(false)}>
-                            <View style={{ flex: 1 }} />
-                        </TouchableWithoutFeedback>
-                        <View style={[modal_styles.sheet, { top: height - 260 }]}>
-                            <ModalOptions setShowModal={setShowModal} article={modalArticle} />
-                        </View>
-                    </Modal>
+                        onClose={() => setShowModal(false)}
+                        article={modalArticle}
+                        saved={modalSaved}
+                        onToggleSave={handleToggleSave}
+                        onOpenInBrowser={handleModalOpenInBrowser}
+                    />
                 </View>
             </SafeAreaView>
         </SafeAreaProvider>
     );
 }
-
-type ModalProps = {
-    setShowModal: React.Dispatch<React.SetStateAction<boolean>>;
-    article: Article | undefined;
-};
-
-const ModalOptions = ({ setShowModal, article }: ModalProps) => {
-    const [saved, setSaved] = useState(false);
-
-    const handleOpenInBrowser = useCallback(async () => {
-        if (article) {
-            const supported = await Linking.canOpenURL(article.url);
-            if (supported) await Linking.openURL(article.url);
-        }
-    }, [article]);
-
-    const handleSave = async () => {
-        if (article) {
-            const db = await getDb();
-            const newSaved = saved ? 0 : 1;
-            await db.runAsync('UPDATE articles SET saved = ? WHERE id = ?', [newSaved, article.id]);
-            setSaved(!saved);
-        }
-    };
-
-    useEffect(() => {
-        if (article) setSaved(article.saved === 1);
-    }, [article]);
-
-    return (
-        <>
-            <View style={modal_styles.handle_bar} />
-
-            <View style={modal_styles.options_container}>
-                <TouchableOpacity style={modal_styles.option} onPress={handleSave}>
-                    <IconFontAwesome
-                        name={saved ? 'bookmark' : 'bookmark-o'}
-                        color="white"
-                        size={18}
-                        style={{ opacity: 0.7, width: 24 }}
-                    />
-                    <Text style={modal_styles.option_text}>{saved ? 'Unsave' : 'Save'}</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={modal_styles.option} onPress={handleOpenInBrowser}>
-                    <FontAwesomeIcon icon={faUpRightFromSquare} color="white" size={17} style={{ opacity: 0.7 }} />
-                    <Text style={modal_styles.option_text}>Open in browser</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={modal_styles.option}>
-                    <FontAwesomeIcon icon={faBan} color="white" size={17} style={{ opacity: 0.7 }} />
-                    <Text style={modal_styles.option_text}>Not interested</Text>
-                </TouchableOpacity>
-
-                <View style={modal_styles.divider} />
-
-                <TouchableOpacity style={modal_styles.option}>
-                    <FontAwesomeIcon icon={faFlag} color={theme.danger} size={16} style={{ opacity: 0.8 }} />
-                    <Text style={[modal_styles.option_text, { color: theme.danger }]}>Report</Text>
-                </TouchableOpacity>
-            </View>
-        </>
-    );
-};
 
 const empty_styles = StyleSheet.create({
     container: {
@@ -734,47 +677,6 @@ const menu_styles = StyleSheet.create({
         right: 0,
         bottom: 0,
         zIndex: 5,
-    },
-});
-
-const modal_styles = StyleSheet.create({
-    sheet: {
-        position: 'absolute',
-        backgroundColor: theme.elevated,
-        height: 260,
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
-        paddingTop: 8,
-        paddingHorizontal: 8,
-        width: '100%',
-    },
-    handle_bar: {
-        width: 36,
-        height: 4,
-        borderRadius: 2,
-        backgroundColor: 'rgba(255,255,255,0.12)',
-        alignSelf: 'center',
-        marginBottom: 20,
-    },
-    options_container: {
-        paddingHorizontal: 16,
-    },
-    option: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 14,
-        paddingVertical: 13,
-        paddingHorizontal: 8,
-    },
-    option_text: {
-        fontFamily: 'WorkSans-Regular',
-        fontSize: 16,
-        color: theme.text,
-    },
-    divider: {
-        height: StyleSheet.hairlineWidth,
-        backgroundColor: theme.border,
-        marginVertical: 4,
     },
 });
 

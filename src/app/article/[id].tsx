@@ -6,6 +6,7 @@ import {
     StyleSheet,
     TouchableOpacity,
     ScrollView,
+    Modal,
     Linking,
 } from 'react-native';
 import { Image } from 'expo-image';
@@ -15,23 +16,30 @@ import {
     faArrowLeft,
     faUpRightFromSquare,
     faBookmark as faBookmarkSolid,
+    faXmark,
 } from '@fortawesome/free-solid-svg-icons';
 import { faBookmark as faBookmarkOutline } from '@fortawesome/free-regular-svg-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Article from '../components/constants';
 import { getDb } from '../components/database';
-import { formatDate } from '../components/news_card';
+import { formatDate } from '../components/NewsCard';
 import { theme, getTopicColor } from '../components/styles';
 import { stripHtml } from '../components/utilities';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 
 const fallBackImage = require('../../assets/images/computer_2.jpg');
 
+// Best-effort domain for display only — falls back to the raw url if parsing fails.
+function getHostname(url: string): string {
+    return url.replace(/^https?:\/\//i, '').replace(/^www\./i, '').split(/[/?#]/)[0];
+}
+
 export default function ArticleDetail() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const [article, setArticle] = useState<Article | null>(null);
     const [saved, setSaved] = useState(false);
     const [imageError, setImageError] = useState(false);
+    const [showLeaveModal, setShowLeaveModal] = useState(false);
 
     useEffect(() => {
         const loadArticle = async () => {
@@ -54,7 +62,8 @@ export default function ArticleDetail() {
         setSaved(!saved);
     };
 
-    const handleOpenInBrowser = async () => {
+    const handleConfirmOpenInBrowser = async () => {
+        setShowLeaveModal(false);
         if (!article) return;
         const supported = await Linking.canOpenURL(article.url);
         if (supported) await Linking.openURL(article.url);
@@ -159,7 +168,7 @@ export default function ArticleDetail() {
                     <Animated.View entering={FadeInUp.duration(400).delay(450)} style={styles.content_block}>
                         <TouchableOpacity
                             style={styles.browser_button}
-                            onPress={handleOpenInBrowser}
+                            onPress={() => setShowLeaveModal(true)}
                             activeOpacity={0.8}
                         >
                             <FontAwesomeIcon icon={faUpRightFromSquare} size={15} color="white" style={{ marginRight: 10 }} />
@@ -167,6 +176,62 @@ export default function ArticleDetail() {
                         </TouchableOpacity>
                     </Animated.View>
                 </ScrollView>
+
+                <Modal
+                    visible={showLeaveModal}
+                    transparent
+                    animationType="fade"
+                    statusBarTranslucent
+                    onRequestClose={() => {}}
+                >
+                    <View style={styles.modal_backdrop}>
+                        <View style={styles.modal_card}>
+                            <TouchableOpacity
+                                onPress={() => setShowLeaveModal(false)}
+                                hitSlop={12}
+                                style={styles.modal_close_btn}
+                            >
+                                <FontAwesomeIcon icon={faXmark} size={13} color={theme.text_secondary} />
+                            </TouchableOpacity>
+
+                            <ScrollView
+                                bounces={false}
+                                showsVerticalScrollIndicator={false}
+                                contentContainerStyle={styles.modal_scroll_content}
+                            >
+                                <View style={styles.modal_icon_circle}>
+                                    <FontAwesomeIcon icon={faUpRightFromSquare} size={18} color={theme.accent} />
+                                </View>
+                                <Text style={styles.modal_title}>Leaving the app</Text>
+                                <Text style={styles.modal_subtitle}>This will open in your browser:</Text>
+
+                                <View style={styles.modal_url_box}>
+                                    <Text style={styles.modal_url_host} numberOfLines={1}>
+                                        {getHostname(article.url)}
+                                    </Text>
+                                    <Text style={styles.modal_url_text}>{article.url}</Text>
+                                </View>
+                            </ScrollView>
+
+                            <View style={styles.modal_actions}>
+                                <TouchableOpacity
+                                    style={[styles.modal_button, styles.modal_button_secondary]}
+                                    onPress={() => setShowLeaveModal(false)}
+                                    activeOpacity={0.8}
+                                >
+                                    <Text style={styles.modal_button_secondary_text}>Cancel</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.modal_button, styles.modal_button_primary]}
+                                    onPress={handleConfirmOpenInBrowser}
+                                    activeOpacity={0.8}
+                                >
+                                    <Text style={styles.modal_button_primary_text}>Continue</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
             </SafeAreaView>
         </SafeAreaProvider>
     );
@@ -303,6 +368,111 @@ const styles = StyleSheet.create({
     browser_button_text: {
         fontFamily: 'WorkSans-SemiBold',
         fontSize: 16,
+        color: 'white',
+    },
+    modal_backdrop: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.65)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 24,
+    },
+    modal_card: {
+        width: '100%',
+        maxWidth: 400,
+        maxHeight: '80%',
+        backgroundColor: theme.elevated,
+        borderRadius: 24,
+        paddingTop: 20,
+        paddingBottom: 20,
+        paddingHorizontal: 24,
+    },
+    modal_close_btn: {
+        position: 'absolute',
+        top: 12,
+        right: 12,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: 'rgba(255, 255, 255, 0.06)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 1,
+    },
+    modal_scroll_content: {
+        alignItems: 'center',
+        paddingTop: 16,
+        paddingBottom: 20,
+    },
+    modal_icon_circle: {
+        width: 52,
+        height: 52,
+        borderRadius: 26,
+        backgroundColor: theme.accent_soft,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    modal_title: {
+        fontFamily: 'WorkSans-Bold',
+        fontSize: 19,
+        color: theme.text,
+        marginBottom: 6,
+        textAlign: 'center',
+    },
+    modal_subtitle: {
+        fontFamily: 'WorkSans-Regular',
+        fontSize: 14,
+        color: theme.text_secondary,
+        textAlign: 'center',
+        marginBottom: 16,
+    },
+    modal_url_box: {
+        width: '100%',
+        backgroundColor: theme.surface,
+        borderRadius: 14,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: theme.border,
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+    },
+    modal_url_host: {
+        fontFamily: 'WorkSans-SemiBold',
+        fontSize: 15,
+        color: theme.accent,
+        marginBottom: 4,
+    },
+    modal_url_text: {
+        fontFamily: 'WorkSans-Regular',
+        fontSize: 13,
+        color: theme.text_secondary,
+        lineHeight: 18,
+    },
+    modal_actions: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    modal_button: {
+        flex: 1,
+        paddingVertical: 14,
+        borderRadius: 14,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modal_button_secondary: {
+        backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    },
+    modal_button_secondary_text: {
+        fontFamily: 'WorkSans-SemiBold',
+        fontSize: 15,
+        color: theme.text,
+    },
+    modal_button_primary: {
+        backgroundColor: theme.accent,
+    },
+    modal_button_primary_text: {
+        fontFamily: 'WorkSans-SemiBold',
+        fontSize: 15,
         color: 'white',
     },
 });

@@ -123,12 +123,7 @@ export const NewsCard = ({
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                         style={card_style.ellipsis_btn}
                     >
-                        <FontAwesomeIcon
-                            icon={faEllipsisVertical}
-                            color="white"
-                            size={13}
-                            style={{ opacity: 0.35 }}
-                        />
+                        <FontAwesomeIcon icon={faEllipsisVertical} color="white" size={10} />
                     </TouchableOpacity>
                 </View>
             </TouchableOpacity>
@@ -192,9 +187,14 @@ export const card_style = StyleSheet.create({
     },
     ellipsis_btn: {
         position: 'absolute',
-        bottom: -4,
-        right: -4,
-        padding: 8,
+        bottom: 5,
+        right: 5,
+        width: 18,
+        height: 18,
+        borderRadius: 9,
+        backgroundColor: 'rgba(0, 0, 0, 0.45)',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
 });
 
