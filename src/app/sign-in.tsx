@@ -4,6 +4,8 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
+    TouchableWithoutFeedback,
+    Keyboard,
     StyleSheet,
     ActivityIndicator,
     KeyboardAvoidingView,
@@ -21,7 +23,6 @@ type Mode = 'sign-in' | 'sign-up';
 export default function SignInPage() {
     const [mode, setMode] = useState<Mode>('sign-in');
     const [emailAddress, setEmailAddress] = useState('');
-    const [password, setPassword] = useState('');
     const [code, setCode] = useState('');
     const [pendingVerification, setPendingVerification] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -45,33 +46,35 @@ export default function SignInPage() {
     const switchMode = (next: Mode) => {
         setMode(next);
         setErrorMessage(null);
-        setPassword('');
         setCode('');
         setPendingVerification(false);
     };
 
-    const handleSignIn = async () => {
+    // Both sign-in and sign-up are just "email → code" now, no passwords.
+    const handleSendCode = async () => {
         setErrorMessage(null);
         setSubmitting(true);
-        const { error } = await signIn.password({ emailAddress, password });
-        setSubmitting(false);
-        if (error) setErrorMessage(error.message ?? 'Sign-in failed');
-    };
 
-    const handleSignUp = async () => {
-        setErrorMessage(null);
-        setSubmitting(true);
-        const { error } = await signUp.password({ emailAddress, password });
-        if (error) {
+        if (mode === 'sign-in') {
+            const { error } = await signIn.emailCode.sendCode({ emailAddress });
             setSubmitting(false);
-            setErrorMessage(error.message ?? 'Sign-up failed');
-            return;
-        }
-        const { error: sendError } = await signUp.verifications.sendEmailCode();
-        setSubmitting(false);
-        if (sendError) {
-            setErrorMessage(sendError.message ?? 'Could not send verification code');
-            return;
+            if (error) {
+                setErrorMessage(error.message ?? 'Could not send code');
+                return;
+            }
+        } else {
+            const { error } = await signUp.create({ emailAddress });
+            if (error) {
+                setSubmitting(false);
+                setErrorMessage(error.message ?? 'Sign-up failed');
+                return;
+            }
+            const { error: sendError } = await signUp.verifications.sendEmailCode();
+            setSubmitting(false);
+            if (sendError) {
+                setErrorMessage(sendError.message ?? 'Could not send verification code');
+                return;
+            }
         }
         setPendingVerification(true);
     };
@@ -79,7 +82,10 @@ export default function SignInPage() {
     const handleVerifyCode = async () => {
         setErrorMessage(null);
         setSubmitting(true);
-        const { error } = await signUp.verifications.verifyEmailCode({ code });
+        const { error } =
+            mode === 'sign-in'
+                ? await signIn.emailCode.verifyCode({ code })
+                : await signUp.verifications.verifyEmailCode({ code });
         setSubmitting(false);
         if (error) setErrorMessage(error.message ?? 'Invalid code');
     };
@@ -96,33 +102,33 @@ export default function SignInPage() {
                     style={styles.flex}
                     behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 >
-                    <View style={styles.container}>
-                        <Text style={styles.wordmark}>VANTAGE</Text>
-                        <Text style={styles.title}>
-                            {pendingVerification
-                                ? 'Check your email'
-                                : mode === 'sign-in'
-                                  ? 'Welcome back'
-                                  : 'Create your account'}
-                        </Text>
+                    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+                        <View style={styles.container}>
+                            <Text style={styles.wordmark}>VANTAGE</Text>
+                            <Text style={styles.title}>
+                                {pendingVerification
+                                    ? 'Check your email'
+                                    : mode === 'sign-in'
+                                      ? 'Welcome back'
+                                      : 'Create your account'}
+                            </Text>
 
-                        {pendingVerification ? (
-                            <>
-                                <Text style={styles.subtitle}>
-                                    Enter the code we sent to {emailAddress}
-                                </Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Verification code"
-                                    placeholderTextColor={theme.text_tertiary}
-                                    value={code}
-                                    onChangeText={setCode}
-                                    keyboardType="number-pad"
-                                    autoFocus
-                                />
-                            </>
-                        ) : (
-                            <>
+                            {pendingVerification ? (
+                                <>
+                                    <Text style={styles.subtitle}>
+                                        Enter the code we sent to {emailAddress}
+                                    </Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        placeholder="Verification code"
+                                        placeholderTextColor={theme.text_tertiary}
+                                        value={code}
+                                        onChangeText={setCode}
+                                        keyboardType="number-pad"
+                                        autoFocus
+                                    />
+                                </>
+                            ) : (
                                 <TextInput
                                     style={styles.input}
                                     placeholder="Email"
@@ -133,69 +139,50 @@ export default function SignInPage() {
                                     keyboardType="email-address"
                                     autoComplete="email"
                                 />
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Password"
-                                    placeholderTextColor={theme.text_tertiary}
-                                    value={password}
-                                    onChangeText={setPassword}
-                                    secureTextEntry
-                                    autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'}
-                                />
-                            </>
-                        )}
+                            )}
 
-                        {errorMessage && <Text style={styles.error}>{errorMessage}</Text>}
+                            {errorMessage && <Text style={styles.error}>{errorMessage}</Text>}
 
-                        <TouchableOpacity
-                            onPress={
-                                pendingVerification
-                                    ? handleVerifyCode
-                                    : mode === 'sign-in'
-                                      ? handleSignIn
-                                      : handleSignUp
-                            }
-                            activeOpacity={0.8}
-                            disabled={submitting}
-                            style={styles.submit_button}
-                        >
-                            <LinearGradient
-                                colors={['#06B6D4', '#0891B2']}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 1 }}
-                                style={styles.submit_gradient}
-                            >
-                                {submitting ? (
-                                    <ActivityIndicator color="white" />
-                                ) : (
-                                    <Text style={styles.submit_text}>
-                                        {pendingVerification
-                                            ? 'Verify'
-                                            : mode === 'sign-in'
-                                              ? 'Sign in'
-                                              : 'Sign up'}
-                                    </Text>
-                                )}
-                            </LinearGradient>
-                        </TouchableOpacity>
-
-                        {!pendingVerification && (
                             <TouchableOpacity
-                                onPress={() => switchMode(mode === 'sign-in' ? 'sign-up' : 'sign-in')}
-                                style={styles.toggle}
+                                onPress={pendingVerification ? handleVerifyCode : handleSendCode}
+                                activeOpacity={0.8}
+                                disabled={submitting}
+                                style={styles.submit_button}
                             >
-                                <Text style={styles.toggle_text}>
-                                    {mode === 'sign-in'
-                                        ? "Don't have an account? Sign up"
-                                        : 'Already have an account? Sign in'}
-                                </Text>
+                                <LinearGradient
+                                    colors={['#06B6D4', '#0891B2']}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                    style={styles.submit_gradient}
+                                >
+                                    {submitting ? (
+                                        <ActivityIndicator color="white" />
+                                    ) : (
+                                        <Text style={styles.submit_text}>
+                                            {pendingVerification ? 'Verify' : 'Continue'}
+                                        </Text>
+                                    )}
+                                </LinearGradient>
                             </TouchableOpacity>
-                        )}
 
-                        <TouchableOpacity onPress={handleSkip} style={styles.skip}>
-                            <Text style={styles.skip_text}>Skip for now</Text>
-                        </TouchableOpacity>
-                    </View>
+                            {!pendingVerification && (
+                                <TouchableOpacity
+                                    onPress={() => switchMode(mode === 'sign-in' ? 'sign-up' : 'sign-in')}
+                                    style={styles.toggle}
+                                >
+                                    <Text style={styles.toggle_text}>
+                                        {mode === 'sign-in'
+                                            ? "Don't have an account? Sign up"
+                                            : 'Already have an account? Sign in'}
+                                    </Text>
+                                </TouchableOpacity>
+                            )}
+
+                            <TouchableOpacity onPress={handleSkip} style={styles.skip}>
+                                <Text style={styles.skip_text}>Skip for now</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </TouchableWithoutFeedback>
                 </KeyboardAvoidingView>
             </SafeAreaView>
         </SafeAreaProvider>
@@ -273,14 +260,20 @@ const styles = StyleSheet.create({
     toggle: {
         marginTop: 20,
         alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 13,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: theme.accent_border,
+        backgroundColor: theme.accent_soft,
     },
     toggle_text: {
-        fontFamily: 'WorkSans-Regular',
-        fontSize: 14,
-        color: theme.text_secondary,
+        fontFamily: 'WorkSans-SemiBold',
+        fontSize: 15,
+        color: theme.accent,
     },
     skip: {
-        marginTop: 16,
+        marginTop: 14,
         alignItems: 'center',
     },
     skip_text: {
