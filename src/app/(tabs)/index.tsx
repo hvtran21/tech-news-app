@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
+import { useAuth } from '@clerk/expo';
 import { ArticleActionSheet } from '../components/ArticleActionSheet';
 import { getDb } from '../components/database';
 import { NewsCard } from '../components/NewsCard';
@@ -95,6 +96,7 @@ const getNetworkScope = (activeFilter: string, userPreferences: string | null): 
 };
 
 export default function HomeFeed() {
+    const { getToken } = useAuth();
     const [articles, setArticles] = useState<Article[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('Home');
@@ -163,9 +165,10 @@ export default function HomeFeed() {
     // Prefetches both scopes and records their nextCursor for later load-more.
     // Home and Top are independent requests, so run them concurrently.
     const syncAndCaptureCursors = useCallback(async (userPreferences: string | null) => {
+        const token = (await getToken()) ?? undefined;
         const [homeOutcome, topOutcome] = await Promise.all([
-            userPreferences ? syncArticles(userPreferences, undefined) : Promise.resolve(undefined),
-            syncArticles(undefined, 'Technology'),
+            userPreferences ? syncArticles(userPreferences, undefined, undefined, token) : Promise.resolve(undefined),
+            syncArticles(undefined, 'Technology', undefined, token),
         ]);
 
         setNetworkCursors((prev) => {
@@ -175,7 +178,7 @@ export default function HomeFeed() {
             }
             return next;
         });
-    }, []);
+    }, [getToken]);
 
     const onRefresh = useCallback(async () => {
         const canRefresh = await canRefreshArticles();
@@ -208,7 +211,8 @@ export default function HomeFeed() {
             const cursor = scope ? networkCursors[scope.key] : undefined;
 
             if (scope && cursor) {
-                const outcome = await syncArticles(scope.genre, scope.category, cursor);
+                const token = (await getToken()) ?? undefined;
+                const outcome = await syncArticles(scope.genre, scope.category, cursor, token);
                 setNetworkCursors((prev) => ({
                     ...prev,
                     // Keep the prior cursor on failure so the next scroll retries.
@@ -228,7 +232,7 @@ export default function HomeFeed() {
             setPage((prev) => prev + 1);
         }
         setLoadingMore(false);
-    }, [loadingMore, hasMore, searchOpen, page, filter, loadByFilter, networkCursors]);
+    }, [loadingMore, hasMore, searchOpen, page, filter, loadByFilter, networkCursors, getToken]);
 
     const handleEllipsisPress = useCallback((id: string) => {
         const fetchArticle = async () => {

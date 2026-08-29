@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { useFonts } from 'expo-font';
 import { router } from 'expo-router';
+import { useAuth } from '@clerk/expo';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { initializeDatabase } from './components/database';
 
@@ -28,22 +29,26 @@ export default function Main() {
         'WorkSans-LightItalic': require('../assets/fonts/WorkSans/WorkSans-LightItalic.ttf'),
         'WorkSans-ExtraLight': require('../assets/fonts/WorkSans/WorkSans-ExtraLight.ttf'),
     });
+    const { isLoaded: authLoaded, isSignedIn } = useAuth();
 
     useEffect(() => {
         const init = async () => {
-            if (!fontsLoaded) return;
+            if (!fontsLoaded || !authLoaded) return;
 
             await initializeDatabase();
 
             const firstLaunch = await checkFirstLaunch();
+            const skippedAuth = await AsyncStorage.getItem('skippedAuth');
             if (firstLaunch) {
                 router.replace('/welcome');
+            } else if (!isSignedIn && skippedAuth !== 'true') {
+                router.replace('/sign-in');
             } else {
                 router.replace('/(tabs)');
             }
         };
         init();
-    }, [fontsLoaded]);
+    }, [fontsLoaded, authLoaded, isSignedIn]);
 
     return (
         <View style={styles.container}>

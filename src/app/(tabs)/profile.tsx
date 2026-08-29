@@ -3,21 +3,16 @@ import {
     View,
     Text,
     StyleSheet,
-    TextInput,
     TouchableOpacity,
-    KeyboardAvoidingView,
-    Platform,
-    Keyboard,
-    TouchableWithoutFeedback,
     ScrollView,
 } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, router } from 'expo-router';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faUser, faCheck, faChevronRight, faArrowLeft } from '@fortawesome/free-solid-svg-icons';
+import { faUser, faCheck, faSignOutAlt, faSignInAlt } from '@fortawesome/free-solid-svg-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useUser, useAuth } from '@clerk/expo';
 import { TabHeader, HeaderRule, theme, topicColors } from '../components/styles';
-import { getUser, upsertUser } from '../components/database';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 const genreOptions = [
@@ -123,14 +118,14 @@ function GenrePreferences() {
 function ProfileCard({
     displayName,
     email,
-    onEdit,
+    signedIn,
 }: {
     displayName: string;
     email: string;
-    onEdit: () => void;
+    signedIn: boolean;
 }) {
     return (
-        <TouchableOpacity style={styles.profile_card} onPress={onEdit} activeOpacity={0.7}>
+        <View style={styles.profile_card}>
             {displayName ? (
                 <View style={styles.card_avatar_filled}>
                     <Text style={styles.card_avatar_initial}>{displayName.charAt(0).toUpperCase()}</Text>
@@ -142,151 +137,28 @@ function ProfileCard({
             )}
             <View style={styles.card_info}>
                 <Text style={styles.card_name}>
-                    {displayName || 'Set up your profile'}
+                    {displayName || (signedIn ? 'Signed in' : 'Not signed in')}
                 </Text>
                 {email.length > 0 && <Text style={styles.card_email}>{email}</Text>}
             </View>
-            <FontAwesomeIcon icon={faChevronRight} size={13} color={theme.text_tertiary} />
-        </TouchableOpacity>
-    );
-}
-
-function ProfileEditor({
-    displayName,
-    email,
-    hasProfile,
-    onDone,
-}: {
-    displayName: string;
-    email: string;
-    hasProfile: boolean;
-    onDone: () => void;
-}) {
-    const [name, setName] = useState(displayName);
-    const [mail, setMail] = useState(email);
-    const [saved, setSaved] = useState(false);
-
-    const handleSave = async () => {
-        if (name.trim().length === 0) return;
-        await upsertUser(name.trim(), mail.trim() || undefined);
-        setSaved(true);
-        Keyboard.dismiss();
-        setTimeout(() => {
-            setSaved(false);
-            onDone();
-        }, 1000);
-    };
-
-    return (
-        <Animated.View entering={FadeIn.duration(300)} style={{ flex: 1 }}>
-            <View style={styles.editor_header}>
-                <TouchableOpacity onPress={onDone} hitSlop={10} style={styles.back_btn}>
-                    <FontAwesomeIcon icon={faArrowLeft} size={16} color="white" />
-                </TouchableOpacity>
-                <Text style={styles.editor_title}>Edit Profile</Text>
-                <View style={{ width: 40 }} />
-            </View>
-
-            <KeyboardAvoidingView
-                style={{ flex: 1 }}
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            >
-                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                    <View style={styles.editor_content}>
-                        <View style={styles.avatar_circle}>
-                            {name.trim() ? (
-                                <Text style={styles.avatar_initial}>
-                                    {name.trim().charAt(0).toUpperCase()}
-                                </Text>
-                            ) : (
-                                <FontAwesomeIcon icon={faUser} size={30} color="white" style={{ opacity: 0.15 }} />
-                            )}
-                        </View>
-
-                        <Text style={styles.form_label}>DISPLAY NAME</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={name}
-                            onChangeText={setName}
-                            placeholder="Your name"
-                            placeholderTextColor={theme.text_tertiary}
-                            autoCapitalize="words"
-                            autoCorrect={false}
-                        />
-
-                        <Text style={styles.form_label}>EMAIL (OPTIONAL)</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={mail}
-                            onChangeText={setMail}
-                            placeholder="you@example.com"
-                            placeholderTextColor={theme.text_tertiary}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                            autoCorrect={false}
-                        />
-
-                        <TouchableOpacity
-                            style={[styles.save_button, name.trim().length === 0 && { opacity: 0.35 }]}
-                            onPress={handleSave}
-                            activeOpacity={0.8}
-                            disabled={name.trim().length === 0}
-                        >
-                            <Text style={styles.save_text}>
-                                {saved ? 'Saved!' : hasProfile ? 'Update profile' : 'Save profile'}
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-                </TouchableWithoutFeedback>
-            </KeyboardAvoidingView>
-        </Animated.View>
+        </View>
     );
 }
 
 export default function ProfileScreen() {
-    const [displayName, setDisplayName] = useState('');
-    const [email, setEmail] = useState('');
-    const [hasProfile, setHasProfile] = useState(false);
-    const [editingProfile, setEditingProfile] = useState(false);
+    const { user } = useUser();
+    const { signOut } = useAuth();
+    const isSignedIn = !!user;
 
-    useFocusEffect(
-        useCallback(() => {
-            const load = async () => {
-                const user = await getUser();
-                if (user) {
-                    setDisplayName(user.display_name ?? '');
-                    setEmail(user.email ?? '');
-                    setHasProfile(true);
-                }
-            };
-            load();
-        }, []),
-    );
-
-    const handleEditDone = async () => {
-        const user = await getUser();
-        if (user) {
-            setDisplayName(user.display_name ?? '');
-            setEmail(user.email ?? '');
-            setHasProfile(true);
-        }
-        setEditingProfile(false);
+    const handleSignOut = async () => {
+        await signOut();
+        await AsyncStorage.removeItem('skippedAuth');
+        router.replace('/sign-in');
     };
 
-    if (editingProfile) {
-        return (
-            <SafeAreaProvider>
-                <SafeAreaView style={styles.theme} edges={['top', 'left', 'right']}>
-                    <ProfileEditor
-                        displayName={displayName}
-                        email={email}
-                        hasProfile={hasProfile}
-                        onDone={handleEditDone}
-                    />
-                </SafeAreaView>
-            </SafeAreaProvider>
-        );
-    }
+    const handleSignIn = () => {
+        router.push('/sign-in');
+    };
 
     return (
         <SafeAreaProvider>
@@ -302,10 +174,29 @@ export default function ProfileScreen() {
                     <View style={styles.section}>
                         <Text style={styles.section_label}>PROFILE</Text>
                         <ProfileCard
-                            displayName={displayName}
-                            email={email}
-                            onEdit={() => setEditingProfile(true)}
+                            displayName={user?.fullName ?? ''}
+                            email={user?.primaryEmailAddress?.emailAddress ?? ''}
+                            signedIn={isSignedIn}
                         />
+                        {isSignedIn ? (
+                            <TouchableOpacity
+                                style={styles.sign_out_button}
+                                onPress={handleSignOut}
+                                activeOpacity={0.7}
+                            >
+                                <FontAwesomeIcon icon={faSignOutAlt} size={14} color={theme.danger} />
+                                <Text style={styles.sign_out_text}>Sign out</Text>
+                            </TouchableOpacity>
+                        ) : (
+                            <TouchableOpacity
+                                style={styles.sign_out_button}
+                                onPress={handleSignIn}
+                                activeOpacity={0.7}
+                            >
+                                <FontAwesomeIcon icon={faSignInAlt} size={14} color={theme.accent} />
+                                <Text style={[styles.sign_out_text, { color: theme.accent }]}>Sign in</Text>
+                            </TouchableOpacity>
+                        )}
                     </View>
 
                     <GenrePreferences />
@@ -430,81 +321,20 @@ const styles = StyleSheet.create({
         color: theme.text_tertiary,
         marginTop: 2,
     },
-    editor_header: {
+    sign_out_button: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        paddingTop: 16,
-        paddingBottom: 12,
-    },
-    back_btn: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: theme.surface,
         justifyContent: 'center',
-        alignItems: 'center',
-    },
-    editor_title: {
-        fontFamily: 'WorkSans-SemiBold',
-        fontSize: 17,
-        color: theme.text,
-    },
-    editor_content: {
-        flex: 1,
-        paddingHorizontal: 24,
-        paddingTop: 32,
-        alignItems: 'center',
-    },
-    avatar_circle: {
-        width: 88,
-        height: 88,
-        borderRadius: 44,
-        backgroundColor: theme.accent_soft,
-        borderWidth: 1,
-        borderColor: theme.accent_border,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 36,
-    },
-    avatar_initial: {
-        fontFamily: 'WorkSans-Bold',
-        fontSize: 34,
-        color: theme.accent,
-    },
-    form_label: {
-        fontFamily: 'WorkSans-SemiBold',
-        fontSize: 11,
-        color: theme.text_tertiary,
-        letterSpacing: 1.5,
-        alignSelf: 'flex-start',
-        marginBottom: 8,
-        marginTop: 20,
-    },
-    input: {
-        width: '100%',
-        backgroundColor: theme.surface,
+        gap: 8,
+        marginTop: 12,
+        paddingVertical: 14,
         borderRadius: 14,
         borderWidth: 1,
         borderColor: theme.border,
-        paddingHorizontal: 18,
-        paddingVertical: 16,
-        fontFamily: 'WorkSans-Regular',
-        fontSize: 16,
-        color: 'white',
     },
-    save_button: {
-        backgroundColor: theme.accent,
-        borderRadius: 14,
-        paddingVertical: 16,
-        marginTop: 36,
-        width: '100%',
-        alignItems: 'center',
-    },
-    save_text: {
+    sign_out_text: {
         fontFamily: 'WorkSans-SemiBold',
-        fontSize: 16,
-        color: 'white',
+        fontSize: 14,
+        color: theme.danger,
     },
 });

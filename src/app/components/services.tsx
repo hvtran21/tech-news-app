@@ -4,12 +4,12 @@ import { updateArticleQueryTime } from './utilities';
 
 const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL || 'http://localhost:8081';
 
-export async function syncArticles(genre?: string, category?: string, cursor?: string) {
+export async function syncArticles(genre?: string, category?: string, cursor?: string, token?: string) {
     try {
         let results = null;
         let nextCursor: string | null = null;
         if (genre) {
-            const outcome = await fetchAndCacheArticles(genre, undefined, 100, cursor);
+            const outcome = await fetchAndCacheArticles(genre, undefined, 100, cursor, token);
             if (!outcome) {
                 console.error(`[sync] No articles returned from API for genre "${genre}"`);
                 return;
@@ -17,7 +17,7 @@ export async function syncArticles(genre?: string, category?: string, cursor?: s
             nextCursor = outcome.nextCursor;
             results = await getArticles(genre, undefined);
         } else if (category) {
-            const outcome = await fetchAndCacheArticles(undefined, category, 100, cursor);
+            const outcome = await fetchAndCacheArticles(undefined, category, 100, cursor, token);
             if (!outcome) {
                 console.error(`[sync] No articles returned from API for category "${category}"`);
                 return;
@@ -103,6 +103,7 @@ export async function fetchAndCacheArticles(
     category?: string,
     limit: number = 100,
     cursor?: string,
+    token?: string,
 ) {
     try {
         const params = new URLSearchParams();
@@ -116,6 +117,7 @@ export async function fetchAndCacheArticles(
             method: 'GET',
             headers: {
                 Accept: 'application/json',
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
             },
         });
 

@@ -49,7 +49,7 @@ export default function WelcomePage() {
         if (userGenreSelection.length > 0) {
             await AsyncStorage.setItem('genreSelection', userGenreSelection.join(','));
         }
-        router.replace('/(tabs)');
+        router.replace('/sign-in');
     };
 
     return (
