@@ -170,7 +170,7 @@ export function getOpenApiDocument() {
         cachedDocument = generator.generateDocument({
             openapi: '3.0.0',
             info: {
-                title: 'Tech News API',
+                title: 'Vantage API',
                 version: '1.0.0',
                 description: 'API for fetching and managing tech news articles',
             },

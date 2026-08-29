@@ -1,29 +1,14 @@
 import { useState, useCallback } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    FlatList,
-    TouchableOpacity,
-    Modal,
-    Dimensions,
-    TouchableWithoutFeedback,
-    Linking,
-} from 'react-native';
+import { View, Text, StyleSheet, FlatList, Linking } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
-import * as SQLite from 'expo-sqlite';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import {
-    faUpRightFromSquare,
-    faBan,
-    faFlag,
-    faBookmark,
-} from '@fortawesome/free-solid-svg-icons';
-import IconFontAwesome from '@react-native-vector-icons/fontawesome';
+import { faBookmark } from '@fortawesome/free-solid-svg-icons';
 import Article from '../components/constants';
+import { ArticleActionSheet } from '../components/ArticleActionSheet';
+import { getDb } from '../components/database';
 import { getSavedArticles } from '../components/services';
-import { NewsCard } from '../components/news_card';
+import { NewsCard } from '../components/NewsCard';
 import { TabHeader, HeaderRule, HorizonalLine, theme } from '../components/styles';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
@@ -31,7 +16,6 @@ export default function SavedScreen() {
     const [savedArticles, setSavedArticles] = useState<Article[]>([]);
     const [showModal, setShowModal] = useState(false);
     const [modalArticle, setModalArticle] = useState<Article>();
-    const { height } = Dimensions.get('window');
 
     useFocusEffect(
         useCallback(() => {
@@ -45,7 +29,7 @@ export default function SavedScreen() {
 
     const handleEllipsisPress = useCallback((id: string) => {
         const fetchArticle = async () => {
-            const db = await SQLite.openDatabaseAsync('newsapp');
+            const db = await getDb();
             const article = (await db.getFirstAsync('SELECT * FROM articles WHERE id = ?', [id])) as Article;
             if (article) {
                 setModalArticle(article);
@@ -57,9 +41,8 @@ export default function SavedScreen() {
 
     const handleUnsave = async () => {
         if (!modalArticle) return;
-        const db = await SQLite.openDatabaseAsync('newsapp');
+        const db = await getDb();
         await db.runAsync('UPDATE articles SET saved = 0 WHERE id = ?', modalArticle.id);
-        setShowModal(false);
         const updated = await getSavedArticles();
         setSavedArticles(updated);
     };
@@ -121,43 +104,14 @@ export default function SavedScreen() {
                     keyExtractor={(item) => item.id}
                 />
 
-                <Modal
-                    animationType="slide"
-                    transparent={true}
+                <ArticleActionSheet
                     visible={showModal}
-                    onRequestClose={() => setShowModal(false)}
-                >
-                    <TouchableWithoutFeedback onPress={() => setShowModal(false)}>
-                        <View style={{ flex: 1 }} />
-                    </TouchableWithoutFeedback>
-                    <View style={[styles.modal_sheet, { top: height - 240 }]}>
-                        <View style={styles.handle_bar} />
-
-                        <View style={styles.modal_content}>
-                            <TouchableOpacity style={styles.modal_option} onPress={handleUnsave}>
-                                <IconFontAwesome name="bookmark" color="white" size={18} style={{ opacity: 0.7, width: 24 }} />
-                                <Text style={styles.modal_text}>Unsave</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity style={styles.modal_option} onPress={handleOpenInBrowser}>
-                                <FontAwesomeIcon icon={faUpRightFromSquare} color="white" size={17} style={{ opacity: 0.7 }} />
-                                <Text style={styles.modal_text}>Open in browser</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity style={styles.modal_option}>
-                                <FontAwesomeIcon icon={faBan} color="white" size={17} style={{ opacity: 0.7 }} />
-                                <Text style={styles.modal_text}>Not interested</Text>
-                            </TouchableOpacity>
-
-                            <View style={styles.modal_divider} />
-
-                            <TouchableOpacity style={styles.modal_option}>
-                                <FontAwesomeIcon icon={faFlag} color={theme.danger} size={16} style={{ opacity: 0.8 }} />
-                                <Text style={[styles.modal_text, { color: theme.danger }]}>Report</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </Modal>
+                    onClose={() => setShowModal(false)}
+                    article={modalArticle}
+                    saved
+                    onToggleSave={handleUnsave}
+                    onOpenInBrowser={handleOpenInBrowser}
+                />
             </SafeAreaView>
         </SafeAreaProvider>
     );
@@ -206,43 +160,5 @@ const styles = StyleSheet.create({
         color: theme.text_tertiary,
         textAlign: 'center',
         lineHeight: 20,
-    },
-    modal_sheet: {
-        position: 'absolute',
-        backgroundColor: theme.elevated,
-        height: 240,
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
-        paddingTop: 8,
-        paddingHorizontal: 8,
-        width: '100%',
-    },
-    handle_bar: {
-        width: 36,
-        height: 4,
-        borderRadius: 2,
-        backgroundColor: 'rgba(255,255,255,0.12)',
-        alignSelf: 'center',
-        marginBottom: 20,
-    },
-    modal_content: {
-        paddingHorizontal: 16,
-    },
-    modal_option: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 14,
-        paddingVertical: 13,
-        paddingHorizontal: 8,
-    },
-    modal_text: {
-        fontFamily: 'WorkSans-Regular',
-        fontSize: 16,
-        color: theme.text,
-    },
-    modal_divider: {
-        height: StyleSheet.hairlineWidth,
-        backgroundColor: theme.border,
-        marginVertical: 4,
     },
 });

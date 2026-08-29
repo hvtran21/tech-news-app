@@ -1,16 +1,16 @@
 {
   "expo": {
-    "name": "tldr_newsapp",
-    "slug": "tldr_newsapp",
+    "name": "vantage",
+    "slug": "vantage",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "tldrnewsapp",
+    "scheme": "vantage",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.tldr-newsapp"
+      "bundleIdentifier": "com.anonymous.vantage"
     },
     "android": {
       "adaptiveIcon": {
@@ -18,7 +18,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.tldr_newsapp"
+      "package": "com.anonymous.vantage"
     },
     "web": {
       "bundler": "metro",

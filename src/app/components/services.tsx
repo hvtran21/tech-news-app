@@ -1,5 +1,5 @@
-import * as SQLite from 'expo-sqlite';
 import Article from './constants';
+import { getDb } from './database';
 import { updateArticleQueryTime } from './utilities';
 
 const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL || 'http://localhost:8081';
@@ -47,7 +47,7 @@ export default async function getArticles(
     limit: number = 20,
     offset: number = 0,
 ): Promise<Article[] | undefined> {
-    const db = await SQLite.openDatabaseAsync('newsapp');
+    const db = await getDb();
 
     if (genres !== undefined && category === undefined) {
         const genreList = genres.split(',');
@@ -74,13 +74,13 @@ export default async function getArticles(
 }
 
 export async function getSavedArticles(): Promise<Article[]> {
-    const db = await SQLite.openDatabaseAsync('newsapp');
+    const db = await getDb();
     const results = await db.getAllAsync('SELECT * FROM articles WHERE saved = 1');
     return (results as Article[]) ?? [];
 }
 
 export async function getAllArticles(limit: number = 100, offset: number = 0): Promise<Article[]> {
-    const db = await SQLite.openDatabaseAsync('newsapp');
+    const db = await getDb();
     const results = await db.getAllAsync(
         'SELECT * FROM articles ORDER BY published_at DESC LIMIT ? OFFSET ?',
         [limit, offset],
@@ -89,7 +89,7 @@ export async function getAllArticles(limit: number = 100, offset: number = 0): P
 }
 
 export async function searchArticles(query: string): Promise<Article[]> {
-    const db = await SQLite.openDatabaseAsync('newsapp');
+    const db = await getDb();
     const searchTerm = `%${query}%`;
     const results = await db.getAllAsync(
         'SELECT * FROM articles WHERE title LIKE ? OR description LIKE ? LIMIT 50',
@@ -133,7 +133,7 @@ export async function fetchAndCacheArticles(
         const articles = data.articles as Article[];
         const nextCursor = (data.nextCursor as string | null | undefined) ?? null;
 
-        const db = await SQLite.openDatabaseAsync('newsapp');
+        const db = await getDb();
         const statement = await db.prepareAsync(
             'INSERT OR IGNORE INTO articles(id, genre, category, source, author, title, description, url, url_to_image, published_at, content, saved) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         );

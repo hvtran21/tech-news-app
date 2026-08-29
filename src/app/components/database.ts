@@ -2,6 +2,19 @@ import { openDatabaseAsync, type SQLiteDatabase } from 'expo-sqlite';
 
 const DB_NAME = 'newsapp';
 
+// Shared so busy_timeout (per-connection, unlike WAL mode) is actually set everywhere.
+let dbPromise: Promise<SQLiteDatabase> | null = null;
+
+export function getDb(): Promise<SQLiteDatabase> {
+    if (!dbPromise) {
+        dbPromise = openDatabaseAsync(DB_NAME).then(async (db) => {
+            await db.execAsync('PRAGMA busy_timeout = 3000;');
+            return db;
+        });
+    }
+    return dbPromise;
+}
+
 // Versioned migrations, applied via PRAGMA user_version. v1 doesn't try to
 // patch old drifted schemas (e.g. missing `category`) — wipe the cache instead.
 const MIGRATIONS: { version: number; up: string }[] = [
@@ -42,7 +55,7 @@ async function getUserVersion(db: SQLiteDatabase): Promise<number> {
 }
 
 export async function initializeDatabase() {
-    const db = await openDatabaseAsync(DB_NAME);
+    const db = await getDb();
 
     // Apparently 'PRAGMA journal_mode = WAL' can't run outside of a transaction.
     await db.execAsync('PRAGMA journal_mode = WAL;');
@@ -63,13 +76,13 @@ export async function initializeDatabase() {
 }
 
 export async function getUser() {
-    const db = await openDatabaseAsync(DB_NAME);
+    const db = await getDb();
     const user = await db.getFirstAsync('SELECT * FROM users LIMIT 1');
     return user as { id: number; display_name: string | null; email: string | null; avatar_uri: string | null; created_at: string } | null;
 }
 
 export async function upsertUser(displayName: string, email?: string) {
-    const db = await openDatabaseAsync(DB_NAME);
+    const db = await getDb();
     const existing = await db.getFirstAsync('SELECT id FROM users LIMIT 1');
     if (existing) {
         await db.runAsync(

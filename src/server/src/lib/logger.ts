@@ -3,7 +3,7 @@ import { env } from '../config/env';
 
 const logger = pino({
     level: env.NODE_ENV === 'production' ? 'info' : 'debug',
-    base: { service: 'tech-news-server' },
+    base: { service: 'vantage-api' },
     transport:
         env.NODE_ENV === 'production'
             ? undefined

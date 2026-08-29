@@ -1,5 +1,5 @@
-import * as SQLite from 'expo-sqlite';
 import Article from './constants';
+import { getDb } from './database';
 
 export function stripHtml(text: string): string {
     return text
@@ -21,7 +21,7 @@ type MetadataRow = {
 export async function deleteArticlesByAge(days?: number): Promise<number> {
     const retentionDays = days ?? 4;
 
-    const db = await SQLite.openDatabaseAsync('newsapp');
+    const db = await getDb();
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - retentionDays);
     const cutoffDate = cutoff.toISOString().split('T')[0];
@@ -42,7 +42,7 @@ export async function deleteArticlesByAge(days?: number): Promise<number> {
 }
 
 export async function deleteArticlesById(id: string) {
-    const db = await SQLite.openDatabaseAsync('newsapp');
+    const db = await getDb();
     try {
         const result = await db.runAsync('DELETE FROM articles WHERE id = $id', {
             $id: id,
@@ -60,7 +60,7 @@ export async function deleteArticlesById(id: string) {
 }
 
 export default async function getArticleById(id: string) {
-    const db = await SQLite.openDatabaseAsync('newsapp');
+    const db = await getDb();
     try {
         const article = (await db.getFirstAsync('SELECT * FROM articles WHERE id = ?', [
             id,
@@ -83,7 +83,7 @@ export function sortArticlesByDate(articles: Article[]): Article[] {
 
 export async function updateArticleQueryTime() {
     const currentDate = new Date().toISOString();
-    const db = await SQLite.openDatabaseAsync('newsapp');
+    const db = await getDb();
     try {
         const result = await db.runAsync('UPDATE metadata SET latest_article_query = $date', {
             $date: currentDate,
@@ -103,7 +103,7 @@ export async function updateArticleQueryTime() {
 
 export async function canRefreshArticles() {
     const cooldownMinutes = 0.5;
-    const db = await SQLite.openDatabaseAsync('newsapp');
+    const db = await getDb();
 
     try {
         const row = (await db.getFirstAsync('SELECT * FROM metadata')) as MetadataRow;

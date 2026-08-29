@@ -9,7 +9,7 @@ router.get(
     asyncHandler(async (req, res) => {
         try {
             await db.one('SELECT 1');
-            res.json({ status: 'ok', service: 'tech-news-server' });
+            res.json({ status: 'ok', service: 'vantage-api' });
         } catch {
             res.status(503).json({ status: 'unhealthy', error: 'db unreachable' });
         }
