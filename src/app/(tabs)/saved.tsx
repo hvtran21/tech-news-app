@@ -24,7 +24,7 @@ import IconFontAwesome from '@react-native-vector-icons/fontawesome';
 import Article from '../components/constants';
 import { getSavedArticles } from '../components/services';
 import { NewsCard } from '../components/news_card';
-import { TabHeader, HeaderRule, HorizonalLine, theme, tabAccents } from '../components/styles';
+import { TabHeader, HeaderRule, HorizonalLine, theme } from '../components/styles';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 export default function SavedScreen() {
@@ -88,7 +88,6 @@ export default function SavedScreen() {
                 <TabHeader
                     title="Saved"
                     subtitle="Your collection"
-                    accent={tabAccents.saved}
                     rightAccessory={
                         savedArticles.length > 0 ? (
                             <View style={styles.count_badge}>
@@ -97,7 +96,7 @@ export default function SavedScreen() {
                         ) : undefined
                     }
                 />
-                <HeaderRule accent={tabAccents.saved} />
+                <HeaderRule />
 
                 <FlatList
                     showsVerticalScrollIndicator={false}
@@ -105,7 +104,7 @@ export default function SavedScreen() {
                     contentContainerStyle={
                         savedArticles.length === 0
                             ? { flexGrow: 1, justifyContent: 'center' }
-                            : { flexGrow: 1, paddingBottom: 20 }
+                            : { flexGrow: 1, paddingBottom: 130 }
                     }
                     ListEmptyComponent={<EmptyState />}
                     ItemSeparatorComponent={() => <HorizonalLine />}

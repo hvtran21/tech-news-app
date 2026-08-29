@@ -18,12 +18,6 @@ export const theme = {
     danger: '#EF4444',
 };
 
-export const tabAccents = {
-    feed: '#06B6D4',
-    saved: '#F59E0B',
-    profile: '#A78BFA',
-} as const;
-
 export const topicColors: Record<string, { color: string; bg: string }> = {
     'Artificial Intelligence': { color: '#60A5FA', bg: 'rgba(96, 165, 250, 0.10)' },
     'Machine Learning':       { color: '#A78BFA', bg: 'rgba(167, 139, 250, 0.10)' },
@@ -35,7 +29,6 @@ export const topicColors: Record<string, { color: string; bg: string }> = {
     'Cybersecurity':          { color: '#F87171', bg: 'rgba(248, 113, 113, 0.10)' },
     'Game development':       { color: '#C084FC', bg: 'rgba(192, 132, 252, 0.10)' },
     'Nintendo':               { color: '#E879F9', bg: 'rgba(232, 121, 249, 0.10)' },
-    'Tesla':                  { color: '#F43F5E', bg: 'rgba(244, 63, 94, 0.10)' },
     'Space Tech':             { color: '#818CF8', bg: 'rgba(129, 140, 248, 0.10)' },
     'Startups':               { color: '#FB7185', bg: 'rgba(251, 113, 133, 0.10)' },
     'Blockchain':             { color: '#FACC15', bg: 'rgba(250, 204, 21, 0.10)' },
@@ -79,40 +72,23 @@ interface TabHeaderProps {
     title: string;
     rightAccessory?: React.ReactNode;
     subtitle?: string;
-    accent?: string;
 }
 
-export const TabHeader = ({ title, rightAccessory, subtitle, accent = theme.accent }: TabHeaderProps) => {
+export const TabHeader = ({ title, rightAccessory, subtitle }: TabHeaderProps) => {
     return (
         <Animated.View entering={FadeIn.duration(450)} style={header_styles.container}>
-            <View style={header_styles.title_row}>
-                <View style={[header_styles.accent_bar, { backgroundColor: accent }]} />
-                <View style={header_styles.title_block}>
-                    {subtitle && (
-                        <Text style={[header_styles.subtitle, { color: accent }]}>
-                            {subtitle}
-                        </Text>
-                    )}
-                    <GradientText
-                        text={title}
-                        colors={['#ffffff', 'rgba(255,255,255,0.48)']}
-                        style={header_styles.title}
-                    />
-                </View>
+            <View style={header_styles.title_block}>
+                {subtitle && <Text style={header_styles.subtitle}>{subtitle}</Text>}
+                <Text style={header_styles.title}>{title}</Text>
             </View>
             {rightAccessory}
         </Animated.View>
     );
 };
 
-export const HeaderRule = ({ accent = theme.accent }: { accent?: string }) => (
+export const HeaderRule = () => (
     <View style={header_styles.rule_wrapper}>
-        <LinearGradient
-            colors={[accent, 'transparent']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={header_styles.rule_line}
-        />
+        <View style={header_styles.rule_line} />
     </View>
 );
 
@@ -127,16 +103,6 @@ const header_styles = StyleSheet.create({
         overflow: 'visible',
         zIndex: 10,
     },
-    title_row: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    accent_bar: {
-        width: 3,
-        height: 32,
-        borderRadius: 2,
-        marginRight: 12,
-    },
     title_block: {
         justifyContent: 'center',
     },
@@ -144,22 +110,23 @@ const header_styles = StyleSheet.create({
         fontFamily: 'WorkSans-Bold',
         fontSize: 30,
         letterSpacing: -0.5,
+        color: theme.text,
     },
     subtitle: {
         fontFamily: 'WorkSans-SemiBold',
         fontSize: 10,
         letterSpacing: 2.5,
         textTransform: 'uppercase',
-        marginBottom: 1,
-        opacity: 0.7,
+        marginBottom: 4,
+        color: theme.text_tertiary,
     },
     rule_wrapper: {
         paddingHorizontal: 20,
         paddingBottom: 10,
     },
     rule_line: {
-        height: StyleSheet.hairlineWidth * 2,
-        borderRadius: 1,
+        height: StyleSheet.hairlineWidth,
+        backgroundColor: theme.border,
     },
 });
 
