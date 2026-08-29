@@ -1,5 +1,5 @@
 import { useLocalSearchParams, router } from 'expo-router';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
     View,
     Text,
@@ -7,10 +7,12 @@ import {
     TouchableOpacity,
     ScrollView,
     Modal,
-    Linking,
+    Platform,
 } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { Image } from 'expo-image';
-import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaView, SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import {
     faArrowLeft,
@@ -29,7 +31,7 @@ import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated'
 
 const fallBackImage = require('../../assets/images/computer_2.jpg');
 
-// Best-effort domain for display only — falls back to the raw url if parsing fails.
+// Best-effort domain for display only. Falls back to the raw url if parsing fails.
 function getHostname(url: string): string {
     return url.replace(/^https?:\/\//i, '').replace(/^www\./i, '').split(/[/?#]/)[0];
 }
@@ -39,7 +41,9 @@ export default function ArticleDetail() {
     const [article, setArticle] = useState<Article | null>(null);
     const [saved, setSaved] = useState(false);
     const [imageError, setImageError] = useState(false);
-    const [showLeaveModal, setShowLeaveModal] = useState(false);
+    const [showBrowserModal, setShowBrowserModal] = useState(false);
+    const pendingBrowserUrl = useRef<string | null>(null);
+    const insets = useSafeAreaInsets();
 
     useEffect(() => {
         const loadArticle = async () => {
@@ -62,11 +66,28 @@ export default function ArticleDetail() {
         setSaved(!saved);
     };
 
-    const handleConfirmOpenInBrowser = async () => {
-        setShowLeaveModal(false);
+    // Presenting the in-app browser while the confirmation <Modal> is still mid-dismiss
+    // causes it to flash and get torn down as collateral (two native modal transitions
+    // colliding). Defer opening it until the Modal's dismiss animation has actually
+    // finished, via onDismiss on iOS, or a short delay on Android (no onDismiss there).
+    const openPendingBrowser = async () => {
+        const url = pendingBrowserUrl.current;
+        pendingBrowserUrl.current = null;
+        if (!url) return;
+        await WebBrowser.openBrowserAsync(url, {
+            toolbarColor: theme.elevated,
+            controlsColor: theme.accent,
+            dismissButtonStyle: 'close',
+        });
+    };
+
+    const handleConfirmOpenInBrowser = () => {
         if (!article) return;
-        const supported = await Linking.canOpenURL(article.url);
-        if (supported) await Linking.openURL(article.url);
+        pendingBrowserUrl.current = article.url;
+        setShowBrowserModal(false);
+        if (Platform.OS === 'android') {
+            setTimeout(openPendingBrowser, 300);
+        }
     };
 
     if (!article) {
@@ -91,7 +112,8 @@ export default function ArticleDetail() {
 
     return (
         <SafeAreaProvider>
-            <SafeAreaView style={styles.theme} edges={['top', 'left', 'right']}>
+            <StatusBar style="light" translucent />
+            <SafeAreaView style={styles.theme} edges={['left', 'right']}>
                 <ScrollView
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={{ paddingBottom: 48 }}
@@ -105,12 +127,17 @@ export default function ArticleDetail() {
                             transition={300}
                         />
                         <LinearGradient
+                            colors={['rgba(5, 5, 5, 0.55)', 'transparent']}
+                            locations={[0, 1]}
+                            style={styles.hero_gradient_top}
+                        />
+                        <LinearGradient
                             colors={['transparent', 'rgba(5, 5, 5, 0.6)', theme.bg]}
                             locations={[0.2, 0.6, 1]}
                             style={styles.hero_gradient}
                         />
 
-                        <View style={styles.nav_overlay}>
+                        <View style={[styles.nav_overlay, { paddingTop: insets.top + 12 }]}>
                             <TouchableOpacity
                                 onPress={() => router.back()}
                                 hitSlop={10}
@@ -168,7 +195,7 @@ export default function ArticleDetail() {
                     <Animated.View entering={FadeInUp.duration(400).delay(450)} style={styles.content_block}>
                         <TouchableOpacity
                             style={styles.browser_button}
-                            onPress={() => setShowLeaveModal(true)}
+                            onPress={() => setShowBrowserModal(true)}
                             activeOpacity={0.8}
                         >
                             <FontAwesomeIcon icon={faUpRightFromSquare} size={15} color="white" style={{ marginRight: 10 }} />
@@ -178,16 +205,17 @@ export default function ArticleDetail() {
                 </ScrollView>
 
                 <Modal
-                    visible={showLeaveModal}
+                    visible={showBrowserModal}
                     transparent
                     animationType="fade"
                     statusBarTranslucent
                     onRequestClose={() => {}}
+                    onDismiss={Platform.OS === 'ios' ? openPendingBrowser : undefined}
                 >
                     <View style={styles.modal_backdrop}>
                         <View style={styles.modal_card}>
                             <TouchableOpacity
-                                onPress={() => setShowLeaveModal(false)}
+                                onPress={() => setShowBrowserModal(false)}
                                 hitSlop={12}
                                 style={styles.modal_close_btn}
                             >
@@ -202,8 +230,8 @@ export default function ArticleDetail() {
                                 <View style={styles.modal_icon_circle}>
                                     <FontAwesomeIcon icon={faUpRightFromSquare} size={18} color={theme.accent} />
                                 </View>
-                                <Text style={styles.modal_title}>Leaving the app</Text>
-                                <Text style={styles.modal_subtitle}>This will open in your browser:</Text>
+                                <Text style={styles.modal_title}>Open article</Text>
+                                <Text style={styles.modal_subtitle}>Opens in an in-app browser:</Text>
 
                                 <View style={styles.modal_url_box}>
                                     <Text style={styles.modal_url_host} numberOfLines={1}>
@@ -216,7 +244,7 @@ export default function ArticleDetail() {
                             <View style={styles.modal_actions}>
                                 <TouchableOpacity
                                     style={[styles.modal_button, styles.modal_button_secondary]}
-                                    onPress={() => setShowLeaveModal(false)}
+                                    onPress={() => setShowBrowserModal(false)}
                                     activeOpacity={0.8}
                                 >
                                     <Text style={styles.modal_button_secondary_text}>Cancel</Text>
@@ -266,6 +294,13 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         height: '60%',
+    },
+    hero_gradient_top: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 130,
     },
     nav_overlay: {
         position: 'absolute',
