@@ -16,7 +16,7 @@ import { useFocusEffect } from 'expo-router';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faUser, faCheck, faChevronRight, faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { TabHeader, HeaderRule, theme, tabAccents, topicColors } from '../components/styles';
+import { TabHeader, HeaderRule, theme, topicColors } from '../components/styles';
 import { getUser, upsertUser } from '../components/database';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
@@ -31,7 +31,6 @@ const genreOptions = [
     'Cybersecurity',
     'Game development',
     'Nintendo',
-    'Tesla',
     'Space Tech',
     'Startups',
     'Blockchain',
@@ -292,8 +291,8 @@ export default function ProfileScreen() {
     return (
         <SafeAreaProvider>
             <SafeAreaView style={styles.theme} edges={['top', 'left', 'right']}>
-                <TabHeader title="Profile" subtitle="Your account" accent={tabAccents.profile} />
-                <HeaderRule accent={tabAccents.profile} />
+                <TabHeader title="Profile" subtitle="Your account" />
+                <HeaderRule />
 
                 <ScrollView
                     contentContainerStyle={styles.scroll_content}
@@ -324,7 +323,7 @@ const styles = StyleSheet.create({
     scroll_content: {
         paddingHorizontal: 20,
         paddingTop: 20,
-        paddingBottom: 40,
+        paddingBottom: 140,
     },
     section: {
         marginBottom: 32,
@@ -394,9 +393,9 @@ const styles = StyleSheet.create({
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: tabAccents.profile + '18',
+        backgroundColor: theme.accent_soft,
         borderWidth: 1,
-        borderColor: tabAccents.profile + '35',
+        borderColor: theme.accent_border,
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 14,
@@ -404,7 +403,7 @@ const styles = StyleSheet.create({
     card_avatar_initial: {
         fontFamily: 'WorkSans-Bold',
         fontSize: 18,
-        color: tabAccents.profile,
+        color: theme.accent,
     },
     card_avatar_empty: {
         width: 44,
@@ -462,9 +461,9 @@ const styles = StyleSheet.create({
         width: 88,
         height: 88,
         borderRadius: 44,
-        backgroundColor: tabAccents.profile + '18',
+        backgroundColor: theme.accent_soft,
         borderWidth: 1,
-        borderColor: tabAccents.profile + '35',
+        borderColor: theme.accent_border,
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 36,
@@ -472,7 +471,7 @@ const styles = StyleSheet.create({
     avatar_initial: {
         fontFamily: 'WorkSans-Bold',
         fontSize: 34,
-        color: tabAccents.profile,
+        color: theme.accent,
     },
     form_label: {
         fontFamily: 'WorkSans-SemiBold',
@@ -496,7 +495,7 @@ const styles = StyleSheet.create({
         color: 'white',
     },
     save_button: {
-        backgroundColor: tabAccents.profile,
+        backgroundColor: theme.accent,
         borderRadius: 14,
         paddingVertical: 16,
         marginTop: 36,

@@ -20,7 +20,7 @@ import {
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { NewsCard } from '../components/news_card';
-import { TabHeader, HeaderRule, HorizonalLine, theme, tabAccents } from '../components/styles';
+import { TabHeader, HeaderRule, HorizonalLine, theme } from '../components/styles';
 import {
     faHouse,
     faAngleDown,
@@ -85,6 +85,20 @@ const FilterMenu = ({ setFilter, activeFilter }: MenuFilterProp) => {
     );
 };
 
+type NetworkScope = { key: string; genre?: string; category?: string };
+
+// Cursor pagination needs a single genre or category — CSV "Home" selections
+// keep the existing first-batch-only behavior.
+const getNetworkScope = (activeFilter: string, userPreferences: string | null): NetworkScope | null => {
+    if (activeFilter === 'Top') {
+        return { key: 'category:Technology', category: 'Technology' };
+    }
+    if (activeFilter === 'Home' && userPreferences && !userPreferences.includes(',')) {
+        return { key: `genre:${userPreferences}`, genre: userPreferences };
+    }
+    return null;
+};
+
 export default function HomeFeed() {
     const [articles, setArticles] = useState<Article[]>([]);
     const [loading, setLoading] = useState(true);
@@ -107,6 +121,9 @@ export default function HomeFeed() {
     const [page, setPage] = useState(0);
     const [loadingMore, setLoadingMore] = useState(false);
     const [hasMore, setHasMore] = useState(true);
+
+    // Cursor per scope (see getNetworkScope) so Home's and Top's don't clobber each other.
+    const [networkCursors, setNetworkCursors] = useState<Record<string, string | null>>({});
 
     // Search
     const [searchOpen, setSearchOpen] = useState(false);
@@ -148,6 +165,23 @@ export default function HomeFeed() {
         return (await getArticles(undefined, 'Technology', PAGE_SIZE, offset)) ?? [];
     }, []);
 
+    // Prefetches both scopes and records their nextCursor for later load-more.
+    // Home and Top are independent requests, so run them concurrently.
+    const syncAndCaptureCursors = useCallback(async (userPreferences: string | null) => {
+        const [homeOutcome, topOutcome] = await Promise.all([
+            userPreferences ? syncArticles(userPreferences, undefined) : Promise.resolve(undefined),
+            syncArticles(undefined, 'Technology'),
+        ]);
+
+        setNetworkCursors((prev) => {
+            const next: Record<string, string | null> = { ...prev, 'category:Technology': topOutcome?.nextCursor ?? null };
+            if (userPreferences && !userPreferences.includes(',')) {
+                next[`genre:${userPreferences}`] = homeOutcome?.nextCursor ?? null;
+            }
+            return next;
+        });
+    }, []);
+
     const onRefresh = useCallback(async () => {
         const canRefresh = await canRefreshArticles();
         if (!canRefresh) return;
@@ -156,24 +190,40 @@ export default function HomeFeed() {
         await deleteArticlesByAge();
 
         const userPreferences = await AsyncStorage.getItem('genreSelection');
-        if (userPreferences) {
-            await syncArticles(userPreferences, undefined);
-        }
-        await syncArticles(undefined, 'Technology');
+        await syncAndCaptureCursors(userPreferences);
 
         const newArticles = await loadByFilter(filter, 0);
         setArticles(newArticles);
         setPage(0);
         setHasMore(newArticles.length >= PAGE_SIZE);
         setRefreshing(false);
-    }, [filter, loadByFilter]);
+    }, [filter, loadByFilter, syncAndCaptureCursors]);
 
     const loadNextPage = useCallback(async () => {
         if (loadingMore || !hasMore || searchOpen) return;
 
         setLoadingMore(true);
         const nextOffset = (page + 1) * PAGE_SIZE;
-        const nextBatch = await loadByFilter(filter, nextOffset);
+        let nextBatch = await loadByFilter(filter, nextOffset);
+
+        // Local cache ran out — try a network top-up before giving up.
+        if (nextBatch.length < PAGE_SIZE) {
+            const userPreferences = await AsyncStorage.getItem('genreSelection');
+            const scope = getNetworkScope(filter, userPreferences);
+            const cursor = scope ? networkCursors[scope.key] : undefined;
+
+            if (scope && cursor) {
+                const outcome = await syncArticles(scope.genre, scope.category, cursor);
+                setNetworkCursors((prev) => ({
+                    ...prev,
+                    // Keep the prior cursor on failure so the next scroll retries.
+                    [scope.key]: outcome ? outcome.nextCursor : prev[scope.key],
+                }));
+                if (outcome) {
+                    nextBatch = await loadByFilter(filter, nextOffset);
+                }
+            }
+        }
 
         if (nextBatch.length < PAGE_SIZE) {
             setHasMore(false);
@@ -183,7 +233,7 @@ export default function HomeFeed() {
             setPage((prev) => prev + 1);
         }
         setLoadingMore(false);
-    }, [loadingMore, hasMore, searchOpen, page, filter, loadByFilter]);
+    }, [loadingMore, hasMore, searchOpen, page, filter, loadByFilter, networkCursors]);
 
     const handleEllipsisPress = useCallback((id: string) => {
         const fetchArticle = async () => {
@@ -285,8 +335,7 @@ export default function HomeFeed() {
             setLoading(true);
             try {
                 const existingPreferences = await AsyncStorage.getItem('genreSelection');
-                if (existingPreferences) await syncArticles(existingPreferences, undefined);
-                await syncArticles(undefined, 'Technology');
+                await syncAndCaptureCursors(existingPreferences);
                 const loadedArticles = await loadByFilter('Home', 0);
                 setArticles(loadedArticles);
                 setPage(0);
@@ -346,7 +395,6 @@ export default function HomeFeed() {
                     <TabHeader
                         title="Feed"
                         subtitle="Your news"
-                        accent={tabAccents.feed}
                         rightAccessory={
                             <View style={base_template.header_actions}>
                                 <TouchableOpacity
@@ -392,7 +440,7 @@ export default function HomeFeed() {
                             </View>
                         }
                     />
-                    <HeaderRule accent={tabAccents.feed} />
+                    <HeaderRule />
 
                     <Animated.View style={[search_styles.bar_wrapper, { height: searchBarHeight, opacity: searchAnim }]}>
                         <View style={search_styles.bar}>
@@ -440,7 +488,7 @@ export default function HomeFeed() {
                                 contentContainerStyle={
                                     articles.length === 0
                                         ? { flexGrow: 1, justifyContent: 'center' }
-                                        : { flexGrow: 1, paddingBottom: 20 }
+                                        : { flexGrow: 1, paddingBottom: 130 }
                                 }
                                 bounces={true}
                                 alwaysBounceVertical={true}
@@ -733,7 +781,7 @@ const modal_styles = StyleSheet.create({
 const fab_styles = StyleSheet.create({
     container: {
         position: 'absolute',
-        bottom: 24,
+        bottom: 148,
         right: 20,
         zIndex: 20,
     },

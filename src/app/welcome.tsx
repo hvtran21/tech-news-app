@@ -21,7 +21,6 @@ enum options {
     CYBERSECURITY = 'Cybersecurity',
     GAME_DEVELOPMENT = 'Game development',
     NINTENDO = 'Nintendo',
-    TESLA = 'Tesla',
     SPACE_TECH = 'Space Tech',
     STARTUPS = 'Startups',
     BLOCKCHAIN = 'Blockchain',
@@ -68,7 +67,7 @@ export default function WelcomePage() {
                     style={welcomeStyles.title_container}
                 >
                     <Text style={welcomeStyles.main_title}>Stay{'\n'}updated.</Text>
-                    <Text style={welcomeStyles.subtitle_italic}>No cookies, no emails.</Text>
+                    <Text style={welcomeStyles.subtitle_italic}>No sign-up. No tracking.</Text>
                 </Animated.View>
 
                 <Animated.View

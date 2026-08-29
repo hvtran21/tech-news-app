@@ -52,12 +52,15 @@ router.get(
                     err.code = 'InvalidGenre';
                     throw err;
                 }
-                try {
-                    await refreshService.refreshIfStale(g, undefined);
-                } catch (err) {
-                    logger.error({ err, genre: g }, 'Background refresh failed');
-                }
             }
+
+            await Promise.all(
+                genreArray.map((g) =>
+                    refreshService.refreshIfStale(g, undefined).catch((err) => {
+                        logger.error({ err, genre: g }, 'Background refresh failed');
+                    }),
+                ),
+            );
 
             const articles = await articleService.listByGenres(genre, limit, cursor);
             logger.info({ count: articles.length }, 'Returning articles');
