@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import * as SQLite from 'expo-sqlite';
 import {
     View,
     Text,
@@ -19,6 +18,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
+import { getDb } from '../components/database';
 import { NewsCard } from '../components/news_card';
 import { TabHeader, HeaderRule, HorizonalLine, theme } from '../components/styles';
 import {
@@ -237,7 +237,7 @@ export default function HomeFeed() {
 
     const handleEllipsisPress = useCallback((id: string) => {
         const fetchArticle = async () => {
-            const db = await SQLite.openDatabaseAsync('newsapp');
+            const db = await getDb();
             const article = (await db.getFirstAsync('SELECT * FROM articles WHERE id = ?', [id])) as Article;
             if (article) {
                 setModalArticle(article);
@@ -566,7 +566,7 @@ const ModalOptions = ({ setShowModal, article }: ModalProps) => {
 
     const handleSave = async () => {
         if (article) {
-            const db = await SQLite.openDatabaseAsync('newsapp');
+            const db = await getDb();
             const newSaved = saved ? 0 : 1;
             await db.runAsync('UPDATE articles SET saved = ? WHERE id = ?', [newSaved, article.id]);
             setSaved(!saved);

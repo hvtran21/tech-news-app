@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
-import * as SQLite from 'expo-sqlite';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import {
     faUpRightFromSquare,
@@ -22,6 +21,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import IconFontAwesome from '@react-native-vector-icons/fontawesome';
 import Article from '../components/constants';
+import { getDb } from '../components/database';
 import { getSavedArticles } from '../components/services';
 import { NewsCard } from '../components/news_card';
 import { TabHeader, HeaderRule, HorizonalLine, theme } from '../components/styles';
@@ -45,7 +45,7 @@ export default function SavedScreen() {
 
     const handleEllipsisPress = useCallback((id: string) => {
         const fetchArticle = async () => {
-            const db = await SQLite.openDatabaseAsync('newsapp');
+            const db = await getDb();
             const article = (await db.getFirstAsync('SELECT * FROM articles WHERE id = ?', [id])) as Article;
             if (article) {
                 setModalArticle(article);
@@ -57,7 +57,7 @@ export default function SavedScreen() {
 
     const handleUnsave = async () => {
         if (!modalArticle) return;
-        const db = await SQLite.openDatabaseAsync('newsapp');
+        const db = await getDb();
         await db.runAsync('UPDATE articles SET saved = 0 WHERE id = ?', modalArticle.id);
         setShowModal(false);
         const updated = await getSavedArticles();

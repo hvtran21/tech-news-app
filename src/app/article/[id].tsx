@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
-import * as SQLite from 'expo-sqlite';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import {
     faArrowLeft,
@@ -20,6 +19,7 @@ import {
 import { faBookmark as faBookmarkOutline } from '@fortawesome/free-regular-svg-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Article from '../components/constants';
+import { getDb } from '../components/database';
 import { formatDate } from '../components/news_card';
 import { theme, getTopicColor } from '../components/styles';
 import { stripHtml } from '../components/utilities';
@@ -35,7 +35,7 @@ export default function ArticleDetail() {
 
     useEffect(() => {
         const loadArticle = async () => {
-            const db = await SQLite.openDatabaseAsync('newsapp');
+            const db = await getDb();
             const result = (await db.getFirstAsync('SELECT * FROM articles WHERE id = ?', [id])) as Article;
             if (result) {
                 setArticle(result);
@@ -47,7 +47,7 @@ export default function ArticleDetail() {
 
     const handleSave = async () => {
         if (!article) return;
-        const db = await SQLite.openDatabaseAsync('newsapp');
+        const db = await getDb();
         const newSaved = saved ? 0 : 1;
         await db.runAsync('UPDATE articles SET saved = ? WHERE id = ?', [newSaved, article.id]);
         setArticle({ ...article, saved: newSaved });
