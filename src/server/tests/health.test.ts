@@ -14,7 +14,7 @@ describe('GET /health', () => {
         const res = await request(app).get('/health');
 
         expect(res.status).toBe(200);
-        expect(res.body).toEqual({ status: 'ok', service: 'tech-news-server' });
+        expect(res.body).toEqual({ status: 'ok', service: 'vantage-api' });
     });
 
     it('returns 503 with unhealthy status when the db is unreachable', async () => {

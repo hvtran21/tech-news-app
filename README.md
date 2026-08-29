@@ -1,4 +1,4 @@
-# Tech News App
+# Vantage
 
 A cross-platform mobile app for discovering technology news — browse by genre, save articles for later, and read the rest in your browser. No account, no sign-up, no tracking.
 

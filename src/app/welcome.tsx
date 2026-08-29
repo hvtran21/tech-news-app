@@ -66,6 +66,7 @@ export default function WelcomePage() {
                     entering={FadeInDown.duration(700)}
                     style={welcomeStyles.title_container}
                 >
+                    <Text style={welcomeStyles.wordmark}>VANTAGE</Text>
                     <Text style={welcomeStyles.main_title}>Stay{'\n'}updated.</Text>
                     <Text style={welcomeStyles.subtitle_italic}>No sign-up. No tracking.</Text>
                 </Animated.View>
@@ -184,6 +185,13 @@ const welcomeStyles = StyleSheet.create({
     title_container: {
         paddingHorizontal: 28,
         paddingTop: 48,
+    },
+    wordmark: {
+        fontFamily: 'WorkSans-SemiBold',
+        fontSize: 13,
+        color: theme.accent,
+        letterSpacing: 3,
+        marginBottom: 10,
     },
     main_title: {
         fontFamily: 'WorkSans-Bold',
