@@ -2,13 +2,8 @@ import { openDatabaseAsync, type SQLiteDatabase } from 'expo-sqlite';
 
 const DB_NAME = 'newsapp';
 
-// Versioned migrations, applied in order via PRAGMA user_version.
-//
-// NOTE: version 1 does not (and must not) attempt to patch pre-Phase-2
-// on-device `articles` tables that predate the `category` column — that
-// schema drift was pre-existing/rare, and CREATE TABLE IF NOT EXISTS can't
-// alter an existing table anyway. For those rare old devices, wiping the
-// local cache (fresh install/reinstall) is the intended fix, not a migration.
+// Versioned migrations, applied via PRAGMA user_version. v1 doesn't try to
+// patch old drifted schemas (e.g. missing `category`) — wipe the cache instead.
 const MIGRATIONS: { version: number; up: string }[] = [
     {
         version: 1,
@@ -61,8 +56,7 @@ export async function initializeDatabase() {
         await db.withTransactionAsync(async () => {
             await db.execAsync(migration.up);
         });
-        // PRAGMA user_version doesn't support bound parameters; N comes from
-        // our own static MIGRATIONS array, not external input.
+        // PRAGMA doesn't support bound params; version is from our own static array, not user input.
         await db.execAsync(`PRAGMA user_version = ${migration.version}`);
         console.log(`[db] applied migration ${migration.version}`);
     }

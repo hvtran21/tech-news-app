@@ -98,7 +98,6 @@ export async function searchArticles(query: string): Promise<Article[]> {
     return (results as Article[]) ?? [];
 }
 
-// Fetches articles from the backend API and inserts them into local SQLite
 export async function fetchAndCacheArticles(
     genre?: string,
     category?: string,
