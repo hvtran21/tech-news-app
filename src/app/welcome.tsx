@@ -1,5 +1,5 @@
 import { SafeAreaView, SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { faArrowRight } from '@fortawesome/free-solid-svg-icons';
@@ -62,79 +62,84 @@ export default function WelcomePage() {
                     end={{ x: 0.5, y: 0.5 }}
                 />
 
-                <Animated.View
-                    entering={FadeInDown.duration(700)}
-                    style={welcomeStyles.title_container}
+                <ScrollView
+                    style={welcomeStyles.scroll}
+                    contentContainerStyle={welcomeStyles.scroll_content}
+                    showsVerticalScrollIndicator={false}
                 >
-                    <Text style={welcomeStyles.wordmark}>VANTAGE</Text>
-                    <Text style={welcomeStyles.main_title}>Stay{'\n'}updated.</Text>
-                    <Text style={welcomeStyles.subtitle_italic}>No sign-up. No tracking.</Text>
-                </Animated.View>
+                    <Animated.View
+                        entering={FadeInDown.duration(700)}
+                        style={welcomeStyles.title_container}
+                    >
+                        <Text style={welcomeStyles.wordmark}>VANTAGE</Text>
+                        <Text style={welcomeStyles.main_title}>Stay{'\n'}updated.</Text>
+                        <Text style={welcomeStyles.subtitle_italic}>No sign-up. No tracking.</Text>
+                    </Animated.View>
 
-                <Animated.View
-                    entering={FadeIn.duration(800).delay(300)}
-                    style={welcomeStyles.preference_header}
-                >
-                    <Text style={welcomeStyles.section_label}>CHOOSE YOUR INTERESTS</Text>
-                </Animated.View>
+                    <Animated.View
+                        entering={FadeIn.duration(800).delay(300)}
+                        style={welcomeStyles.preference_header}
+                    >
+                        <Text style={welcomeStyles.section_label}>CHOOSE YOUR INTERESTS</Text>
+                    </Animated.View>
 
-                <Animated.View
-                    entering={FadeInUp.duration(600).delay(500)}
-                    style={welcomeStyles.genre_container}
-                >
-                    {genre_arr.map((item, index) => {
-                        const isSelected = userGenreSelection.includes(item);
-                        const tc = topicColors[item];
-                        return (
-                            <TouchableOpacity
-                                key={index}
-                                onPress={() => toggleGenre(item)}
-                                activeOpacity={0.7}
-                            >
-                                <Animated.View
-                                    entering={FadeIn.duration(400).delay(500 + index * 60)}
-                                    style={[
-                                        welcomeStyles.chip,
-                                        isSelected && tc && {
-                                            backgroundColor: tc.bg,
-                                            borderColor: tc.color + '40',
-                                        },
-                                    ]}
+                    <Animated.View
+                        entering={FadeInUp.duration(600).delay(500)}
+                        style={welcomeStyles.genre_container}
+                    >
+                        {genre_arr.map((item, index) => {
+                            const isSelected = userGenreSelection.includes(item);
+                            const tc = topicColors[item];
+                            return (
+                                <TouchableOpacity
+                                    key={index}
+                                    onPress={() => toggleGenre(item)}
+                                    activeOpacity={0.7}
                                 >
-                                    <Text
+                                    <Animated.View
+                                        entering={FadeIn.duration(400).delay(500 + index * 60)}
                                         style={[
-                                            welcomeStyles.chip_text,
+                                            welcomeStyles.chip,
                                             isSelected && tc && {
-                                                color: tc.color,
-                                                fontFamily: 'WorkSans-SemiBold',
+                                                backgroundColor: tc.bg,
+                                                borderColor: tc.color + '40',
                                             },
                                         ]}
                                     >
-                                        {item}
-                                    </Text>
-                                </Animated.View>
-                            </TouchableOpacity>
-                        );
-                    })}
-                </Animated.View>
+                                        <Text
+                                            style={[
+                                                welcomeStyles.chip_text,
+                                                isSelected && tc && {
+                                                    color: tc.color,
+                                                    fontFamily: 'WorkSans-SemiBold',
+                                                },
+                                            ]}
+                                        >
+                                            {item}
+                                        </Text>
+                                    </Animated.View>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </Animated.View>
 
-                <Animated.View
-                    entering={FadeIn.duration(600).delay(800)}
-                    style={welcomeStyles.info_container}
-                >
-                    <Text style={welcomeStyles.info_text}>Select as many as you like</Text>
-                    <Text style={[welcomeStyles.info_text, { fontSize: 13, marginTop: 12 }]}>
-                        {"Or don't \u2014 that's fine too."}
-                    </Text>
-                </Animated.View>
+                    <Animated.View
+                        entering={FadeIn.duration(600).delay(800)}
+                        style={welcomeStyles.info_container}
+                    >
+                        <Text style={welcomeStyles.info_text}>Select as many as you like</Text>
+                        <Text style={[welcomeStyles.info_text, { fontSize: 13, marginTop: 12 }]}>
+                            {"Or don't \u2014 that's fine too."}
+                        </Text>
+                    </Animated.View>
+                </ScrollView>
 
                 <Animated.View
                     entering={FadeIn.duration(400).delay(1000)}
                     style={{
-                        position: 'absolute',
-                        bottom: insets.bottom + 24,
-                        right: 24,
-                        left: 24,
+                        paddingHorizontal: 24,
+                        paddingBottom: insets.bottom + 24,
+                        paddingTop: 12,
                     }}
                 >
                     <TouchableOpacity
@@ -181,6 +186,12 @@ const welcomeStyles = StyleSheet.create({
         left: 0,
         right: 0,
         height: 400,
+    },
+    scroll: {
+        flex: 1,
+    },
+    scroll_content: {
+        paddingBottom: 24,
     },
     title_container: {
         paddingHorizontal: 28,
