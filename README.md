@@ -1,112 +1,161 @@
 # Tech News App
 
-A cross-platform React Native app for browsing, saving, and filtering the latest technology news. None of your personal info required.
+A cross-platform mobile app for discovering technology news — browse by genre, save articles for later, and read the rest in your browser. No account, no sign-up, no tracking.
+
+<p align="center">
+  <img src="screenshots/feed.png" width="260" alt="Feed screen" />
+  <img src="screenshots/profile.png" width="260" alt="Profile screen" />
+  <img src="screenshots/saved.png" width="260" alt="Saved screen" />
+</p>
 
 ---
 
-## Frontend Features
+## Overview
 
-- **Browse Tech News:** View curated articles from multiple sources based on user-selected genres and categories.
-- **Filter & Personalize:** Users can select and save preferred genres (AI, ML, Apple, Microsoft, Amazon, Gaming, Cybersecurity, Game Development, Nintendo).
-- **Save Articles:** Bookmark articles for later reading with instant save/unsave actions.
-- **Offline Support:** Articles are cached locally using SQLite, enabling offline reading.
-- **Animated UI:** Smooth transitions, filter modals, fade-in effects, and animated menu options for enhanced user experience.
-- **Custom Navigation:** Bottom navigation bar for quick access to Home, Recent, and Top articles.
-- **Article Modal:** Tap ellipsis for modal options (open in browser, save/unsave, report).
-- **Refresh Control:** Pull-to-refresh on article lists, which also triggers cleanup of old cached articles.
-- **Font Management:** Uses custom fonts for improved aesthetics and readability.
-- **First Launch Flow:** Smart routing between welcome page (genre selection) and homepage depending on first app launch.
+The app is a discovery tool, not a reader — the goal is to surface headlines fast across genres you care about, then hand off to the browser for the actual read. Articles are aggregated server-side from [NewsAPI](https://newsapi.org), stored in PostgreSQL, and synced into a local SQLite cache on-device for offline-first browsing.
 
-## Backend (Server) Features
+```
+Mobile (Expo Router)  ──HTTP──▶  Express API  ──HTTP──▶  NewsAPI
+   SQLite cache                      │
+                                      └──▶  PostgreSQL
+```
 
-- **RESTful API:** Built with Node.js, Express, and TypeScript.
-- **Database:** Uses PostgreSQL via `pg-promise` for robust article storage and querying.
-- **Article Fetching:** Aggregates articles from NewsAPI, mapped to internal genres and categories.
-- **Batch Insert & Deduplication:** Efficient batch insertion with conflict checks to avoid duplicate articles.
-- **Endpoints:**
-  - `/api/RemoveOldArticles`: Deletes articles older than a set threshold.
-  - `/api/FetchArticles`: Triggers fetching and updating of articles from NewsAPI.
-  - `/api/GetArticles`: Returns articles by user genre or category selection, with limit.
-- **Initialization:** On startup, initializes the database schema and fetches articles for all genres and categories.
-- **Error Handling:** Graceful error reporting and logging for API failures, database issues, and rate limits.
-- **Article Schema:** Ensures uniqueness on (url, title), with support for genre, category, source, author, and all major metadata.
+## Features
 
-## Technologies
+**Mobile**
+- Genre-based discovery feed across 14 tech categories (AI, Gaming, Apple, Cybersecurity, and more)
+- Home / Recent / Top filters, plus in-app search
+- Save articles for later, offline
+- Cursor-based pagination for loading more articles from the server without re-fetching
+- Offline-first: all reads come from a local SQLite cache, synced in the background
+- Onboarding genre picker, no account required
 
-- **React + React Native**
-- **Expo**
-- **SQLite (Mobile)**
-- **Animated & Reanimated**
-- **TypeScript**
-- **PostgreSQL (Server)**
-- **Node.js**
-- **Express**
-- **pg-promise**
-- **NewsAPI** (external source)
+**Backend**
+- REST API built on Express + TypeScript, validated end-to-end with Zod
+- OpenAPI docs generated directly from the same Zod schemas that validate requests — one source of truth
+- PostgreSQL schema managed with versioned migrations (`node-pg-migrate`)
+- Admin endpoints protected by a shared-secret token, rate-limited separately from public routes
+- Structured logging (`pino`), graceful shutdown, health check endpoint
+- Test suite (`vitest` + `supertest`) covering route contracts against mocked services
+
+## Tech Stack
+
+| | |
+|---|---|
+| **Mobile** | React Native, Expo, Expo Router, TypeScript, SQLite, Reanimated |
+| **Backend** | Node.js, Express, TypeScript, PostgreSQL, pg-promise, Zod |
+| **Tooling** | node-pg-migrate, pino, vitest, tsx |
+| **External** | NewsAPI |
+
+## API
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/health` | — | Liveness probe (checks database connectivity) |
+| GET | `/api/articles` | — | List articles by genre or category, with cursor pagination |
+| GET | `/api/articles/search` | — | Full-text search across cached articles |
+| POST | `/api/admin/refresh` | `x-admin-token` | Force-fetch all genres/categories from NewsAPI |
+| POST | `/api/admin/cleanup` | `x-admin-token` | Delete articles older than N days |
+| GET | `/api-docs` | — | Swagger UI |
+| GET | `/api-docs/openapi.json` | — | Raw OpenAPI 3.0 spec |
 
 ## Getting Started
 
-1. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-2. **Start the Expo server:**
-   ```bash
-   npx expo start
-   ```
-3. **Run on device or emulator:**
-   - Scan the QR code with Expo Go, or
-   - Press `i` for iOS simulator, `a` for Android emulator.
+### Prerequisites
+- Node.js and npm
+- PostgreSQL running locally
+- A [NewsAPI](https://newsapi.org) key
+- Expo Go (for physical device testing) or iOS Simulator / Android emulator
 
-### Backend Server
+### Backend
 
-1. **Install server dependencies:**
-   ```bash
-   cd src/server
-   npm install
-   ```
-2. **Start the server (from project root):**
-   ```bash
-   ./src/start-server.sh
-   ```
-3. **Configure environment variables:**
-   - Create a `.env` file in `src/server` with your NewsAPI key and database credentials.
+```bash
+cd src/server
+npm install
+```
+
+Create `src/server/.env`:
+
+```
+NEWS_API_KEY=your_newsapi_key
+PORT=8000
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=newsapp
+DB_USER=your_db_user
+DB_PASSWORD=your_db_password
+DATABASE_URL=postgres://your_db_user:your_db_password@localhost:5432/newsapp
+ADMIN_TOKEN=a-secret-at-least-16-characters
+```
+
+```bash
+createdb newsapp
+npm run migrate:up   # applies the schema
+npm run dev           # tsx watch, hot reload
+```
+
+### Mobile
+
+```bash
+cd src
+npm install
+```
+
+Create `src/.env`:
+
+```
+EXPO_PUBLIC_BASE_URL=http://localhost:8000
+```
+
+> On a physical device, replace `localhost` with your machine's LAN IP.
+
+```bash
+npx expo start
+```
+
+Press `i` for iOS Simulator, `a` for Android emulator, or scan the QR code with Expo Go.
+
+### Tests
+
+```bash
+cd src/server
+npm test
+```
 
 ## Project Structure
 
 ```
 src/
-  app/
-    components/
-      news_card.tsx        # News card UI & logic
-      navigation.tsx       # Bottom navigation bar
-      services.tsx         # Article fetching logic, local DB handling
-      constants.tsx        # Article types and constants
-      styles.tsx           # Gradient text, horizontal line styles
-
-    homepage.tsx           # Main screen: article list, filters, modal logic
-    welcome.tsx            # First time genre selection & DB initialization
-    _layout.tsx            # Navigation stack configuration
-    index.tsx              # App entry, font loading, initial routing
-
-  server/
-    db.ts                  # DB context definition
-    models.ts              # DB schema models
-    newsapi.ts             # Main API for fetching and saving articles
-    constants.ts           # Genre/category mappings
-    src/
-      index.ts             # Express server, API endpoints
-
-  start-server.sh          # Script to build and start backend server
-  eslint.config.js         # ESLint configuration
-
-.env                       # Environment variables (NewsAPI key, etc.)
+├── app/                          # Mobile app (Expo Router)
+│   ├── index.tsx                 # Entry: font loading, first-launch routing
+│   ├── welcome.tsx                # Onboarding + genre selection
+│   ├── (tabs)/
+│   │   ├── index.tsx              # Feed
+│   │   ├── profile.tsx            # Profile + genre preferences
+│   │   └── saved.tsx              # Saved articles
+│   ├── article/[id].tsx           # Article detail
+│   └── components/
+│       ├── services.tsx           # Data fetching + SQLite access
+│       ├── database.ts            # SQLite schema + migrations
+│       ├── news_card.tsx          # Article card UI
+│       └── styles.tsx             # Theme, shared components
+│
+└── server/                        # Backend (Node.js + Express)
+    ├── db.ts                      # PostgreSQL connection
+    ├── constants.ts                # Genre/category definitions
+    ├── migrations/                 # Versioned SQL migrations
+    └── src/
+        ├── app.ts                  # Express app factory
+        ├── server.ts                # Entry point (listen + shutdown)
+        ├── config/                  # Zod-validated environment
+        ├── routes/                  # articles, admin, health
+        ├── services/                 # Business logic
+        ├── repositories/             # SQL queries
+        ├── schemas/                  # Zod request/response schemas
+        ├── middleware/                # validate, adminAuth, errorHandler
+        └── openapi/                   # Generated API spec
 ```
-
-## Server Details
-
-The backend is written using TypeScript, Node.js, and Express, exposing REST APIs to the frontend. It uses `pg-promise` for PostgreSQL integration, enabling efficient, batched article storage and retrieval. Articles are fetched from NewsAPI, mapped into internal genres/categories, and returned based on user preferences.
 
 ---
 
-Feel free to further expand sections as the project grows!
+Contributions and suggestions welcome.
