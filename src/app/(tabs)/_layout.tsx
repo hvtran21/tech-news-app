@@ -7,7 +7,7 @@ import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../components/styles';
 
-// Fully custom tab bar — react-navigation's default button reserves its own
+// Fully custom tab bar. react-navigation's default button reserves its own
 // bottom padding that can't be overridden cleanly, so we own the layout instead.
 function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
     const insets = useSafeAreaInsets();

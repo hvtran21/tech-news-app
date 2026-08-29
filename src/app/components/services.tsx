@@ -122,7 +122,7 @@ export async function fetchAndCacheArticles(
         });
 
         if (response.status === 500) {
-            console.error('[api] Server returned 500 — is the backend running?');
+            console.error('[api] Server returned 500. Is the backend running?');
             return;
         }
 

@@ -1,6 +1,6 @@
 # Vantage
 
-A cross-platform mobile app for discovering technology news — browse by genre, save articles for later, and read the rest in your browser. No account, no sign-up, no tracking.
+Just the headlines that matter. A cross-platform mobile app for discovering technology news: browse by genre, save articles for later, and read the rest in your browser.
 
 <p align="center">
   <img src="screenshots/feed.png" width="260" alt="Feed screen" />
@@ -12,7 +12,7 @@ A cross-platform mobile app for discovering technology news — browse by genre,
 
 ## Overview
 
-The app is a discovery tool, not a reader — the goal is to surface headlines fast across genres you care about, then hand off to the browser for the actual read. Articles are aggregated server-side from [NewsAPI](https://newsapi.org), stored in PostgreSQL, and synced into a local SQLite cache on-device for offline-first browsing.
+The app is a discovery tool, not a reader. The goal is to surface headlines fast across genres you care about, then hand off to the browser for the actual read. Articles are aggregated server-side from [NewsAPI](https://newsapi.org), stored in PostgreSQL, and synced into a local SQLite cache on-device for offline-first browsing.
 
 ```
 Mobile (Expo Router)  ──HTTP──▶  Express API  ──HTTP──▶  NewsAPI
@@ -32,7 +32,7 @@ Mobile (Expo Router)  ──HTTP──▶  Express API  ──HTTP──▶  New
 
 **Backend**
 - REST API built on Express + TypeScript, validated end-to-end with Zod
-- OpenAPI docs generated directly from the same Zod schemas that validate requests — one source of truth
+- OpenAPI docs generated directly from the same Zod schemas that validate requests: one source of truth
 - PostgreSQL schema managed with versioned migrations (`node-pg-migrate`)
 - Admin endpoints protected by a shared-secret token, rate-limited separately from public routes
 - Structured logging (`pino`), graceful shutdown, health check endpoint
@@ -51,13 +51,13 @@ Mobile (Expo Router)  ──HTTP──▶  Express API  ──HTTP──▶  New
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/health` | — | Liveness probe (checks database connectivity) |
-| GET | `/api/articles` | — | List articles by genre or category, with cursor pagination |
-| GET | `/api/articles/search` | — | Full-text search across cached articles |
+| GET | `/health` | None | Liveness probe (checks database connectivity) |
+| GET | `/api/articles` | None | List articles by genre or category, with cursor pagination |
+| GET | `/api/articles/search` | None | Full-text search across cached articles |
 | POST | `/api/admin/refresh` | `x-admin-token` | Force-fetch all genres/categories from NewsAPI |
 | POST | `/api/admin/cleanup` | `x-admin-token` | Delete articles older than N days |
-| GET | `/api-docs` | — | Swagger UI |
-| GET | `/api-docs/openapi.json` | — | Raw OpenAPI 3.0 spec |
+| GET | `/api-docs` | None | Swagger UI |
+| GET | `/api-docs/openapi.json` | None | Raw OpenAPI 3.0 spec |
 
 ## Getting Started
 

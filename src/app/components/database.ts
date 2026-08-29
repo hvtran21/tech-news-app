@@ -16,7 +16,7 @@ export function getDb(): Promise<SQLiteDatabase> {
 }
 
 // Versioned migrations, applied via PRAGMA user_version. v1 doesn't try to
-// patch old drifted schemas (e.g. missing `category`) — wipe the cache instead.
+// patch old drifted schemas (e.g. missing `category`); wipe the cache instead.
 const MIGRATIONS: { version: number; up: string }[] = [
     {
         version: 1,

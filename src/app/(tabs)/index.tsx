@@ -83,7 +83,7 @@ const FilterMenu = ({ setFilter, activeFilter }: MenuFilterProp) => {
 
 type NetworkScope = { key: string; genre?: string; category?: string };
 
-// Cursor pagination needs a single genre or category — CSV "Home" selections
+// Cursor pagination needs a single genre or category. CSV "Home" selections
 // keep the existing first-batch-only behavior.
 const getNetworkScope = (activeFilter: string, userPreferences: string | null): NetworkScope | null => {
     if (activeFilter === 'Top') {
@@ -204,7 +204,7 @@ export default function HomeFeed() {
         const nextOffset = (page + 1) * PAGE_SIZE;
         let nextBatch = await loadByFilter(filter, nextOffset);
 
-        // Local cache ran out — try a network top-up before giving up.
+        // Local cache ran out, try a network top-up before giving up.
         if (nextBatch.length < PAGE_SIZE) {
             const userPreferences = await AsyncStorage.getItem('genreSelection');
             const scope = getNetworkScope(filter, userPreferences);

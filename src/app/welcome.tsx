@@ -73,7 +73,7 @@ export default function WelcomePage() {
                     >
                         <Text style={welcomeStyles.wordmark}>VANTAGE</Text>
                         <Text style={welcomeStyles.main_title}>Stay{'\n'}updated.</Text>
-                        <Text style={welcomeStyles.subtitle_italic}>No sign-up. No tracking.</Text>
+                        <Text style={welcomeStyles.subtitle_italic}>Just the headlines that matter.</Text>
                     </Animated.View>
 
                     <Animated.View
@@ -129,7 +129,7 @@ export default function WelcomePage() {
                     >
                         <Text style={welcomeStyles.info_text}>Select as many as you like</Text>
                         <Text style={[welcomeStyles.info_text, { fontSize: 13, marginTop: 12 }]}>
-                            {"Or don't \u2014 that's fine too."}
+                            {"Or don't. That's fine too."}
                         </Text>
                     </Animated.View>
                 </ScrollView>
@@ -191,7 +191,7 @@ const welcomeStyles = StyleSheet.create({
         flex: 1,
     },
     scroll_content: {
-        paddingBottom: 24,
+        paddingBottom: 32,
     },
     title_container: {
         paddingHorizontal: 28,
@@ -251,7 +251,7 @@ const welcomeStyles = StyleSheet.create({
     },
     info_container: {
         alignItems: 'center',
-        marginTop: 24,
+        marginTop: 36,
     },
     info_text: {
         fontFamily: 'WorkSans-Light',
