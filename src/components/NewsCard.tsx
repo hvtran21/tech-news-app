@@ -5,7 +5,9 @@ import { faEllipsisVertical } from '@fortawesome/free-solid-svg-icons';
 import { useState, useEffect } from 'react';
 import { router } from 'expo-router';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import { theme, getTopicColor } from './styles';
+import { theme, getTopicColor } from '@/components/styles';
+import { useMotion } from '@/components/Motion';
+import { scaleMs, withMotion } from '@/lib/motion';
 
 function formatDate(date: Date): string {
     if (!(date instanceof Date) || isNaN(date.getTime())) {
@@ -62,7 +64,7 @@ interface CardFrontProps {
     handleEllipsisPress: (id: string) => void;
 }
 
-const fallBackImage = require('../../assets/images/computer_2.jpg');
+const fallBackImage = require('@/assets/images/computer_2.jpg');
 
 export const NewsCard = ({
     title,
@@ -73,6 +75,7 @@ export const NewsCard = ({
     handleEllipsisPress,
 }: CardFrontProps) => {
     const [imageError, setImageError] = useState(false);
+    const { scale } = useMotion();
 
     const time = relativeTime(published_at);
     const imageSource = url_to_image && !imageError ? { uri: url_to_image } : fallBackImage;
@@ -90,7 +93,10 @@ export const NewsCard = ({
     };
 
     return (
-        <Animated.View entering={FadeIn.duration(300)} style={card_style.main_card}>
+        <Animated.View
+            entering={withMotion(scale, () => FadeIn.duration(scaleMs(scale, 300)))}
+            style={card_style.main_card}
+        >
             <TouchableOpacity
                 onPress={handleCardPress}
                 activeOpacity={0.65}

@@ -22,14 +22,16 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { faBookmark as faBookmarkOutline } from '@fortawesome/free-regular-svg-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Article from '../components/constants';
-import { getDb } from '../components/database';
-import { formatDate } from '../components/NewsCard';
-import { theme, getTopicColor } from '../components/styles';
-import { stripHtml } from '../components/utilities';
+import Article from '@/lib/constants';
+import { getDb } from '@/lib/database';
+import { formatDate } from '@/components/NewsCard';
+import { theme, getTopicColor } from '@/components/styles';
+import { stripHtml } from '@/lib/utilities';
+import { useMotion } from '@/components/Motion';
+import { scaleMs, withMotion } from '@/lib/motion';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 
-const fallBackImage = require('../../assets/images/computer_2.jpg');
+const fallBackImage = require('@/assets/images/computer_2.jpg');
 
 // Best-effort domain for display only. Falls back to the raw url if parsing fails.
 function getHostname(url: string): string {
@@ -44,6 +46,7 @@ export default function ArticleDetail() {
     const [showBrowserModal, setShowBrowserModal] = useState(false);
     const pendingBrowserUrl = useRef<string | null>(null);
     const insets = useSafeAreaInsets();
+    const { scale } = useMotion();
 
     useEffect(() => {
         const loadArticle = async () => {
@@ -118,7 +121,10 @@ export default function ArticleDetail() {
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={{ paddingBottom: 48 }}
                 >
-                    <Animated.View entering={FadeIn.duration(500)} style={styles.hero_wrapper}>
+                    <Animated.View
+                        entering={withMotion(scale, () => FadeIn.duration(scaleMs(scale, 500)))}
+                        style={styles.hero_wrapper}
+                    >
                         <Image
                             source={imageSource}
                             style={styles.hero_image}
@@ -127,36 +133,18 @@ export default function ArticleDetail() {
                             transition={300}
                         />
                         <LinearGradient
-                            colors={['rgba(5, 5, 5, 0.55)', 'transparent']}
-                            locations={[0, 1]}
-                            style={styles.hero_gradient_top}
-                        />
-                        <LinearGradient
                             colors={['transparent', 'rgba(5, 5, 5, 0.6)', theme.bg]}
                             locations={[0.2, 0.6, 1]}
                             style={styles.hero_gradient}
                         />
-
-                        <View style={[styles.nav_overlay, { paddingTop: insets.top + 12 }]}>
-                            <TouchableOpacity
-                                onPress={() => router.back()}
-                                hitSlop={10}
-                                style={styles.nav_btn}
-                            >
-                                <FontAwesomeIcon icon={faArrowLeft} size={16} color="white" />
-                            </TouchableOpacity>
-
-                            <TouchableOpacity onPress={handleSave} hitSlop={10} style={styles.nav_btn}>
-                                <FontAwesomeIcon
-                                    icon={saved ? faBookmarkSolid : faBookmarkOutline}
-                                    size={16}
-                                    color={saved ? theme.accent : 'white'}
-                                />
-                            </TouchableOpacity>
-                        </View>
                     </Animated.View>
 
-                    <Animated.View entering={FadeInDown.duration(400).delay(150)} style={styles.meta_container}>
+                    <Animated.View
+                        entering={withMotion(scale, () =>
+                            FadeInDown.duration(scaleMs(scale, 400)).delay(scaleMs(scale, 60)),
+                        )}
+                        style={styles.meta_container}
+                    >
                         <View style={[styles.tag_pill, { backgroundColor: topicColor.bg }]}>
                             <Text style={[styles.tag_text, { color: topicColor.color }]}>{label}</Text>
                         </View>
@@ -170,29 +158,54 @@ export default function ArticleDetail() {
                         )}
                     </Animated.View>
 
-                    <Animated.View entering={FadeInDown.duration(400).delay(250)} style={styles.content_block}>
+                    <Animated.View
+                        entering={withMotion(scale, () =>
+                            FadeInDown.duration(scaleMs(scale, 400)).delay(scaleMs(scale, 100)),
+                        )}
+                        style={styles.content_block}
+                    >
                         <Text style={styles.title}>{article.title}</Text>
                     </Animated.View>
 
                     {article.author && (
-                        <Animated.View entering={FadeInDown.duration(400).delay(300)} style={styles.content_block}>
+                        <Animated.View
+                            entering={withMotion(scale, () =>
+                                FadeInDown.duration(scaleMs(scale, 400)).delay(scaleMs(scale, 130)),
+                            )}
+                            style={styles.content_block}
+                        >
                             <Text style={styles.author_text}>By {article.author}</Text>
                         </Animated.View>
                     )}
 
                     {article.description && (
-                        <Animated.View entering={FadeInDown.duration(400).delay(350)} style={styles.content_block}>
+                        <Animated.View
+                            entering={withMotion(scale, () =>
+                                FadeInDown.duration(scaleMs(scale, 400)).delay(scaleMs(scale, 160)),
+                            )}
+                            style={styles.content_block}
+                        >
                             <Text style={styles.description}>{stripHtml(article.description)}</Text>
                         </Animated.View>
                     )}
 
                     {article.content && (
-                        <Animated.View entering={FadeInDown.duration(400).delay(400)} style={styles.content_block}>
+                        <Animated.View
+                            entering={withMotion(scale, () =>
+                                FadeInDown.duration(scaleMs(scale, 400)).delay(scaleMs(scale, 190)),
+                            )}
+                            style={styles.content_block}
+                        >
                             <Text style={styles.content}>{stripHtml(article.content)}</Text>
                         </Animated.View>
                     )}
 
-                    <Animated.View entering={FadeInUp.duration(400).delay(450)} style={styles.content_block}>
+                    <Animated.View
+                        entering={withMotion(scale, () =>
+                            FadeInUp.duration(scaleMs(scale, 400)).delay(scaleMs(scale, 220)),
+                        )}
+                        style={styles.content_block}
+                    >
                         <TouchableOpacity
                             style={styles.browser_button}
                             onPress={() => setShowBrowserModal(true)}
@@ -203,6 +216,37 @@ export default function ArticleDetail() {
                         </TouchableOpacity>
                     </Animated.View>
                 </ScrollView>
+
+                {/* Outside the ScrollView, or these scroll up with the hero and clip
+                    behind the status bar. The scrim keeps the clock legible too. */}
+                <LinearGradient
+                    colors={['rgba(5, 5, 5, 0.78)', 'transparent']}
+                    locations={[0, 1]}
+                    pointerEvents="none"
+                    style={[styles.status_scrim, { height: insets.top + 88 }]}
+                />
+                <View
+                    // box-none: only the buttons take touches, so drags in the top
+                    // strip still reach the ScrollView underneath.
+                    pointerEvents="box-none"
+                    style={[styles.nav_overlay, { paddingTop: insets.top + 12 }]}
+                >
+                    <TouchableOpacity
+                        onPress={() => router.back()}
+                        hitSlop={10}
+                        style={styles.nav_btn}
+                    >
+                        <FontAwesomeIcon icon={faArrowLeft} size={16} color="white" />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity onPress={handleSave} hitSlop={10} style={styles.nav_btn}>
+                        <FontAwesomeIcon
+                            icon={saved ? faBookmarkSolid : faBookmarkOutline}
+                            size={16}
+                            color={saved ? theme.accent : 'white'}
+                        />
+                    </TouchableOpacity>
+                </View>
 
                 <Modal
                     visible={showBrowserModal}
@@ -295,18 +339,19 @@ const styles = StyleSheet.create({
         right: 0,
         height: '60%',
     },
-    hero_gradient_top: {
+    status_scrim: {
         position: 'absolute',
         top: 0,
         left: 0,
         right: 0,
-        height: 130,
+        zIndex: 2,
     },
     nav_overlay: {
         position: 'absolute',
         top: 0,
         left: 0,
         right: 0,
+        zIndex: 3,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
@@ -368,28 +413,26 @@ const styles = StyleSheet.create({
         color: theme.text,
         lineHeight: 36,
         letterSpacing: -0.5,
-        marginBottom: 4,
     },
     author_text: {
         fontFamily: 'WorkSans-LightItalic',
         fontSize: 14,
         color: theme.text_tertiary,
-        marginTop: 4,
-        marginBottom: 4,
+        marginTop: 2,
     },
     description: {
         fontFamily: 'WorkSans-Regular',
         fontSize: 17,
         color: 'rgba(255, 255, 255, 0.72)',
         lineHeight: 27,
-        marginTop: 16,
+        marginTop: 10,
     },
     content: {
         fontFamily: 'WorkSans-Light',
         fontSize: 16,
         color: theme.text_secondary,
         lineHeight: 25,
-        marginTop: 12,
+        marginTop: 10,
     },
     browser_button: {
         flexDirection: 'row',

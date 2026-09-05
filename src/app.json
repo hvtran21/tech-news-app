@@ -7,6 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "vantage",
     "userInterfaceStyle": "automatic",
+    "backgroundColor": "#050505",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
@@ -15,9 +16,10 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#050505"
       },
       "edgeToEdgeEnabled": true,
+      "backgroundColor": "#050505",
       "package": "com.anonymous.vantage"
     },
     "web": {
@@ -33,7 +35,7 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#050505"
         }
       ],
       "expo-font",

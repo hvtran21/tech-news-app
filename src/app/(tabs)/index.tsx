@@ -17,10 +17,10 @@ import {
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { useAuth } from '@clerk/expo';
-import { ArticleActionSheet } from '../components/ArticleActionSheet';
-import { getDb } from '../components/database';
-import { NewsCard } from '../components/NewsCard';
-import { TabHeader, HeaderRule, HorizonalLine, theme } from '../components/styles';
+import { useActionSheet } from '@/components/ArticleActionSheet';
+import { getDb } from '@/lib/database';
+import { NewsCard } from '@/components/NewsCard';
+import { TabHeader, HeaderRule, HorizonalLine, theme, TAB_BAR_INSET } from '@/components/styles';
 import {
     faHouse,
     faAngleDown,
@@ -35,9 +35,11 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Article from '../components/constants';
-import getArticles, { syncArticles, getAllArticles, searchArticles } from '../components/services';
-import { deleteArticlesByAge, canRefreshArticles } from '../components/utilities';
+import Article from '@/lib/constants';
+import getArticles, { syncArticles, getAllArticles, searchArticles } from '@/lib/services';
+import { deleteArticlesByAge, canRefreshArticles } from '@/lib/utilities';
+import { useMotion } from '@/components/Motion';
+import { scaleMs, withMotion } from '@/lib/motion';
 import ReAnimated, { FadeIn } from 'react-native-reanimated';
 
 type MenuOptionProp = {
@@ -106,9 +108,8 @@ export default function HomeFeed() {
     const fadeAnimArticles = useRef(new Animated.Value(0)).current;
     const slideAnimArticles = useRef(new Animated.Value(12)).current;
 
-    const [showModal, setShowModal] = useState(false);
-    const [modalArticle, setModalArticle] = useState<Article>();
-    const [modalSaved, setModalSaved] = useState(false);
+    const actionSheet = useActionSheet();
+    const { scale } = useMotion();
 
     const [refreshing, setRefreshing] = useState(false);
     const initialLoadDone = useRef(false);
@@ -234,37 +235,35 @@ export default function HomeFeed() {
         setLoadingMore(false);
     }, [loadingMore, hasMore, searchOpen, page, filter, loadByFilter, networkCursors, getToken]);
 
-    const handleEllipsisPress = useCallback((id: string) => {
-        const fetchArticle = async () => {
-            const db = await getDb();
-            const article = (await db.getFirstAsync('SELECT * FROM articles WHERE id = ?', [id])) as Article;
-            if (article) {
-                setModalArticle(article);
-            }
-        };
-        fetchArticle();
-    }, []);
-
-    useEffect(() => {
-        if (modalArticle) {
-            setModalSaved(modalArticle.saved === 1);
-            setShowModal(true);
-        }
-    }, [modalArticle]);
-
-    const handleToggleSave = useCallback(async () => {
-        if (!modalArticle) return;
-        const db = await getDb();
-        const newSaved = modalSaved ? 0 : 1;
-        await db.runAsync('UPDATE articles SET saved = ? WHERE id = ?', [newSaved, modalArticle.id]);
-        setModalSaved(!modalSaved);
-    }, [modalArticle, modalSaved]);
-
-    const handleModalOpenInBrowser = useCallback(async () => {
-        if (!modalArticle) return;
-        const supported = await Linking.canOpenURL(modalArticle.url);
-        if (supported) await Linking.openURL(modalArticle.url);
-    }, [modalArticle]);
+    const handleEllipsisPress = useCallback(
+        (id: string) => {
+            // The row is already in state from rendering the card, so the sheet
+            // can open on this tick rather than after a SQLite round trip.
+            const article = articles.find((item) => item.id === id);
+            if (!article) return;
+            actionSheet.open({
+                article,
+                saved: article.saved === 1,
+                onToggleSave: async (next) => {
+                    const db = await getDb();
+                    await db.runAsync('UPDATE articles SET saved = ? WHERE id = ?', [
+                        next ? 1 : 0,
+                        article.id,
+                    ]);
+                    setArticles((prev) =>
+                        prev.map((item) =>
+                            item.id === article.id ? { ...item, saved: next ? 1 : 0 } : item,
+                        ),
+                    );
+                },
+                onOpenInBrowser: async () => {
+                    const supported = await Linking.canOpenURL(article.url);
+                    if (supported) await Linking.openURL(article.url);
+                },
+            });
+        },
+        [articles, actionSheet],
+    );
 
     const animateContent = useCallback(() => {
         Animated.parallel([
@@ -343,6 +342,21 @@ export default function HomeFeed() {
                 resetContentAnim();
                 animateContent();
             }
+            // The sheet reads `saved` straight from list state now, so refresh it
+            // in case the article screen changed it while we were away.
+            (async () => {
+                const db = await getDb();
+                const rows = (await db.getAllAsync(
+                    'SELECT id FROM articles WHERE saved = 1',
+                )) as { id: string }[];
+                const savedIds = new Set(rows.map((row) => row.id));
+                setArticles((prev) =>
+                    prev.map((item) => {
+                        const saved = savedIds.has(item.id) ? 1 : 0;
+                        return item.saved === saved ? item : { ...item, saved };
+                    }),
+                );
+            })();
         }, [resetContentAnim, animateContent]),
     );
 
@@ -392,7 +406,10 @@ export default function HomeFeed() {
     });
 
     const EmptyState = () => (
-        <ReAnimated.View entering={FadeIn.duration(500)} style={empty_styles.container}>
+        <ReAnimated.View
+            entering={withMotion(scale, () => FadeIn.duration(scaleMs(scale, 500)))}
+            style={empty_styles.container}
+        >
             <Text style={empty_styles.title}>
                 {searchOpen && searchQuery.length > 0 ? 'No results' : 'No articles yet'}
             </Text>
@@ -503,8 +520,8 @@ export default function HomeFeed() {
                                 scrollEventThrottle={100}
                                 contentContainerStyle={
                                     articles.length === 0
-                                        ? { flexGrow: 1, justifyContent: 'center' }
-                                        : { flexGrow: 1, paddingBottom: 130 }
+                                        ? { flexGrow: 1, justifyContent: 'center', paddingBottom: TAB_BAR_INSET }
+                                        : { flexGrow: 1, paddingBottom: TAB_BAR_INSET }
                                 }
                                 bounces={true}
                                 alwaysBounceVertical={true}
@@ -546,14 +563,6 @@ export default function HomeFeed() {
                         </TouchableOpacity>
                     </Animated.View>
 
-                    <ArticleActionSheet
-                        visible={showModal}
-                        onClose={() => setShowModal(false)}
-                        article={modalArticle}
-                        saved={modalSaved}
-                        onToggleSave={handleToggleSave}
-                        onOpenInBrowser={handleModalOpenInBrowser}
-                    />
                 </View>
             </SafeAreaView>
         </SafeAreaProvider>

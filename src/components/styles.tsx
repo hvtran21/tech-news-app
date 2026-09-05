@@ -3,6 +3,8 @@ import { Text, TextStyle, StyleSheet, View } from 'react-native';
 import MaskedView from '@react-native-masked-view/masked-view';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn } from 'react-native-reanimated';
+import { useMotion } from '@/components/Motion';
+import { scaleMs, withMotion } from '@/lib/motion';
 
 export const theme = {
     bg: '#050505',
@@ -17,6 +19,9 @@ export const theme = {
     border: 'rgba(255, 255, 255, 0.06)',
     danger: '#EF4444',
 };
+
+// Floating tab bar's 72pt pill + 16pt gap + safe area, rounded up.
+export const TAB_BAR_INSET = 130;
 
 export const topicColors: Record<string, { color: string; bg: string }> = {
     'Artificial Intelligence': { color: '#60A5FA', bg: 'rgba(96, 165, 250, 0.10)' },
@@ -75,8 +80,12 @@ interface TabHeaderProps {
 }
 
 export const TabHeader = ({ title, rightAccessory, subtitle }: TabHeaderProps) => {
+    const { scale } = useMotion();
     return (
-        <Animated.View entering={FadeIn.duration(450)} style={header_styles.container}>
+        <Animated.View
+            entering={withMotion(scale, () => FadeIn.duration(scaleMs(scale, 450)))}
+            style={header_styles.container}
+        >
             <View style={header_styles.title_block}>
                 {subtitle && <Text style={header_styles.subtitle}>{subtitle}</Text>}
                 <Text style={header_styles.title}>{title}</Text>
