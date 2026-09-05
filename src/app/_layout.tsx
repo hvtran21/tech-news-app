@@ -11,7 +11,9 @@ export default function RootLayout() {
     // The native stack lifts both screens during a push/pop, exposing Android's
     // window background -- white by default. contentStyle only paints screens.
     useEffect(() => {
-        SystemUI.setBackgroundColorAsync(theme.bg);
+        SystemUI.setBackgroundColorAsync(theme.bg).catch((error) => {
+            console.warn('[system-ui] could not set window background:', error);
+        });
     }, []);
 
     return (

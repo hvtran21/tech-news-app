@@ -9,6 +9,7 @@ import {
     Pressable,
     StyleSheet,
     Platform,
+    I18nManager,
     type LayoutChangeEvent,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
@@ -20,6 +21,12 @@ import { theme } from '@/components/styles';
 const INDICATOR_INSET = 6;
 const SLIDE = { damping: 18, stiffness: 190, mass: 0.6 };
 
+// dimezisBlurView leans on RenderEffect and is only dependable from API 31.
+// Below that it can silently no-op, which would leave the pill see-through --
+// so those devices get an opaque fill instead of trusting an experimental path.
+const ANDROID_BLUR = Platform.OS === 'android' && Number(Platform.Version) >= 31;
+const BLURRED = Platform.OS === 'ios' || ANDROID_BLUR;
+
 // Fully custom tab bar. react-navigation's default button reserves its own
 // bottom padding that can't be overridden cleanly, so we own the layout instead.
 function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
@@ -28,18 +35,18 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
     const itemWidth = pillWidth ? pillWidth / state.routes.length : 0;
 
     const indicatorX = useSharedValue(0);
-    const measured = useRef(false);
+    const lastItemWidth = useRef(0);
 
     useEffect(() => {
         if (!itemWidth) return;
-        const target = state.index * itemWidth;
-        // Don't animate in from x=0 on the very first measure.
-        if (measured.current) {
-            indicatorX.value = withSpring(target, SLIDE);
-        } else {
-            measured.current = true;
-            indicatorX.value = target;
-        }
+        // flexDirection: 'row' mirrors under RTL, so the indicator has to travel
+        // the other way to stay under the tab it belongs to.
+        const target = state.index * itemWidth * (I18nManager.isRTL ? -1 : 1);
+        // Jump on first measure and on any width change (rotation); only a tab
+        // change should animate.
+        const resized = lastItemWidth.current !== itemWidth;
+        lastItemWidth.current = itemWidth;
+        indicatorX.value = resized ? target : withSpring(target, SLIDE);
     }, [state.index, itemWidth, indicatorX]);
 
     const indicatorStyle = useAnimatedStyle(() => ({
@@ -53,15 +60,16 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
     return (
         <View style={[tab_styles.wrapper, { bottom: insets.bottom + 16 }]}>
             <View style={tab_styles.pill} onLayout={onPillLayout}>
-                <BlurView
-                    intensity={65}
-                    tint="dark"
-                    experimentalBlurMethod={Platform.OS === 'android' ? 'dimezisBlurView' : undefined}
-                    style={StyleSheet.absoluteFill}
-                />
+                {BLURRED && (
+                    <BlurView
+                        intensity={65}
+                        tint="dark"
+                        experimentalBlurMethod={ANDROID_BLUR ? 'dimezisBlurView' : undefined}
+                        style={StyleSheet.absoluteFill}
+                    />
+                )}
 
-                {/* Top-edge highlight. Reads as a lit surface rather than a flat
-                    slab, which matters most on Android where there's no blur. */}
+                {/* Top-edge highlight, so the bar reads as a lit surface. */}
                 <LinearGradient
                     colors={['rgba(255,255,255,0.08)', 'rgba(255,255,255,0.02)', 'transparent']}
                     locations={[0, 0.45, 1]}
@@ -74,7 +82,10 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                         pointerEvents="none"
                         style={[
                             tab_styles.indicator,
-                            { width: itemWidth - INDICATOR_INSET * 2, left: INDICATOR_INSET },
+                            { width: itemWidth - INDICATOR_INSET * 2 },
+                            I18nManager.isRTL
+                                ? { right: INDICATOR_INSET }
+                                : { left: INDICATOR_INSET },
                             indicatorStyle,
                         ]}
                     />
@@ -84,6 +95,7 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                     const { options } = descriptors[route.key];
                     const focused = state.index === index;
                     const color = focused ? theme.accent : theme.text_tertiary;
+                    const label = options.title ?? route.name;
 
                     const onPress = () => {
                         const event = navigation.emit({
@@ -100,6 +112,11 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                         <Pressable
                             key={route.key}
                             onPress={onPress}
+                            // Everything marking the active tab is visual, so the
+                            // selected state has to be announced explicitly.
+                            accessibilityRole="tab"
+                            accessibilityState={{ selected: focused }}
+                            accessibilityLabel={label}
                             // borderless keeps the ripple clear of the pill's rounded ends.
                             android_ripple={{
                                 color: 'rgba(255, 255, 255, 0.10)',
@@ -119,7 +136,7 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                                     focused && tab_styles.label_focused,
                                 ]}
                             >
-                                {options.title ?? route.name}
+                                {label}
                             </Text>
                         </Pressable>
                     );
@@ -191,10 +208,13 @@ const tab_styles = StyleSheet.create({
             ios: 'rgba(255,255,255,0.14)',
             default: 'rgba(255,255,255,0.20)',
         }),
-        backgroundColor: Platform.select({
-            ios: 'transparent',
-            default: 'rgba(14, 14, 14, 0.45)',
-        }),
+        // Translucent only where a real blur backs it; otherwise opaque, or feed
+        // content reads straight through the bar.
+        backgroundColor: Platform.OS === 'ios'
+            ? 'transparent'
+            : ANDROID_BLUR
+              ? 'rgba(14, 14, 14, 0.45)'
+              : theme.elevated,
     },
     // Slides between tabs; same accent-tint treatment as the genre chips.
     indicator: {

@@ -29,7 +29,7 @@ import { theme, getTopicColor } from '@/components/styles';
 import { stripHtml } from '@/lib/utilities';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 
-const fallBackImage = require('../../assets/images/computer_2.jpg');
+const fallBackImage = require('@/assets/images/computer_2.jpg');
 
 // Best-effort domain for display only. Falls back to the raw url if parsing fails.
 function getHostname(url: string): string {

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import {
     View,
     Text,
@@ -6,6 +6,7 @@ import {
     TouchableOpacity,
     Modal,
     Pressable,
+    Dimensions,
     type LayoutChangeEvent,
 } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -81,8 +82,9 @@ export function ArticleActionSheet({
     const topicColor = getTopicColor(label);
 
     const translateY = useSharedValue(0);
-    // Placeholder until onLayout; a dismiss travels exactly the sheet's height.
-    const sheetHeight = useSharedValue(400);
+    // Seeded to the screen height so a dismiss still clears the viewport if it
+    // fires before onLayout; refined to the real height once measured.
+    const sheetHeight = useSharedValue(Dimensions.get('window').height);
 
     // Modal stays mounted between openings, so clear any leftover drag.
     useEffect(() => {
@@ -91,27 +93,33 @@ export function ArticleActionSheet({
         }
     }, [visible, translateY]);
 
-    const pan = Gesture.Pan()
-        // Only claim clear vertical drags, so taps on the rows still land.
-        .activeOffsetY(8)
-        .onUpdate((event) => {
-            translateY.value = Math.max(0, event.translationY);
-        })
-        .onEnd((event) => {
-            if (event.translationY > DISMISS_DISTANCE || event.velocityY > DISMISS_VELOCITY) {
-                translateY.value = withTiming(
-                    sheetHeight.value,
-                    { duration: 180 },
-                    (finished) => {
-                        if (finished) {
-                            runOnJS(onClose)();
-                        }
-                    },
-                );
-            } else {
-                translateY.value = withSpring(0, { damping: 22, stiffness: 260 });
-            }
-        });
+    const pan = useMemo(
+        () =>
+            Gesture.Pan()
+                // Only claim clear vertical drags, so taps on the rows still land.
+                .activeOffsetY(8)
+                // ...and let a mostly-horizontal swipe go rather than dragging the sheet.
+                .failOffsetX([-20, 20])
+                .onUpdate((event) => {
+                    translateY.value = Math.max(0, event.translationY);
+                })
+                .onEnd((event) => {
+                    if (event.translationY > DISMISS_DISTANCE || event.velocityY > DISMISS_VELOCITY) {
+                        translateY.value = withTiming(
+                            sheetHeight.value,
+                            { duration: 180 },
+                            (finished) => {
+                                if (finished) {
+                                    runOnJS(onClose)();
+                                }
+                            },
+                        );
+                    } else {
+                        translateY.value = withSpring(0, { damping: 22, stiffness: 260 });
+                    }
+                }),
+        [onClose, sheetHeight, translateY],
+    );
 
     const sheetStyle = useAnimatedStyle(() => ({
         transform: [{ translateY: translateY.value }],
