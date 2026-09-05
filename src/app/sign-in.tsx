@@ -16,7 +16,7 @@ import { router } from 'expo-router';
 import { useSignIn, useSignUp } from '@clerk/expo';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { theme } from './components/styles';
+import { theme } from '@/components/styles';
 
 type Mode = 'sign-in' | 'sign-up';
 

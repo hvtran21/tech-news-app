@@ -18,6 +18,9 @@ export const theme = {
     danger: '#EF4444',
 };
 
+// Floating tab bar's 72pt pill + 16pt gap + safe area, rounded up.
+export const TAB_BAR_INSET = 130;
+
 export const topicColors: Record<string, { color: string; bg: string }> = {
     'Artificial Intelligence': { color: '#60A5FA', bg: 'rgba(96, 165, 250, 0.10)' },
     'Machine Learning':       { color: '#A78BFA', bg: 'rgba(167, 139, 250, 0.10)' },

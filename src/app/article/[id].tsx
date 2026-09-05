@@ -22,11 +22,11 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { faBookmark as faBookmarkOutline } from '@fortawesome/free-regular-svg-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Article from '../components/constants';
-import { getDb } from '../components/database';
-import { formatDate } from '../components/NewsCard';
-import { theme, getTopicColor } from '../components/styles';
-import { stripHtml } from '../components/utilities';
+import Article from '@/lib/constants';
+import { getDb } from '@/lib/database';
+import { formatDate } from '@/components/NewsCard';
+import { theme, getTopicColor } from '@/components/styles';
+import { stripHtml } from '@/lib/utilities';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 
 const fallBackImage = require('../../assets/images/computer_2.jpg');
@@ -127,33 +127,10 @@ export default function ArticleDetail() {
                             transition={300}
                         />
                         <LinearGradient
-                            colors={['rgba(5, 5, 5, 0.55)', 'transparent']}
-                            locations={[0, 1]}
-                            style={styles.hero_gradient_top}
-                        />
-                        <LinearGradient
                             colors={['transparent', 'rgba(5, 5, 5, 0.6)', theme.bg]}
                             locations={[0.2, 0.6, 1]}
                             style={styles.hero_gradient}
                         />
-
-                        <View style={[styles.nav_overlay, { paddingTop: insets.top + 12 }]}>
-                            <TouchableOpacity
-                                onPress={() => router.back()}
-                                hitSlop={10}
-                                style={styles.nav_btn}
-                            >
-                                <FontAwesomeIcon icon={faArrowLeft} size={16} color="white" />
-                            </TouchableOpacity>
-
-                            <TouchableOpacity onPress={handleSave} hitSlop={10} style={styles.nav_btn}>
-                                <FontAwesomeIcon
-                                    icon={saved ? faBookmarkSolid : faBookmarkOutline}
-                                    size={16}
-                                    color={saved ? theme.accent : 'white'}
-                                />
-                            </TouchableOpacity>
-                        </View>
                     </Animated.View>
 
                     <Animated.View entering={FadeInDown.duration(400).delay(150)} style={styles.meta_container}>
@@ -203,6 +180,37 @@ export default function ArticleDetail() {
                         </TouchableOpacity>
                     </Animated.View>
                 </ScrollView>
+
+                {/* Outside the ScrollView, or these scroll up with the hero and clip
+                    behind the status bar. The scrim keeps the clock legible too. */}
+                <LinearGradient
+                    colors={['rgba(5, 5, 5, 0.78)', 'transparent']}
+                    locations={[0, 1]}
+                    pointerEvents="none"
+                    style={[styles.status_scrim, { height: insets.top + 88 }]}
+                />
+                <View
+                    // box-none: only the buttons take touches, so drags in the top
+                    // strip still reach the ScrollView underneath.
+                    pointerEvents="box-none"
+                    style={[styles.nav_overlay, { paddingTop: insets.top + 12 }]}
+                >
+                    <TouchableOpacity
+                        onPress={() => router.back()}
+                        hitSlop={10}
+                        style={styles.nav_btn}
+                    >
+                        <FontAwesomeIcon icon={faArrowLeft} size={16} color="white" />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity onPress={handleSave} hitSlop={10} style={styles.nav_btn}>
+                        <FontAwesomeIcon
+                            icon={saved ? faBookmarkSolid : faBookmarkOutline}
+                            size={16}
+                            color={saved ? theme.accent : 'white'}
+                        />
+                    </TouchableOpacity>
+                </View>
 
                 <Modal
                     visible={showBrowserModal}
@@ -295,18 +303,19 @@ const styles = StyleSheet.create({
         right: 0,
         height: '60%',
     },
-    hero_gradient_top: {
+    status_scrim: {
         position: 'absolute',
         top: 0,
         left: 0,
         right: 0,
-        height: 130,
+        zIndex: 2,
     },
     nav_overlay: {
         position: 'absolute',
         top: 0,
         left: 0,
         right: 0,
+        zIndex: 3,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
@@ -368,28 +377,26 @@ const styles = StyleSheet.create({
         color: theme.text,
         lineHeight: 36,
         letterSpacing: -0.5,
-        marginBottom: 4,
     },
     author_text: {
         fontFamily: 'WorkSans-LightItalic',
         fontSize: 14,
         color: theme.text_tertiary,
-        marginTop: 4,
-        marginBottom: 4,
+        marginTop: 2,
     },
     description: {
         fontFamily: 'WorkSans-Regular',
         fontSize: 17,
         color: 'rgba(255, 255, 255, 0.72)',
         lineHeight: 27,
-        marginTop: 16,
+        marginTop: 10,
     },
     content: {
         fontFamily: 'WorkSans-Light',
         fontSize: 16,
         color: theme.text_secondary,
         lineHeight: 25,
-        marginTop: 12,
+        marginTop: 10,
     },
     browser_button: {
         flexDirection: 'row',

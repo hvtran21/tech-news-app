@@ -4,12 +4,12 @@ import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faBookmark } from '@fortawesome/free-solid-svg-icons';
-import Article from '../components/constants';
-import { ArticleActionSheet } from '../components/ArticleActionSheet';
-import { getDb } from '../components/database';
-import { getSavedArticles } from '../components/services';
-import { NewsCard } from '../components/NewsCard';
-import { TabHeader, HeaderRule, HorizonalLine, theme } from '../components/styles';
+import Article from '@/lib/constants';
+import { ArticleActionSheet } from '@/components/ArticleActionSheet';
+import { getDb } from '@/lib/database';
+import { getSavedArticles } from '@/lib/services';
+import { NewsCard } from '@/components/NewsCard';
+import { TabHeader, HeaderRule, HorizonalLine, theme, TAB_BAR_INSET } from '@/components/styles';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 export default function SavedScreen() {
@@ -86,8 +86,8 @@ export default function SavedScreen() {
                     data={savedArticles}
                     contentContainerStyle={
                         savedArticles.length === 0
-                            ? { flexGrow: 1, justifyContent: 'center' }
-                            : { flexGrow: 1, paddingBottom: 130 }
+                            ? { flexGrow: 1, justifyContent: 'center', paddingBottom: TAB_BAR_INSET }
+                            : { flexGrow: 1, paddingBottom: TAB_BAR_INSET }
                     }
                     ListEmptyComponent={<EmptyState />}
                     ItemSeparatorComponent={() => <HorizonalLine />}

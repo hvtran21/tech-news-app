@@ -5,7 +5,7 @@ import { faEllipsisVertical } from '@fortawesome/free-solid-svg-icons';
 import { useState, useEffect } from 'react';
 import { router } from 'expo-router';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import { theme, getTopicColor } from './styles';
+import { theme, getTopicColor } from '@/components/styles';
 
 function formatDate(date: Date): string {
     if (!(date instanceof Date) || isNaN(date.getTime())) {
@@ -62,7 +62,7 @@ interface CardFrontProps {
     handleEllipsisPress: (id: string) => void;
 }
 
-const fallBackImage = require('../../assets/images/computer_2.jpg');
+const fallBackImage = require('@/assets/images/computer_2.jpg');
 
 export const NewsCard = ({
     title,

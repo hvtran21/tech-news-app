@@ -17,10 +17,10 @@ import {
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { useAuth } from '@clerk/expo';
-import { ArticleActionSheet } from '../components/ArticleActionSheet';
-import { getDb } from '../components/database';
-import { NewsCard } from '../components/NewsCard';
-import { TabHeader, HeaderRule, HorizonalLine, theme } from '../components/styles';
+import { ArticleActionSheet } from '@/components/ArticleActionSheet';
+import { getDb } from '@/lib/database';
+import { NewsCard } from '@/components/NewsCard';
+import { TabHeader, HeaderRule, HorizonalLine, theme, TAB_BAR_INSET } from '@/components/styles';
 import {
     faHouse,
     faAngleDown,
@@ -35,9 +35,9 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Article from '../components/constants';
-import getArticles, { syncArticles, getAllArticles, searchArticles } from '../components/services';
-import { deleteArticlesByAge, canRefreshArticles } from '../components/utilities';
+import Article from '@/lib/constants';
+import getArticles, { syncArticles, getAllArticles, searchArticles } from '@/lib/services';
+import { deleteArticlesByAge, canRefreshArticles } from '@/lib/utilities';
 import ReAnimated, { FadeIn } from 'react-native-reanimated';
 
 type MenuOptionProp = {
@@ -503,8 +503,8 @@ export default function HomeFeed() {
                                 scrollEventThrottle={100}
                                 contentContainerStyle={
                                     articles.length === 0
-                                        ? { flexGrow: 1, justifyContent: 'center' }
-                                        : { flexGrow: 1, paddingBottom: 130 }
+                                        ? { flexGrow: 1, justifyContent: 'center', paddingBottom: TAB_BAR_INSET }
+                                        : { flexGrow: 1, paddingBottom: TAB_BAR_INSET }
                                 }
                                 bounces={true}
                                 alwaysBounceVertical={true}

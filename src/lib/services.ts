@@ -1,6 +1,6 @@
-import Article from './constants';
-import { getDb } from './database';
-import { updateArticleQueryTime } from './utilities';
+import Article from '@/lib/constants';
+import { getDb } from '@/lib/database';
+import { updateArticleQueryTime } from '@/lib/utilities';
 
 const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL || 'http://localhost:8081';
 

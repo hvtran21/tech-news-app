@@ -12,7 +12,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faUser, faCheck, faSignOutAlt, faSignInAlt } from '@fortawesome/free-solid-svg-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useUser, useAuth } from '@clerk/expo';
-import { TabHeader, HeaderRule, theme, topicColors } from '../components/styles';
+import { TabHeader, HeaderRule, theme, topicColors } from '@/components/styles';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 const genreOptions = [

@@ -1,5 +1,5 @@
-import Article from './constants';
-import { getDb } from './database';
+import Article from '@/lib/constants';
+import { getDb } from '@/lib/database';
 
 export function stripHtml(text: string): string {
     return text
@@ -10,6 +10,8 @@ export function stripHtml(text: string): string {
         .replace(/&quot;/g, '"')
         .replace(/&#39;/g, "'")
         .replace(/&nbsp;/g, ' ')
+        // NewsAPI appends a literal '… [+28934 chars]' to truncated content.
+        .replace(/\s*\[\+[\d,]+\s*chars\]\s*$/i, '')
         .replace(/\s{2,}/g, ' ')
         .trim();
 }

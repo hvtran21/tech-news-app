@@ -7,8 +7,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import { initializeDatabase } from './components/database';
-import { theme, topicColors } from './components/styles';
+import { initializeDatabase } from '@/lib/database';
+import { theme, topicColors } from '@/components/styles';
 
 enum options {
     AI = 'Artificial Intelligence',
