@@ -40,6 +40,8 @@ import {
 import { faBookmark as faBookmarkOutline } from '@fortawesome/free-regular-svg-icons';
 import Article from '@/lib/constants';
 import { theme, getTopicColor } from '@/components/styles';
+import { useMotion } from '@/components/Motion';
+import { scaleMs, scaleSpring } from '@/lib/motion';
 
 const DISMISS_DISTANCE = 90;
 const DISMISS_VELOCITY = 800;
@@ -98,6 +100,7 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
     const [request, setRequest] = useState<ActionSheetRequest | null>(null);
     const [saved, setSaved] = useState(false);
     const insets = useSafeAreaInsets();
+    const { scale } = useMotion();
 
     const translateY = useSharedValue(SCREEN_HEIGHT);
     const sheetHeight = useSharedValue(SCREEN_HEIGHT);
@@ -111,10 +114,14 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
     const close = useCallback(() => {
         if (closing.current) return;
         closing.current = true;
-        translateY.value = withTiming(sheetHeight.value, { duration: 180 }, (finished) => {
-            if (finished) runOnJS(clear)();
-        });
-    }, [clear, sheetHeight, translateY]);
+        translateY.value = withTiming(
+            sheetHeight.value,
+            { duration: scaleMs(scale, 180) },
+            (finished) => {
+                if (finished) runOnJS(clear)();
+            },
+        );
+    }, [clear, sheetHeight, translateY, scale]);
 
     const open = useCallback(
         (next: ActionSheetRequest) => {
@@ -122,9 +129,9 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
             setSaved(next.saved);
             setRequest(next);
             translateY.value = SCREEN_HEIGHT;
-            translateY.value = withSpring(0, RISE);
+            translateY.value = scale === 0 ? 0 : withSpring(0, scaleSpring(scale, RISE));
         },
-        [translateY],
+        [translateY, scale],
     );
 
     const api = useMemo<ActionSheetApi>(() => ({ open, close }), [open, close]);
@@ -152,11 +159,16 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
                 .onEnd((event) => {
                     if (event.translationY > DISMISS_DISTANCE || event.velocityY > DISMISS_VELOCITY) {
                         runOnJS(close)();
+                    } else if (scale === 0) {
+                        translateY.value = 0;
                     } else {
-                        translateY.value = withSpring(0, { damping: 22, stiffness: 260 });
+                        translateY.value = withSpring(
+                            0,
+                            scaleSpring(scale, { damping: 22, stiffness: 260 }),
+                        );
                     }
                 }),
-        [close, translateY],
+        [close, translateY, scale],
     );
 
     const sheetStyle = useAnimatedStyle(() => ({

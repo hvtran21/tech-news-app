@@ -13,6 +13,8 @@ import { faUser, faCheck, faSignOutAlt, faSignInAlt } from '@fortawesome/free-so
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useUser, useAuth } from '@clerk/expo';
 import { TabHeader, HeaderRule, theme, topicColors } from '@/components/styles';
+import { useMotion } from '@/components/Motion';
+import { scaleMs, withMotion, type MotionPreference } from '@/lib/motion';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 const genreOptions = [
@@ -36,6 +38,7 @@ function GenrePreferences() {
     const [selected, setSelected] = useState<string[]>([]);
     const [saved, setSaved] = useState(false);
     const [loaded, setLoaded] = useState(false);
+    const { scale } = useMotion();
 
     useFocusEffect(
         useCallback(() => {
@@ -70,7 +73,10 @@ function GenrePreferences() {
             <View style={styles.section_header}>
                 <Text style={styles.section_label}>INTERESTS</Text>
                 {saved && (
-                    <Animated.View entering={FadeIn.duration(200)} style={styles.saved_inline}>
+                    <Animated.View
+                        entering={withMotion(scale, () => FadeIn.duration(scaleMs(scale, 200)))}
+                        style={styles.saved_inline}
+                    >
                         <FontAwesomeIcon icon={faCheck} size={10} color="#4ade80" />
                         <Text style={styles.saved_inline_text}>Updated</Text>
                     </Animated.View>
@@ -86,7 +92,9 @@ function GenrePreferences() {
                     return (
                         <TouchableOpacity key={genre} onPress={() => toggle(genre)} activeOpacity={0.7}>
                             <Animated.View
-                                entering={FadeIn.duration(350).delay(index * 40)}
+                                entering={withMotion(scale, () =>
+                                    FadeIn.duration(scaleMs(scale, 350)).delay(scaleMs(scale, index * 40)),
+                                )}
                                 style={[
                                     styles.chip,
                                     active && tc && {
@@ -107,6 +115,44 @@ function GenrePreferences() {
                                     {genre}
                                 </Text>
                             </Animated.View>
+                        </TouchableOpacity>
+                    );
+                })}
+            </View>
+        </View>
+    );
+}
+
+const MOTION_OPTIONS: { value: MotionPreference; label: string }[] = [
+    { value: 'snappy', label: 'Snappy' },
+    { value: 'default', label: 'Default' },
+    { value: 'off', label: 'Off' },
+];
+
+function MotionPreferences() {
+    const { preference, setPreference } = useMotion();
+    return (
+        <View style={styles.section}>
+            <Text style={styles.section_label}>MOTION</Text>
+            <Text style={styles.section_hint}>How fast animations and transitions play.</Text>
+            <View style={styles.motion_row}>
+                {MOTION_OPTIONS.map((option) => {
+                    const active = preference === option.value;
+                    return (
+                        <TouchableOpacity
+                            key={option.value}
+                            onPress={() => setPreference(option.value)}
+                            activeOpacity={0.7}
+                            style={[styles.motion_option, active && styles.motion_option_active]}
+                        >
+                            <Text
+                                style={[
+                                    styles.motion_option_text,
+                                    active && styles.motion_option_text_active,
+                                ]}
+                            >
+                                {option.label}
+                            </Text>
                         </TouchableOpacity>
                     );
                 })}
@@ -199,6 +245,8 @@ export default function ProfileScreen() {
                         )}
                     </View>
 
+                    <MotionPreferences />
+
                     <GenrePreferences />
                 </ScrollView>
             </SafeAreaView>
@@ -255,6 +303,33 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap',
         flexDirection: 'row',
         gap: 8,
+    },
+    motion_row: {
+        flexDirection: 'row',
+        gap: 8,
+    },
+    motion_option: {
+        flex: 1,
+        paddingVertical: 12,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: theme.surface,
+        borderWidth: 1,
+        borderColor: theme.border,
+    },
+    motion_option_active: {
+        backgroundColor: theme.accent_soft,
+        borderColor: theme.accent_border,
+    },
+    motion_option_text: {
+        fontFamily: 'WorkSans-Regular',
+        fontSize: 14,
+        color: theme.text_secondary,
+    },
+    motion_option_text_active: {
+        fontFamily: 'WorkSans-SemiBold',
+        color: theme.accent,
     },
     chip: {
         backgroundColor: theme.surface,

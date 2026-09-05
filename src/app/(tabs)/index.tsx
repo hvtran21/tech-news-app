@@ -38,6 +38,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Article from '@/lib/constants';
 import getArticles, { syncArticles, getAllArticles, searchArticles } from '@/lib/services';
 import { deleteArticlesByAge, canRefreshArticles } from '@/lib/utilities';
+import { useMotion } from '@/components/Motion';
+import { scaleMs, withMotion } from '@/lib/motion';
 import ReAnimated, { FadeIn } from 'react-native-reanimated';
 
 type MenuOptionProp = {
@@ -107,6 +109,7 @@ export default function HomeFeed() {
     const slideAnimArticles = useRef(new Animated.Value(12)).current;
 
     const actionSheet = useActionSheet();
+    const { scale } = useMotion();
 
     const [refreshing, setRefreshing] = useState(false);
     const initialLoadDone = useRef(false);
@@ -403,7 +406,10 @@ export default function HomeFeed() {
     });
 
     const EmptyState = () => (
-        <ReAnimated.View entering={FadeIn.duration(500)} style={empty_styles.container}>
+        <ReAnimated.View
+            entering={withMotion(scale, () => FadeIn.duration(scaleMs(scale, 500)))}
+            style={empty_styles.container}
+        >
             <Text style={empty_styles.title}>
                 {searchOpen && searchQuery.length > 0 ? 'No results' : 'No articles yet'}
             </Text>

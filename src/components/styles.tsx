@@ -3,6 +3,8 @@ import { Text, TextStyle, StyleSheet, View } from 'react-native';
 import MaskedView from '@react-native-masked-view/masked-view';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn } from 'react-native-reanimated';
+import { useMotion } from '@/components/Motion';
+import { scaleMs, withMotion } from '@/lib/motion';
 
 export const theme = {
     bg: '#050505',
@@ -78,8 +80,12 @@ interface TabHeaderProps {
 }
 
 export const TabHeader = ({ title, rightAccessory, subtitle }: TabHeaderProps) => {
+    const { scale } = useMotion();
     return (
-        <Animated.View entering={FadeIn.duration(450)} style={header_styles.container}>
+        <Animated.View
+            entering={withMotion(scale, () => FadeIn.duration(scaleMs(scale, 450)))}
+            style={header_styles.container}
+        >
             <View style={header_styles.title_block}>
                 {subtitle && <Text style={header_styles.subtitle}>{subtitle}</Text>}
                 <Text style={header_styles.title}>{title}</Text>

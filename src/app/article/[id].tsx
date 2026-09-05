@@ -27,6 +27,8 @@ import { getDb } from '@/lib/database';
 import { formatDate } from '@/components/NewsCard';
 import { theme, getTopicColor } from '@/components/styles';
 import { stripHtml } from '@/lib/utilities';
+import { useMotion } from '@/components/Motion';
+import { scaleMs, withMotion } from '@/lib/motion';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 
 const fallBackImage = require('@/assets/images/computer_2.jpg');
@@ -44,6 +46,7 @@ export default function ArticleDetail() {
     const [showBrowserModal, setShowBrowserModal] = useState(false);
     const pendingBrowserUrl = useRef<string | null>(null);
     const insets = useSafeAreaInsets();
+    const { scale } = useMotion();
 
     useEffect(() => {
         const loadArticle = async () => {
@@ -118,7 +121,10 @@ export default function ArticleDetail() {
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={{ paddingBottom: 48 }}
                 >
-                    <Animated.View entering={FadeIn.duration(500)} style={styles.hero_wrapper}>
+                    <Animated.View
+                        entering={withMotion(scale, () => FadeIn.duration(scaleMs(scale, 500)))}
+                        style={styles.hero_wrapper}
+                    >
                         <Image
                             source={imageSource}
                             style={styles.hero_image}
@@ -133,7 +139,12 @@ export default function ArticleDetail() {
                         />
                     </Animated.View>
 
-                    <Animated.View entering={FadeInDown.duration(400).delay(150)} style={styles.meta_container}>
+                    <Animated.View
+                        entering={withMotion(scale, () =>
+                            FadeInDown.duration(scaleMs(scale, 400)).delay(scaleMs(scale, 60)),
+                        )}
+                        style={styles.meta_container}
+                    >
                         <View style={[styles.tag_pill, { backgroundColor: topicColor.bg }]}>
                             <Text style={[styles.tag_text, { color: topicColor.color }]}>{label}</Text>
                         </View>
@@ -147,29 +158,54 @@ export default function ArticleDetail() {
                         )}
                     </Animated.View>
 
-                    <Animated.View entering={FadeInDown.duration(400).delay(250)} style={styles.content_block}>
+                    <Animated.View
+                        entering={withMotion(scale, () =>
+                            FadeInDown.duration(scaleMs(scale, 400)).delay(scaleMs(scale, 100)),
+                        )}
+                        style={styles.content_block}
+                    >
                         <Text style={styles.title}>{article.title}</Text>
                     </Animated.View>
 
                     {article.author && (
-                        <Animated.View entering={FadeInDown.duration(400).delay(300)} style={styles.content_block}>
+                        <Animated.View
+                            entering={withMotion(scale, () =>
+                                FadeInDown.duration(scaleMs(scale, 400)).delay(scaleMs(scale, 130)),
+                            )}
+                            style={styles.content_block}
+                        >
                             <Text style={styles.author_text}>By {article.author}</Text>
                         </Animated.View>
                     )}
 
                     {article.description && (
-                        <Animated.View entering={FadeInDown.duration(400).delay(350)} style={styles.content_block}>
+                        <Animated.View
+                            entering={withMotion(scale, () =>
+                                FadeInDown.duration(scaleMs(scale, 400)).delay(scaleMs(scale, 160)),
+                            )}
+                            style={styles.content_block}
+                        >
                             <Text style={styles.description}>{stripHtml(article.description)}</Text>
                         </Animated.View>
                     )}
 
                     {article.content && (
-                        <Animated.View entering={FadeInDown.duration(400).delay(400)} style={styles.content_block}>
+                        <Animated.View
+                            entering={withMotion(scale, () =>
+                                FadeInDown.duration(scaleMs(scale, 400)).delay(scaleMs(scale, 190)),
+                            )}
+                            style={styles.content_block}
+                        >
                             <Text style={styles.content}>{stripHtml(article.content)}</Text>
                         </Animated.View>
                     )}
 
-                    <Animated.View entering={FadeInUp.duration(400).delay(450)} style={styles.content_block}>
+                    <Animated.View
+                        entering={withMotion(scale, () =>
+                            FadeInUp.duration(scaleMs(scale, 400)).delay(scaleMs(scale, 220)),
+                        )}
+                        style={styles.content_block}
+                    >
                         <TouchableOpacity
                             style={styles.browser_button}
                             onPress={() => setShowBrowserModal(true)}

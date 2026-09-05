@@ -10,11 +10,14 @@ import { getDb } from '@/lib/database';
 import { getSavedArticles } from '@/lib/services';
 import { NewsCard } from '@/components/NewsCard';
 import { TabHeader, HeaderRule, HorizonalLine, theme, TAB_BAR_INSET } from '@/components/styles';
+import { useMotion } from '@/components/Motion';
+import { scaleMs, withMotion } from '@/lib/motion';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 export default function SavedScreen() {
     const [savedArticles, setSavedArticles] = useState<Article[]>([]);
     const actionSheet = useActionSheet();
+    const { scale } = useMotion();
 
     useFocusEffect(
         useCallback(() => {
@@ -50,7 +53,10 @@ export default function SavedScreen() {
     );
 
     const EmptyState = () => (
-        <Animated.View entering={FadeIn.duration(500)} style={styles.empty_container}>
+        <Animated.View
+            entering={withMotion(scale, () => FadeIn.duration(scaleMs(scale, 500)))}
+            style={styles.empty_container}
+        >
             <View style={styles.empty_icon_circle}>
                 <FontAwesomeIcon icon={faBookmark} size={28} color="white" style={{ opacity: 0.12 }} />
             </View>
