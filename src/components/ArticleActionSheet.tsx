@@ -1,15 +1,24 @@
-import { useEffect, useMemo } from 'react';
+import {
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+    type ReactNode,
+} from 'react';
 import {
     View,
     Text,
     StyleSheet,
     TouchableOpacity,
-    Modal,
     Pressable,
+    BackHandler,
     Dimensions,
     type LayoutChangeEvent,
 } from 'react-native';
-import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
     Extrapolation,
     interpolate,
@@ -34,6 +43,28 @@ import { theme, getTopicColor } from '@/components/styles';
 
 const DISMISS_DISTANCE = 90;
 const DISMISS_VELOCITY = 800;
+const RISE = { damping: 24, stiffness: 240, mass: 0.7 };
+const SCREEN_HEIGHT = Dimensions.get('window').height;
+
+export type ActionSheetRequest = {
+    article: Article;
+    saved: boolean;
+    onToggleSave: (next: boolean) => void;
+    onOpenInBrowser: () => void;
+};
+
+type ActionSheetApi = {
+    open: (request: ActionSheetRequest) => void;
+    close: () => void;
+};
+
+const ActionSheetContext = createContext<ActionSheetApi | null>(null);
+
+export function useActionSheet(): ActionSheetApi {
+    const api = useContext(ActionSheetContext);
+    if (!api) throw new Error('useActionSheet must be used inside ActionSheetProvider');
+    return api;
+}
 
 interface ActionRowProps {
     icon: IconProp;
@@ -60,38 +91,53 @@ function ActionRow({ icon, label, onPress, tone = 'default' }: ActionRowProps) {
     );
 }
 
-interface ArticleActionSheetProps {
-    visible: boolean;
-    onClose: () => void;
-    article: Article | undefined;
-    saved: boolean;
-    onToggleSave: () => void;
-    onOpenInBrowser: () => void;
-}
-
-export function ArticleActionSheet({
-    visible,
-    onClose,
-    article,
-    saved,
-    onToggleSave,
-    onOpenInBrowser,
-}: ArticleActionSheetProps) {
+// Hosted at the root rather than in a react-native Modal: Modal builds a native
+// Dialog window on Android, which measured ~470ms from tap to visible no matter
+// what animationType was set to.
+export function ActionSheetProvider({ children }: { children: ReactNode }) {
+    const [request, setRequest] = useState<ActionSheetRequest | null>(null);
+    const [saved, setSaved] = useState(false);
     const insets = useSafeAreaInsets();
-    const label = article?.genre || article?.category || 'Top';
-    const topicColor = getTopicColor(label);
 
-    const translateY = useSharedValue(0);
-    // Seeded to the screen height so a dismiss still clears the viewport if it
-    // fires before onLayout; refined to the real height once measured.
-    const sheetHeight = useSharedValue(Dimensions.get('window').height);
+    const translateY = useSharedValue(SCREEN_HEIGHT);
+    const sheetHeight = useSharedValue(SCREEN_HEIGHT);
+    const closing = useRef(false);
 
-    // Modal stays mounted between openings, so clear any leftover drag.
+    const clear = useCallback(() => {
+        closing.current = false;
+        setRequest(null);
+    }, []);
+
+    const close = useCallback(() => {
+        if (closing.current) return;
+        closing.current = true;
+        translateY.value = withTiming(sheetHeight.value, { duration: 180 }, (finished) => {
+            if (finished) runOnJS(clear)();
+        });
+    }, [clear, sheetHeight, translateY]);
+
+    const open = useCallback(
+        (next: ActionSheetRequest) => {
+            closing.current = false;
+            setSaved(next.saved);
+            setRequest(next);
+            translateY.value = SCREEN_HEIGHT;
+            translateY.value = withSpring(0, RISE);
+        },
+        [translateY],
+    );
+
+    const api = useMemo<ActionSheetApi>(() => ({ open, close }), [open, close]);
+
+    // Modal gave us onRequestClose for free; an overlay has to claim back itself.
     useEffect(() => {
-        if (visible) {
-            translateY.value = 0;
-        }
-    }, [visible, translateY]);
+        if (!request) return;
+        const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+            close();
+            return true;
+        });
+        return () => sub.remove();
+    }, [request, close]);
 
     const pan = useMemo(
         () =>
@@ -105,20 +151,12 @@ export function ArticleActionSheet({
                 })
                 .onEnd((event) => {
                     if (event.translationY > DISMISS_DISTANCE || event.velocityY > DISMISS_VELOCITY) {
-                        translateY.value = withTiming(
-                            sheetHeight.value,
-                            { duration: 180 },
-                            (finished) => {
-                                if (finished) {
-                                    runOnJS(onClose)();
-                                }
-                            },
-                        );
+                        runOnJS(close)();
                     } else {
                         translateY.value = withSpring(0, { damping: 22, stiffness: 260 });
                     }
                 }),
-        [onClose, sheetHeight, translateY],
+        [close, translateY],
     );
 
     const sheetStyle = useAnimatedStyle(() => ({
@@ -138,76 +176,110 @@ export function ArticleActionSheet({
         sheetHeight.value = event.nativeEvent.layout.height;
     };
 
+    const article = request?.article;
+    const label = article?.genre || article?.category || 'Top';
+    const topicColor = getTopicColor(label);
+
     return (
-        <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
-            {/* Modal is a separate native view hierarchy on Android; gestures
-                inside it need their own root. */}
-            <GestureHandlerRootView style={styles.root}>
-                <Animated.View
-                    style={[StyleSheet.absoluteFill, styles.scrim, scrimStyle]}
-                    pointerEvents="none"
-                />
-                <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <ActionSheetContext.Provider value={api}>
+            <View style={styles.root}>
+                {children}
 
-                <GestureDetector gesture={pan}>
-                    <Animated.View
-                        style={[styles.sheet, { paddingBottom: insets.bottom + 12 }, sheetStyle]}
-                        onLayout={onSheetLayout}
-                    >
-                        <View style={styles.handle_hitbox}>
-                            <View style={styles.handle} />
-                        </View>
+                {request && (
+                    <View style={styles.overlay} pointerEvents="box-none">
+                        <Animated.View
+                            style={[StyleSheet.absoluteFill, styles.scrim, scrimStyle]}
+                            pointerEvents="none"
+                        />
+                        <Pressable style={StyleSheet.absoluteFill} onPress={close} />
 
-                        {article && (
-                            <View style={styles.header}>
-                                <View style={[styles.header_accent, { backgroundColor: topicColor.color }]} />
-                                <View style={styles.header_text_block}>
-                                    <Text style={[styles.header_label, { color: topicColor.color }]}>{label}</Text>
-                                    <Text style={styles.header_title} numberOfLines={2}>
-                                        {article.title}
-                                    </Text>
+                        <GestureDetector gesture={pan}>
+                            <Animated.View
+                                style={[
+                                    styles.sheet,
+                                    { paddingBottom: insets.bottom + 12 },
+                                    sheetStyle,
+                                ]}
+                                onLayout={onSheetLayout}
+                            >
+                                <View style={styles.handle_hitbox}>
+                                    <View style={styles.handle} />
                                 </View>
-                            </View>
-                        )}
 
-                        <View style={styles.divider} />
+                                {article && (
+                                    <View style={styles.header}>
+                                        <View
+                                            style={[
+                                                styles.header_accent,
+                                                { backgroundColor: topicColor.color },
+                                            ]}
+                                        />
+                                        <View style={styles.header_text_block}>
+                                            <Text
+                                                style={[
+                                                    styles.header_label,
+                                                    { color: topicColor.color },
+                                                ]}
+                                            >
+                                                {label}
+                                            </Text>
+                                            <Text style={styles.header_title} numberOfLines={2}>
+                                                {article.title}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                )}
 
-                        <View style={styles.group}>
-                            <ActionRow
-                                icon={saved ? faBookmarkSolid : faBookmarkOutline}
-                                label={saved ? 'Unsave' : 'Save'}
-                                tone={saved ? 'active' : 'default'}
-                                onPress={() => {
-                                    onToggleSave();
-                                    onClose();
-                                }}
-                            />
-                            <ActionRow
-                                icon={faUpRightFromSquare}
-                                label="Open in browser"
-                                onPress={() => {
-                                    onOpenInBrowser();
-                                    onClose();
-                                }}
-                            />
-                            <ActionRow icon={faBan} label="Not interested" onPress={onClose} />
-                        </View>
+                                <View style={styles.divider} />
 
-                        <View style={styles.divider} />
+                                <View style={styles.group}>
+                                    <ActionRow
+                                        icon={saved ? faBookmarkSolid : faBookmarkOutline}
+                                        label={saved ? 'Unsave' : 'Save'}
+                                        tone={saved ? 'active' : 'default'}
+                                        onPress={() => {
+                                            const next = !saved;
+                                            setSaved(next);
+                                            request.onToggleSave(next);
+                                            close();
+                                        }}
+                                    />
+                                    <ActionRow
+                                        icon={faUpRightFromSquare}
+                                        label="Open in browser"
+                                        onPress={() => {
+                                            request.onOpenInBrowser();
+                                            close();
+                                        }}
+                                    />
+                                    <ActionRow icon={faBan} label="Not interested" onPress={close} />
+                                </View>
 
-                        <View style={styles.group}>
-                            <ActionRow icon={faFlag} label="Report" tone="danger" onPress={onClose} />
-                        </View>
-                    </Animated.View>
-                </GestureDetector>
-            </GestureHandlerRootView>
-        </Modal>
+                                <View style={styles.divider} />
+
+                                <View style={styles.group}>
+                                    <ActionRow
+                                        icon={faFlag}
+                                        label="Report"
+                                        tone="danger"
+                                        onPress={close}
+                                    />
+                                </View>
+                            </Animated.View>
+                        </GestureDetector>
+                    </View>
+                )}
+            </View>
+        </ActionSheetContext.Provider>
     );
 }
 
 const styles = StyleSheet.create({
     root: {
         flex: 1,
+    },
+    overlay: {
+        ...StyleSheet.absoluteFillObject,
         justifyContent: 'flex-end',
     },
     scrim: {
@@ -295,4 +367,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default ArticleActionSheet;
+export default ActionSheetProvider;
